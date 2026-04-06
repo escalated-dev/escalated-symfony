@@ -1,0 +1,23 @@
+# Escalated Bundle Routes
+# These routes are auto-loaded when ui_enabled is true.
+# API routes are always available regardless of ui_enabled.
+
+escalated_customer:
+    resource: '../src/Controller/Customer/'
+    type: attribute
+    prefix: '%escalated.route_prefix%'
+
+escalated_agent:
+    resource: '../src/Controller/Agent/'
+    type: attribute
+    prefix: '%escalated.route_prefix%'
+
+escalated_admin:
+    resource: '../src/Controller/Admin/'
+    type: attribute
+    prefix: '%escalated.route_prefix%'
+
+escalated_api:
+    resource: '../src/Controller/Api/'
+    type: attribute
+    prefix: '%escalated.route_prefix%'

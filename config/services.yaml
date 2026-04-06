@@ -1,0 +1,72 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    # Repositories
+    Escalated\Symfony\Repository\TicketRepository:
+        tags: ['doctrine.repository_service']
+
+    Escalated\Symfony\Repository\DepartmentRepository:
+        tags: ['doctrine.repository_service']
+
+    # Services
+    Escalated\Symfony\Service\TicketService: ~
+
+    Escalated\Symfony\Service\AssignmentService: ~
+
+    Escalated\Symfony\Service\SlaService:
+        arguments:
+            $slaEnabled: '%escalated.sla.enabled%'
+            $businessHoursOnly: '%escalated.sla.business_hours_only%'
+            $businessHours: '%escalated.sla.business_hours%'
+
+    # UI Rendering
+    Escalated\Symfony\Rendering\UiRendererInterface:
+        class: Escalated\Symfony\Rendering\InertiaUiRenderer
+
+    Escalated\Symfony\Rendering\InertiaUiRenderer: ~
+
+    # Security Voters
+    Escalated\Symfony\Security\EnsureAgentVoter:
+        tags: ['security.voter']
+
+    Escalated\Symfony\Security\EnsureAdminVoter:
+        tags: ['security.voter']
+
+    # Event Subscribers
+    Escalated\Symfony\EventSubscriber\InertiaDataSubscriber:
+        arguments:
+            $routePrefix: '%escalated.route_prefix%'
+        tags: ['kernel.event_subscriber']
+
+    # Controllers
+    Escalated\Symfony\Controller\Customer\TicketController:
+        arguments:
+            $allowCustomerClose: '%escalated.tickets.allow_customer_close%'
+        tags: ['controller.service_arguments']
+
+    Escalated\Symfony\Controller\Agent\DashboardController:
+        tags: ['controller.service_arguments']
+
+    Escalated\Symfony\Controller\Agent\TicketController:
+        tags: ['controller.service_arguments']
+
+    Escalated\Symfony\Controller\Admin\TicketController:
+        tags: ['controller.service_arguments']
+
+    Escalated\Symfony\Controller\Admin\DepartmentController:
+        tags: ['controller.service_arguments']
+
+    Escalated\Symfony\Controller\Admin\SettingsController:
+        tags: ['controller.service_arguments']
+
+    Escalated\Symfony\Controller\Admin\TagController:
+        tags: ['controller.service_arguments']
+
+    Escalated\Symfony\Controller\Api\TicketController:
+        tags: ['controller.service_arguments']
+
+    Escalated\Symfony\Controller\Api\AuthController:
+        tags: ['controller.service_arguments']

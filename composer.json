@@ -1,0 +1,39 @@
+{
+    "name": "escalated-dev/escalated-symfony",
+    "description": "An embeddable support ticket system for Symfony applications",
+    "keywords": ["symfony", "support", "tickets", "helpdesk", "customer-support", "bundle"],
+    "license": "MIT",
+    "type": "symfony-bundle",
+    "require": {
+        "php": "^8.2",
+        "symfony/framework-bundle": "^6.4|^7.0",
+        "symfony/security-bundle": "^6.4|^7.0",
+        "doctrine/orm": "^2.17|^3.0",
+        "doctrine/doctrine-bundle": "^2.11",
+        "doctrine/doctrine-migrations-bundle": "^3.3",
+        "symfony/uid": "^6.4|^7.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.5|^11.0",
+        "symfony/phpunit-bridge": "^6.4|^7.0"
+    },
+    "suggest": {
+        "rompetomp/inertia-bundle": "Required for built-in Inertia.js UI (^2.0)",
+        "skipthedragon/inertia-bundle": "Alternative Inertia.js bundle (^1.0)"
+    },
+    "autoload": {
+        "psr-4": {
+            "Escalated\\Symfony\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Escalated\\Symfony\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

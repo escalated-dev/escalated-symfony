@@ -18,7 +18,8 @@ class DashboardController extends AbstractController
         private readonly TicketRepository $ticketRepository,
         private readonly AssignmentService $assignmentService,
         private readonly UiRendererInterface $renderer,
-    ) {}
+    ) {
+    }
 
     #[Route('/dashboard', name: 'dashboard', methods: ['GET'])]
     public function index(): Response

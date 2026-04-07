@@ -64,6 +64,7 @@ class Tag
     public function setName(string $name): self
     {
         $this->name = $name;
+
         return $this;
     }
 
@@ -75,6 +76,7 @@ class Tag
     public function setSlug(string $slug): self
     {
         $this->slug = $slug;
+
         return $this;
     }
 
@@ -86,6 +88,7 @@ class Tag
     public function setColor(?string $color): self
     {
         $this->color = $color;
+
         return $this;
     }
 

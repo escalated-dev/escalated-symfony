@@ -25,7 +25,8 @@ class InertiaDataSubscriber implements EventSubscriberInterface
         private readonly AuthorizationCheckerInterface $authChecker,
         private readonly EntityManagerInterface $em,
         private readonly string $routePrefix,
-    ) {}
+    ) {
+    }
 
     public static function getSubscribedEvents(): array
     {

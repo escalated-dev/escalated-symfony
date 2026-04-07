@@ -79,6 +79,7 @@ class Reply
     public function setTicket(Ticket $ticket): self
     {
         $this->ticket = $ticket;
+
         return $this;
     }
 
@@ -90,6 +91,7 @@ class Reply
     public function setAuthorId(?int $authorId): self
     {
         $this->authorId = $authorId;
+
         return $this;
     }
 
@@ -101,6 +103,7 @@ class Reply
     public function setAuthorClass(?string $authorClass): self
     {
         $this->authorClass = $authorClass;
+
         return $this;
     }
 
@@ -112,6 +115,7 @@ class Reply
     public function setBody(string $body): self
     {
         $this->body = $body;
+
         return $this;
     }
 
@@ -123,6 +127,7 @@ class Reply
     public function setIsInternalNote(bool $isInternalNote): self
     {
         $this->isInternalNote = $isInternalNote;
+
         return $this;
     }
 
@@ -134,6 +139,7 @@ class Reply
     public function setIsPinned(bool $isPinned): self
     {
         $this->isPinned = $isPinned;
+
         return $this;
     }
 
@@ -145,6 +151,7 @@ class Reply
     public function setType(string $type): self
     {
         $this->type = $type;
+
         return $this;
     }
 
@@ -156,6 +163,7 @@ class Reply
     public function setMetadata(?array $metadata): self
     {
         $this->metadata = $metadata;
+
         return $this;
     }
 
@@ -177,6 +185,7 @@ class Reply
     public function setDeletedAt(?\DateTimeImmutable $deletedAt): self
     {
         $this->deletedAt = $deletedAt;
+
         return $this;
     }
 }

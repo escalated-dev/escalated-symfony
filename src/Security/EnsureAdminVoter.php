@@ -20,7 +20,7 @@ class EnsureAdminVoter extends Voter
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        return $attribute === self::ATTRIBUTE;
+        return self::ATTRIBUTE === $attribute;
     }
 
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool

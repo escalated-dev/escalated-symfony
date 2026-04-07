@@ -44,7 +44,7 @@ class EscalatedBundle extends AbstractBundle
                     'Escalated' => [
                         'is_bundle' => false,
                         'type' => 'attribute',
-                        'dir' => __DIR__ . '/Entity',
+                        'dir' => __DIR__.'/Entity',
                         'prefix' => 'Escalated\\Symfony\\Entity',
                         'alias' => 'Escalated',
                     ],

@@ -23,7 +23,7 @@ class EscalatedExtension extends Extension implements PrependExtensionInterface
         $configuration = new Configuration();
         $config = $this->processConfiguration($configuration, $configs);
 
-        $loader = new YamlFileLoader($container, new FileLocator(__DIR__ . '/../../config'));
+        $loader = new YamlFileLoader($container, new FileLocator(__DIR__.'/../../config'));
         $loader->load('services.yaml');
 
         $container->setParameter('escalated.user_class', $config['user_class']);
@@ -45,7 +45,7 @@ class EscalatedExtension extends Extension implements PrependExtensionInterface
                     'Escalated' => [
                         'is_bundle' => false,
                         'type' => 'attribute',
-                        'dir' => __DIR__ . '/../Entity',
+                        'dir' => __DIR__.'/../Entity',
                         'prefix' => 'Escalated\\Symfony\\Entity',
                         'alias' => 'Escalated',
                     ],

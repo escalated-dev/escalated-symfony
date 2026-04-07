@@ -22,11 +22,12 @@ class EnsureAgentVoter extends Voter
 
     public function __construct(
         private readonly EntityManagerInterface $em,
-    ) {}
+    ) {
+    }
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        return $attribute === self::ATTRIBUTE;
+        return self::ATTRIBUTE === $attribute;
     }
 
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool
@@ -41,6 +42,6 @@ class EnsureAgentVoter extends Voter
         $profile = $this->em->getRepository(AgentProfile::class)
             ->findOneBy(['userId' => $user->getUserIdentifier()]);
 
-        return $profile !== null;
+        return null !== $profile;
     }
 }

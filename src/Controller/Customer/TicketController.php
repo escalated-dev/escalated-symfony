@@ -21,7 +21,8 @@ class TicketController extends AbstractController
         private readonly UiRendererInterface $renderer,
         private readonly DepartmentRepository $departmentRepository,
         private readonly bool $allowCustomerClose,
-    ) {}
+    ) {
+    }
 
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): Response
@@ -82,7 +83,7 @@ class TicketController extends AbstractController
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
         $ticket = $this->ticketService->find($reference);
-        if ($ticket === null) {
+        if (null === $ticket) {
             throw $this->createNotFoundException('Ticket not found.');
         }
 
@@ -99,7 +100,7 @@ class TicketController extends AbstractController
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
         $ticket = $this->ticketService->find($reference);
-        if ($ticket === null) {
+        if (null === $ticket) {
             throw $this->createNotFoundException('Ticket not found.');
         }
 
@@ -130,7 +131,7 @@ class TicketController extends AbstractController
         }
 
         $ticket = $this->ticketService->find($reference);
-        if ($ticket === null) {
+        if (null === $ticket) {
             throw $this->createNotFoundException('Ticket not found.');
         }
 
@@ -151,7 +152,7 @@ class TicketController extends AbstractController
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
         $ticket = $this->ticketService->find($reference);
-        if ($ticket === null) {
+        if (null === $ticket) {
             throw $this->createNotFoundException('Ticket not found.');
         }
 

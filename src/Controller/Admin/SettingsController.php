@@ -14,7 +14,8 @@ class SettingsController extends AbstractController
 {
     public function __construct(
         private readonly UiRendererInterface $renderer,
-    ) {}
+    ) {
+    }
 
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(): Response

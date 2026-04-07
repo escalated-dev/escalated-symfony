@@ -160,9 +160,9 @@ class Ticket
     #[ORM\PrePersist]
     public function onPrePersist(): void
     {
-        if ($this->reference === '') {
+        if ('' === $this->reference) {
             // Temporary reference; should be updated after flush with generateReference()
-            $this->reference = 'TEMP-' . Uuid::v4()->toRfc4122();
+            $this->reference = 'TEMP-'.Uuid::v4()->toRfc4122();
         }
     }
 
@@ -191,7 +191,7 @@ class Ticket
 
     public function isGuest(): bool
     {
-        return $this->requesterClass === null && $this->guestToken !== null;
+        return null === $this->requesterClass && null !== $this->guestToken;
     }
 
     // --- Getters and Setters ---
@@ -209,6 +209,7 @@ class Ticket
     public function setReference(string $reference): self
     {
         $this->reference = $reference;
+
         return $this;
     }
 
@@ -220,6 +221,7 @@ class Ticket
     public function setSubject(string $subject): self
     {
         $this->subject = $subject;
+
         return $this;
     }
 
@@ -231,6 +233,7 @@ class Ticket
     public function setDescription(?string $description): self
     {
         $this->description = $description;
+
         return $this;
     }
 
@@ -242,6 +245,7 @@ class Ticket
     public function setStatus(string $status): self
     {
         $this->status = $status;
+
         return $this;
     }
 
@@ -253,6 +257,7 @@ class Ticket
     public function setPriority(string $priority): self
     {
         $this->priority = $priority;
+
         return $this;
     }
 
@@ -264,6 +269,7 @@ class Ticket
     public function setTicketType(?string $ticketType): self
     {
         $this->ticketType = $ticketType;
+
         return $this;
     }
 
@@ -275,6 +281,7 @@ class Ticket
     public function setRequesterId(?int $requesterId): self
     {
         $this->requesterId = $requesterId;
+
         return $this;
     }
 
@@ -286,6 +293,7 @@ class Ticket
     public function setRequesterClass(?string $requesterClass): self
     {
         $this->requesterClass = $requesterClass;
+
         return $this;
     }
 
@@ -297,6 +305,7 @@ class Ticket
     public function setAssignedTo(?int $assignedTo): self
     {
         $this->assignedTo = $assignedTo;
+
         return $this;
     }
 
@@ -308,6 +317,7 @@ class Ticket
     public function setDepartment(?Department $department): self
     {
         $this->department = $department;
+
         return $this;
     }
 
@@ -319,6 +329,7 @@ class Ticket
     public function setSlaPolicy(?SlaPolicy $slaPolicy): self
     {
         $this->slaPolicy = $slaPolicy;
+
         return $this;
     }
 
@@ -334,6 +345,7 @@ class Ticket
             $this->replies->add($reply);
             $reply->setTicket($this);
         }
+
         return $this;
     }
 
@@ -354,12 +366,14 @@ class Ticket
         if (!$this->tags->contains($tag)) {
             $this->tags->add($tag);
         }
+
         return $this;
     }
 
     public function removeTag(Tag $tag): self
     {
         $this->tags->removeElement($tag);
+
         return $this;
     }
 
@@ -375,6 +389,7 @@ class Ticket
             $this->activities->add($activity);
             $activity->setTicket($this);
         }
+
         return $this;
     }
 
@@ -386,6 +401,7 @@ class Ticket
     public function setGuestName(?string $guestName): self
     {
         $this->guestName = $guestName;
+
         return $this;
     }
 
@@ -397,6 +413,7 @@ class Ticket
     public function setGuestEmail(?string $guestEmail): self
     {
         $this->guestEmail = $guestEmail;
+
         return $this;
     }
 
@@ -408,6 +425,7 @@ class Ticket
     public function setGuestToken(?string $guestToken): self
     {
         $this->guestToken = $guestToken;
+
         return $this;
     }
 
@@ -419,6 +437,7 @@ class Ticket
     public function setFirstResponseAt(?\DateTimeImmutable $firstResponseAt): self
     {
         $this->firstResponseAt = $firstResponseAt;
+
         return $this;
     }
 
@@ -430,6 +449,7 @@ class Ticket
     public function setFirstResponseDueAt(?\DateTimeImmutable $firstResponseDueAt): self
     {
         $this->firstResponseDueAt = $firstResponseDueAt;
+
         return $this;
     }
 
@@ -441,6 +461,7 @@ class Ticket
     public function setResolutionDueAt(?\DateTimeImmutable $resolutionDueAt): self
     {
         $this->resolutionDueAt = $resolutionDueAt;
+
         return $this;
     }
 
@@ -452,6 +473,7 @@ class Ticket
     public function setSlaFirstResponseBreached(bool $breached): self
     {
         $this->slaFirstResponseBreached = $breached;
+
         return $this;
     }
 
@@ -463,6 +485,7 @@ class Ticket
     public function setSlaResolutionBreached(bool $breached): self
     {
         $this->slaResolutionBreached = $breached;
+
         return $this;
     }
 
@@ -474,6 +497,7 @@ class Ticket
     public function setResolvedAt(?\DateTimeImmutable $resolvedAt): self
     {
         $this->resolvedAt = $resolvedAt;
+
         return $this;
     }
 
@@ -485,6 +509,7 @@ class Ticket
     public function setClosedAt(?\DateTimeImmutable $closedAt): self
     {
         $this->closedAt = $closedAt;
+
         return $this;
     }
 
@@ -496,6 +521,7 @@ class Ticket
     public function setMetadata(?array $metadata): self
     {
         $this->metadata = $metadata;
+
         return $this;
     }
 
@@ -517,6 +543,7 @@ class Ticket
     public function setDeletedAt(?\DateTimeImmutable $deletedAt): self
     {
         $this->deletedAt = $deletedAt;
+
         return $this;
     }
 }

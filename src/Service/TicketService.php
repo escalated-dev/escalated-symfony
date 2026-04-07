@@ -18,7 +18,8 @@ class TicketService
         private readonly EntityManagerInterface $em,
         private readonly TicketRepository $ticketRepository,
         private readonly EventDispatcherInterface $dispatcher,
-    ) {}
+    ) {
+    }
 
     /**
      * Create a new ticket.
@@ -109,9 +110,7 @@ class TicketService
     public function changeStatus(Ticket $ticket, string $newStatus, ?int $causerId = null): Ticket
     {
         if (!$ticket->canTransitionTo($newStatus)) {
-            throw new \InvalidArgumentException(
-                sprintf('Cannot transition from "%s" to "%s".', $ticket->getStatus(), $newStatus)
-            );
+            throw new \InvalidArgumentException(sprintf('Cannot transition from "%s" to "%s".', $ticket->getStatus(), $newStatus));
         }
 
         $oldStatus = $ticket->getStatus();
@@ -229,7 +228,7 @@ class TicketService
     {
         foreach ($tagIds as $tagId) {
             $tag = $this->em->find(\Escalated\Symfony\Entity\Tag::class, $tagId);
-            if ($tag !== null) {
+            if (null !== $tag) {
                 $ticket->removeTag($tag);
 
                 $this->logActivity($ticket, TicketActivity::TYPE_TAG_REMOVED, $causerId, [

@@ -83,7 +83,7 @@ class TicketRepository extends ServiceEntityRepository
             ->andWhere('t.deletedAt IS NULL')
             ->orderBy('t.createdAt', 'DESC');
 
-        if ($requesterClass !== null) {
+        if (null !== $requesterClass) {
             $qb->andWhere('t.requesterClass = :requesterClass')
                 ->setParameter('requesterClass', $requesterClass);
         }
@@ -131,14 +131,14 @@ class TicketRepository extends ServiceEntityRepository
 
         if (!empty($filters['search'])) {
             $qb->andWhere('t.subject LIKE :search OR t.reference LIKE :search OR t.description LIKE :search')
-                ->setParameter('search', '%' . $filters['search'] . '%');
+                ->setParameter('search', '%'.$filters['search'].'%');
         }
 
         $sortBy = $filters['sort_by'] ?? 'createdAt';
         $sortDir = strtoupper($filters['sort_dir'] ?? 'DESC');
         $sortDir = in_array($sortDir, ['ASC', 'DESC'], true) ? $sortDir : 'DESC';
 
-        $qb->orderBy('t.' . $sortBy, $sortDir);
+        $qb->orderBy('t.'.$sortBy, $sortDir);
 
         return $qb;
     }

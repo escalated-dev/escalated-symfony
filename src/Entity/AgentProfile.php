@@ -50,12 +50,12 @@ class AgentProfile
 
     public function isLightAgent(): bool
     {
-        return $this->agentType === self::TYPE_LIGHT;
+        return self::TYPE_LIGHT === $this->agentType;
     }
 
     public function isFullAgent(): bool
     {
-        return $this->agentType === self::TYPE_FULL;
+        return self::TYPE_FULL === $this->agentType;
     }
 
     // --- Getters and Setters ---
@@ -73,6 +73,7 @@ class AgentProfile
     public function setUserId(int $userId): self
     {
         $this->userId = $userId;
+
         return $this;
     }
 
@@ -84,6 +85,7 @@ class AgentProfile
     public function setAgentType(string $agentType): self
     {
         $this->agentType = $agentType;
+
         return $this;
     }
 
@@ -95,6 +97,7 @@ class AgentProfile
     public function setMaxTickets(?int $maxTickets): self
     {
         $this->maxTickets = $maxTickets;
+
         return $this;
     }
 

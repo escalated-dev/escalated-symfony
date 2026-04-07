@@ -14,7 +14,8 @@ class AssignmentService
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly TicketRepository $ticketRepository,
-    ) {}
+    ) {
+    }
 
     /**
      * Assign a ticket to an agent.
@@ -61,7 +62,7 @@ class AssignmentService
     public function autoAssign(Ticket $ticket): ?Ticket
     {
         $department = $ticket->getDepartment();
-        if ($department === null) {
+        if (null === $department) {
             return null;
         }
 

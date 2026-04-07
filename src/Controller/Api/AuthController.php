@@ -19,7 +19,7 @@ class AuthController extends AbstractController
     {
         $user = $this->getUser();
 
-        if ($user === null) {
+        if (null === $user) {
             return $this->json(['error' => 'Not authenticated.'], 401);
         }
 

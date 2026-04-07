@@ -18,7 +18,8 @@ class TicketController extends AbstractController
     public function __construct(
         private readonly TicketService $ticketService,
         private readonly SerializerInterface $serializer,
-    ) {}
+    ) {
+    }
 
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
@@ -34,7 +35,7 @@ class TicketController extends AbstractController
     public function show(string $reference): JsonResponse
     {
         $ticket = $this->ticketService->find($reference);
-        if ($ticket === null) {
+        if (null === $ticket) {
             return $this->json(['error' => 'Ticket not found.'], Response::HTTP_NOT_FOUND);
         }
 
@@ -63,7 +64,7 @@ class TicketController extends AbstractController
     public function update(string $reference, Request $request): JsonResponse
     {
         $ticket = $this->ticketService->find($reference);
-        if ($ticket === null) {
+        if (null === $ticket) {
             return $this->json(['error' => 'Ticket not found.'], Response::HTTP_NOT_FOUND);
         }
 
@@ -79,14 +80,14 @@ class TicketController extends AbstractController
     public function changeStatus(string $reference, Request $request): JsonResponse
     {
         $ticket = $this->ticketService->find($reference);
-        if ($ticket === null) {
+        if (null === $ticket) {
             return $this->json(['error' => 'Ticket not found.'], Response::HTTP_NOT_FOUND);
         }
 
         $data = json_decode($request->getContent(), true) ?? [];
         $newStatus = $data['status'] ?? null;
 
-        if ($newStatus === null) {
+        if (null === $newStatus) {
             return $this->json(['error' => 'Status is required.'], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 

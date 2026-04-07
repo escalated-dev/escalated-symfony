@@ -67,6 +67,7 @@ class TicketActivity
     public function setTicket(Ticket $ticket): self
     {
         $this->ticket = $ticket;
+
         return $this;
     }
 
@@ -78,6 +79,7 @@ class TicketActivity
     public function setType(string $type): self
     {
         $this->type = $type;
+
         return $this;
     }
 
@@ -89,6 +91,7 @@ class TicketActivity
     public function setCauserId(?int $causerId): self
     {
         $this->causerId = $causerId;
+
         return $this;
     }
 
@@ -100,6 +103,7 @@ class TicketActivity
     public function setCauserClass(?string $causerClass): self
     {
         $this->causerClass = $causerClass;
+
         return $this;
     }
 
@@ -111,6 +115,7 @@ class TicketActivity
     public function setProperties(?array $properties): self
     {
         $this->properties = $properties;
+
         return $this;
     }
 

@@ -29,7 +29,7 @@ class InertiaUiRenderer implements UiRendererInterface
     {
         // rompetomp/inertia-bundle provides Rompetomp\InertiaBundle\Service\InertiaInterface
         // skipthedragon/inertia-bundle provides a similar service
-        if ($this->inertia !== null && method_exists($this->inertia, 'render')) {
+        if (null !== $this->inertia && method_exists($this->inertia, 'render')) {
             $response = $this->inertia->render($page, $props);
 
             // The Inertia render may return a Response directly or an Inertia response object

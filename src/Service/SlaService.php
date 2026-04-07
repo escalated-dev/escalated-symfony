@@ -17,7 +17,8 @@ class SlaService
         private readonly bool $slaEnabled,
         private readonly bool $businessHoursOnly,
         private readonly array $businessHours,
-    ) {}
+    ) {
+    }
 
     /**
      * Attach the default SLA policy to a ticket.
@@ -31,7 +32,7 @@ class SlaService
         $policy = $this->em->getRepository(SlaPolicy::class)
             ->findOneBy(['isDefault' => true, 'isActive' => true]);
 
-        if ($policy === null) {
+        if (null === $policy) {
             return;
         }
 
@@ -48,13 +49,13 @@ class SlaService
         $firstResponseHours = $policy->getFirstResponseHoursFor($ticket->getPriority());
         $resolutionHours = $policy->getResolutionHoursFor($ticket->getPriority());
 
-        if ($firstResponseHours !== null) {
+        if (null !== $firstResponseHours) {
             $ticket->setFirstResponseDueAt(
                 $this->calculateDueDate($ticket->getCreatedAt(), $firstResponseHours, $policy->isBusinessHoursOnly())
             );
         }
 
-        if ($resolutionHours !== null) {
+        if (null !== $resolutionHours) {
             $ticket->setResolutionDueAt(
                 $this->calculateDueDate($ticket->getCreatedAt(), $resolutionHours, $policy->isBusinessHoursOnly())
             );
@@ -94,7 +95,7 @@ class SlaService
 
         foreach ($tickets as $ticket) {
             $ticket->setSlaFirstResponseBreached(true);
-            $breached++;
+            ++$breached;
         }
 
         // Check resolution breaches
@@ -113,7 +114,7 @@ class SlaService
 
         foreach ($tickets as $ticket) {
             $ticket->setSlaResolutionBreached(true);
-            $breached++;
+            ++$breached;
         }
 
         if ($breached > 0) {
@@ -156,6 +157,7 @@ class SlaService
 
                     if ($availableMinutes >= $remainingMinutes) {
                         $current->modify(sprintf('+%d minutes', (int) $remainingMinutes));
+
                         return \DateTimeImmutable::createFromMutable($current);
                     }
 

@@ -25,14 +25,14 @@ class SlaPolicy
 
     /**
      * First response hours per priority level.
-     * Example: {"low": 24, "medium": 8, "high": 4, "urgent": 1, "critical": 0.5}
+     * Example: {"low": 24, "medium": 8, "high": 4, "urgent": 1, "critical": 0.5}.
      */
     #[ORM\Column(type: Types::JSON)]
     private array $firstResponseHours = [];
 
     /**
      * Resolution hours per priority level.
-     * Example: {"low": 72, "medium": 24, "high": 8, "urgent": 4, "critical": 2}
+     * Example: {"low": 72, "medium": 24, "high": 8, "urgent": 4, "critical": 2}.
      */
     #[ORM\Column(type: Types::JSON)]
     private array $resolutionHours = [];
@@ -89,6 +89,7 @@ class SlaPolicy
     public function setName(string $name): self
     {
         $this->name = $name;
+
         return $this;
     }
 
@@ -100,6 +101,7 @@ class SlaPolicy
     public function setDescription(?string $description): self
     {
         $this->description = $description;
+
         return $this;
     }
 
@@ -111,6 +113,7 @@ class SlaPolicy
     public function setFirstResponseHours(array $firstResponseHours): self
     {
         $this->firstResponseHours = $firstResponseHours;
+
         return $this;
     }
 
@@ -122,6 +125,7 @@ class SlaPolicy
     public function setResolutionHours(array $resolutionHours): self
     {
         $this->resolutionHours = $resolutionHours;
+
         return $this;
     }
 
@@ -133,6 +137,7 @@ class SlaPolicy
     public function setBusinessHoursOnly(bool $businessHoursOnly): self
     {
         $this->businessHoursOnly = $businessHoursOnly;
+
         return $this;
     }
 
@@ -144,6 +149,7 @@ class SlaPolicy
     public function setIsDefault(bool $isDefault): self
     {
         $this->isDefault = $isDefault;
+
         return $this;
     }
 
@@ -155,6 +161,7 @@ class SlaPolicy
     public function setIsActive(bool $isActive): self
     {
         $this->isActive = $isActive;
+
         return $this;
     }
 

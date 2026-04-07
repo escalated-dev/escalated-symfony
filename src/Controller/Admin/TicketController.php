@@ -19,7 +19,8 @@ class TicketController extends AbstractController
         private readonly TicketService $ticketService,
         private readonly AssignmentService $assignmentService,
         private readonly UiRendererInterface $renderer,
-    ) {}
+    ) {
+    }
 
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): Response
@@ -40,7 +41,7 @@ class TicketController extends AbstractController
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
 
         $ticket = $this->ticketService->find($reference);
-        if ($ticket === null) {
+        if (null === $ticket) {
             throw $this->createNotFoundException('Ticket not found.');
         }
 
@@ -55,7 +56,7 @@ class TicketController extends AbstractController
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
 
         $ticket = $this->ticketService->find($reference);
-        if ($ticket === null) {
+        if (null === $ticket) {
             throw $this->createNotFoundException('Ticket not found.');
         }
 
@@ -74,7 +75,7 @@ class TicketController extends AbstractController
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
 
         $ticket = $this->ticketService->find($reference);
-        if ($ticket === null) {
+        if (null === $ticket) {
             throw $this->createNotFoundException('Ticket not found.');
         }
 
@@ -98,7 +99,7 @@ class TicketController extends AbstractController
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
 
         $ticket = $this->ticketService->find($reference);
-        if ($ticket === null) {
+        if (null === $ticket) {
             throw $this->createNotFoundException('Ticket not found.');
         }
 

@@ -20,7 +20,8 @@ class TagController extends AbstractController
         private readonly EntityManagerInterface $em,
         private readonly UiRendererInterface $renderer,
         private readonly SluggerInterface $slugger,
-    ) {}
+    ) {
+    }
 
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(): Response
@@ -58,7 +59,7 @@ class TagController extends AbstractController
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
 
         $tag = $this->em->getRepository(Tag::class)->find($id);
-        if ($tag === null) {
+        if (null === $tag) {
             throw $this->createNotFoundException('Tag not found.');
         }
 
@@ -83,7 +84,7 @@ class TagController extends AbstractController
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
 
         $tag = $this->em->getRepository(Tag::class)->find($id);
-        if ($tag === null) {
+        if (null === $tag) {
             throw $this->createNotFoundException('Tag not found.');
         }
 

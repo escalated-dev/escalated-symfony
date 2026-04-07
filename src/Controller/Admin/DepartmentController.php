@@ -22,7 +22,8 @@ class DepartmentController extends AbstractController
         private readonly DepartmentRepository $departmentRepository,
         private readonly UiRendererInterface $renderer,
         private readonly SluggerInterface $slugger,
-    ) {}
+    ) {
+    }
 
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(): Response
@@ -63,7 +64,7 @@ class DepartmentController extends AbstractController
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
 
         $department = $this->departmentRepository->find($id);
-        if ($department === null) {
+        if (null === $department) {
             throw $this->createNotFoundException('Department not found.');
         }
 
@@ -93,7 +94,7 @@ class DepartmentController extends AbstractController
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
 
         $department = $this->departmentRepository->find($id);
-        if ($department === null) {
+        if (null === $department) {
             throw $this->createNotFoundException('Department not found.');
         }
 

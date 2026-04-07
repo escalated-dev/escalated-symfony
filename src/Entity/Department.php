@@ -68,6 +68,7 @@ class Department
     public function setName(string $name): self
     {
         $this->name = $name;
+
         return $this;
     }
 
@@ -79,6 +80,7 @@ class Department
     public function setSlug(string $slug): self
     {
         $this->slug = $slug;
+
         return $this;
     }
 
@@ -90,6 +92,7 @@ class Department
     public function setDescription(?string $description): self
     {
         $this->description = $description;
+
         return $this;
     }
 
@@ -101,6 +104,7 @@ class Department
     public function setIsActive(bool $isActive): self
     {
         $this->isActive = $isActive;
+
         return $this;
     }
 

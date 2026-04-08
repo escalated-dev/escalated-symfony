@@ -35,6 +35,7 @@ class EscalatedExtension extends Extension implements PrependExtensionInterface
         $container->setParameter('escalated.sla.business_hours', $config['sla']['business_hours']);
         $container->setParameter('escalated.tickets.allow_customer_close', $config['tickets']['allow_customer_close']);
         $container->setParameter('escalated.tickets.default_priority', $config['tickets']['default_priority']);
+        $container->setParameter('escalated.mail_domain', $config['mail_domain'] ?? 'escalated.localhost');
     }
 
     public function prepend(ContainerBuilder $container): void

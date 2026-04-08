@@ -36,6 +36,9 @@ services:
         tags: ['security.voter']
 
     # Event Subscribers
+    EscalatedSymfonySecurityKnowledgeBaseGuard:
+        tags:
+            - { name: kernel.event_listener, event: kernel.request, priority: 10 }
     Escalated\Symfony\EventSubscriber\InertiaDataSubscriber:
         arguments:
             $routePrefix: '%escalated.route_prefix%'

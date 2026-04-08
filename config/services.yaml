@@ -35,6 +35,10 @@ services:
     Escalated\Symfony\Security\EnsureAdminVoter:
         tags: ['security.voter']
 
+    # Commands
+    EscalatedSymfonyCommandWakeSnoozedTicketsCommand:
+        tags: ['console.command']
+
     # Event Subscribers
     Escalated\Symfony\EventSubscriber\InertiaDataSubscriber:
         arguments:

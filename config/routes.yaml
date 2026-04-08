@@ -21,3 +21,8 @@ escalated_api:
     resource: '../src/Controller/Api/'
     type: attribute
     prefix: '%escalated.route_prefix%'
+
+escalated_widget:
+    resource: '../src/Controller/Widget/'
+    type: attribute
+    prefix: '%escalated.route_prefix%'

@@ -18,29 +18,101 @@ class WidgetSettings
     ) {
     }
 
-    public function isEnabled(): bool { return $this->enabled; }
-    public function setEnabled(bool $enabled): self { $this->enabled = $enabled; return $this; }
+    public function isEnabled(): bool
+    {
+        return $this->enabled;
+    }
 
-    public function getPrimaryColor(): string { return $this->primaryColor; }
-    public function setPrimaryColor(string $primaryColor): self { $this->primaryColor = $primaryColor; return $this; }
+    public function setEnabled(bool $enabled): self
+    {
+        $this->enabled = $enabled;
 
-    public function getPosition(): string { return $this->position; }
-    public function setPosition(string $position): self { $this->position = $position; return $this; }
+        return $this;
+    }
 
-    public function getGreeting(): string { return $this->greeting; }
-    public function setGreeting(string $greeting): self { $this->greeting = $greeting; return $this; }
+    public function getPrimaryColor(): string
+    {
+        return $this->primaryColor;
+    }
 
-    public function isAllowGuestTickets(): bool { return $this->allowGuestTickets; }
-    public function setAllowGuestTickets(bool $allowGuestTickets): self { $this->allowGuestTickets = $allowGuestTickets; return $this; }
+    public function setPrimaryColor(string $primaryColor): self
+    {
+        $this->primaryColor = $primaryColor;
 
-    public function isShowArticles(): bool { return $this->showArticles; }
-    public function setShowArticles(bool $showArticles): self { $this->showArticles = $showArticles; return $this; }
+        return $this;
+    }
 
-    public function getMaxArticlesShown(): int { return $this->maxArticlesShown; }
-    public function setMaxArticlesShown(int $maxArticlesShown): self { $this->maxArticlesShown = $maxArticlesShown; return $this; }
+    public function getPosition(): string
+    {
+        return $this->position;
+    }
 
-    public function getAllowedOrigins(): array { return $this->allowedOrigins; }
-    public function setAllowedOrigins(array $allowedOrigins): self { $this->allowedOrigins = $allowedOrigins; return $this; }
+    public function setPosition(string $position): self
+    {
+        $this->position = $position;
+
+        return $this;
+    }
+
+    public function getGreeting(): string
+    {
+        return $this->greeting;
+    }
+
+    public function setGreeting(string $greeting): self
+    {
+        $this->greeting = $greeting;
+
+        return $this;
+    }
+
+    public function isAllowGuestTickets(): bool
+    {
+        return $this->allowGuestTickets;
+    }
+
+    public function setAllowGuestTickets(bool $allowGuestTickets): self
+    {
+        $this->allowGuestTickets = $allowGuestTickets;
+
+        return $this;
+    }
+
+    public function isShowArticles(): bool
+    {
+        return $this->showArticles;
+    }
+
+    public function setShowArticles(bool $showArticles): self
+    {
+        $this->showArticles = $showArticles;
+
+        return $this;
+    }
+
+    public function getMaxArticlesShown(): int
+    {
+        return $this->maxArticlesShown;
+    }
+
+    public function setMaxArticlesShown(int $maxArticlesShown): self
+    {
+        $this->maxArticlesShown = $maxArticlesShown;
+
+        return $this;
+    }
+
+    public function getAllowedOrigins(): array
+    {
+        return $this->allowedOrigins;
+    }
+
+    public function setAllowedOrigins(array $allowedOrigins): self
+    {
+        $this->allowedOrigins = $allowedOrigins;
+
+        return $this;
+    }
 
     public function isOriginAllowed(string $origin): bool
     {

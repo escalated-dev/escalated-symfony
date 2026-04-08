@@ -31,6 +31,12 @@ class Ticket
     public const STATUS_CLOSED = 'closed';
     public const STATUS_REOPENED = 'reopened';
     public const STATUS_SNOOZED = 'snoozed';
+    public const STATUS_LIVE = 'live';
+
+    public const CHANNEL_EMAIL = 'email';
+    public const CHANNEL_WEB = 'web';
+    public const CHANNEL_CHAT = 'chat';
+    public const CHANNEL_API = 'api';
 
     public const PRIORITY_LOW = 'low';
     public const PRIORITY_MEDIUM = 'medium';
@@ -51,6 +57,7 @@ class Ticket
         self::STATUS_CLOSED => [self::STATUS_REOPENED],
         self::STATUS_REOPENED => [self::STATUS_IN_PROGRESS, self::STATUS_WAITING_ON_CUSTOMER, self::STATUS_WAITING_ON_AGENT, self::STATUS_ESCALATED, self::STATUS_RESOLVED, self::STATUS_CLOSED],
         self::STATUS_SNOOZED => [self::STATUS_OPEN, self::STATUS_IN_PROGRESS, self::STATUS_WAITING_ON_CUSTOMER, self::STATUS_WAITING_ON_AGENT, self::STATUS_ESCALATED, self::STATUS_RESOLVED, self::STATUS_CLOSED],
+        self::STATUS_LIVE => [self::STATUS_OPEN, self::STATUS_IN_PROGRESS, self::STATUS_RESOLVED, self::STATUS_CLOSED],
     ];
 
     #[ORM\Id]
@@ -150,6 +157,15 @@ class Ticket
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private ?array $metadata = null;
 
+    #[ORM\Column(type: Types::STRING, length: 16, nullable: true)]
+    private ?string $channel = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $chatEndedAt = null;
+
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $chatMetadata = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
 
@@ -208,6 +224,16 @@ class Ticket
     public function isGuest(): bool
     {
         return null === $this->requesterClass && null !== $this->guestToken;
+    }
+
+    public function isLiveChat(): bool
+    {
+        return self::CHANNEL_CHAT === $this->channel;
+    }
+
+    public function isChatActive(): bool
+    {
+        return $this->isLiveChat() && self::STATUS_LIVE === $this->status && null === $this->chatEndedAt;
     }
 
     // --- Getters and Setters ---
@@ -595,6 +621,42 @@ class Ticket
     public function setStatusBeforeSnooze(?string $statusBeforeSnooze): self
     {
         $this->statusBeforeSnooze = $statusBeforeSnooze;
+
+        return $this;
+    }
+
+    public function getChannel(): ?string
+    {
+        return $this->channel;
+    }
+
+    public function setChannel(?string $channel): self
+    {
+        $this->channel = $channel;
+
+        return $this;
+    }
+
+    public function getChatEndedAt(): ?\DateTimeImmutable
+    {
+        return $this->chatEndedAt;
+    }
+
+    public function setChatEndedAt(?\DateTimeImmutable $chatEndedAt): self
+    {
+        $this->chatEndedAt = $chatEndedAt;
+
+        return $this;
+    }
+
+    public function getChatMetadata(): ?array
+    {
+        return $this->chatMetadata;
+    }
+
+    public function setChatMetadata(?array $chatMetadata): self
+    {
+        $this->chatMetadata = $chatMetadata;
 
         return $this;
     }

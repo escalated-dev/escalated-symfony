@@ -1,0 +1,15 @@
+{% extends '@Escalated/email/base.html.twig' %}
+
+{% block content %}
+    <p>Hi {{ recipient_name|default('there') }},</p>
+
+    <p>There is a new reply on ticket <strong>{{ ticket.reference }}</strong>: <em>{{ ticket.subject }}</em></p>
+
+    <div style="padding: 16px; background-color: #f3f4f6; border-left: 4px solid {{ branding.primary_color|default('#4F46E5') }}; margin: 16px 0;">
+        {{ reply_body|raw }}
+    </div>
+
+    {% if ticket_url is defined and ticket_url %}
+        <p><a href="{{ ticket_url }}" style="color: {{ branding.primary_color|default('#4F46E5') }};">View Ticket</a></p>
+    {% endif %}
+{% endblock %}

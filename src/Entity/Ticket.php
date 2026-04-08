@@ -30,7 +30,7 @@ class Ticket
     public const STATUS_RESOLVED = 'resolved';
     public const STATUS_CLOSED = 'closed';
     public const STATUS_REOPENED = 'reopened';
-public const STATUS_SNOOZED = 'snoozed';
+    public const STATUS_SNOOZED = 'snoozed';
 
     public const PRIORITY_LOW = 'low';
     public const PRIORITY_MEDIUM = 'medium';
@@ -50,7 +50,7 @@ public const STATUS_SNOOZED = 'snoozed';
         self::STATUS_RESOLVED => [self::STATUS_REOPENED, self::STATUS_CLOSED],
         self::STATUS_CLOSED => [self::STATUS_REOPENED],
         self::STATUS_REOPENED => [self::STATUS_IN_PROGRESS, self::STATUS_WAITING_ON_CUSTOMER, self::STATUS_WAITING_ON_AGENT, self::STATUS_ESCALATED, self::STATUS_RESOLVED, self::STATUS_CLOSED],
-self::STATUS_SNOOZED => [self::STATUS_OPEN, self::STATUS_IN_PROGRESS, self::STATUS_WAITING_ON_CUSTOMER, self::STATUS_WAITING_ON_AGENT, self::STATUS_ESCALATED, self::STATUS_RESOLVED, self::STATUS_CLOSED],
+        self::STATUS_SNOOZED => [self::STATUS_OPEN, self::STATUS_IN_PROGRESS, self::STATUS_WAITING_ON_CUSTOMER, self::STATUS_WAITING_ON_AGENT, self::STATUS_ESCALATED, self::STATUS_RESOLVED, self::STATUS_CLOSED],
     ];
 
     #[ORM\Id]

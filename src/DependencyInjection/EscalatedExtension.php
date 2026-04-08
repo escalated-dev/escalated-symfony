@@ -38,6 +38,7 @@ class EscalatedExtension extends Extension implements PrependExtensionInterface
         $container->setParameter('escalated.kb.enabled', $config['knowledge_base']['enabled']);
         $container->setParameter('escalated.kb.public_access', $config['knowledge_base']['public_access']);
         $container->setParameter('escalated.kb.feedback_enabled', $config['knowledge_base']['feedback_enabled']);
+        $container->setParameter('escalated.mail_domain', $config['mail_domain'] ?? 'escalated.localhost');
     }
 
     public function prepend(ContainerBuilder $container): void

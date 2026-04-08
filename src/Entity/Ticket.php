@@ -30,6 +30,7 @@ class Ticket
     public const STATUS_RESOLVED = 'resolved';
     public const STATUS_CLOSED = 'closed';
     public const STATUS_REOPENED = 'reopened';
+    public const STATUS_SNOOZED = 'snoozed';
 
     public const PRIORITY_LOW = 'low';
     public const PRIORITY_MEDIUM = 'medium';
@@ -41,14 +42,15 @@ class Ticket
      * Valid status transitions.
      */
     public const TRANSITIONS = [
-        self::STATUS_OPEN => [self::STATUS_IN_PROGRESS, self::STATUS_WAITING_ON_CUSTOMER, self::STATUS_WAITING_ON_AGENT, self::STATUS_ESCALATED, self::STATUS_RESOLVED, self::STATUS_CLOSED],
-        self::STATUS_IN_PROGRESS => [self::STATUS_WAITING_ON_CUSTOMER, self::STATUS_WAITING_ON_AGENT, self::STATUS_ESCALATED, self::STATUS_RESOLVED, self::STATUS_CLOSED],
-        self::STATUS_WAITING_ON_CUSTOMER => [self::STATUS_OPEN, self::STATUS_IN_PROGRESS, self::STATUS_RESOLVED, self::STATUS_CLOSED],
-        self::STATUS_WAITING_ON_AGENT => [self::STATUS_OPEN, self::STATUS_IN_PROGRESS, self::STATUS_ESCALATED, self::STATUS_RESOLVED, self::STATUS_CLOSED],
+        self::STATUS_OPEN => [self::STATUS_SNOOZED, self::STATUS_IN_PROGRESS, self::STATUS_WAITING_ON_CUSTOMER, self::STATUS_WAITING_ON_AGENT, self::STATUS_ESCALATED, self::STATUS_RESOLVED, self::STATUS_CLOSED],
+        self::STATUS_IN_PROGRESS => [self::STATUS_SNOOZED, self::STATUS_WAITING_ON_CUSTOMER, self::STATUS_WAITING_ON_AGENT, self::STATUS_ESCALATED, self::STATUS_RESOLVED, self::STATUS_CLOSED],
+        self::STATUS_WAITING_ON_CUSTOMER => [self::STATUS_SNOOZED, self::STATUS_OPEN, self::STATUS_IN_PROGRESS, self::STATUS_RESOLVED, self::STATUS_CLOSED],
+        self::STATUS_WAITING_ON_AGENT => [self::STATUS_SNOOZED, self::STATUS_OPEN, self::STATUS_IN_PROGRESS, self::STATUS_ESCALATED, self::STATUS_RESOLVED, self::STATUS_CLOSED],
         self::STATUS_ESCALATED => [self::STATUS_IN_PROGRESS, self::STATUS_RESOLVED, self::STATUS_CLOSED],
         self::STATUS_RESOLVED => [self::STATUS_REOPENED, self::STATUS_CLOSED],
         self::STATUS_CLOSED => [self::STATUS_REOPENED],
         self::STATUS_REOPENED => [self::STATUS_IN_PROGRESS, self::STATUS_WAITING_ON_CUSTOMER, self::STATUS_WAITING_ON_AGENT, self::STATUS_ESCALATED, self::STATUS_RESOLVED, self::STATUS_CLOSED],
+        self::STATUS_SNOOZED => [self::STATUS_OPEN, self::STATUS_IN_PROGRESS, self::STATUS_WAITING_ON_CUSTOMER, self::STATUS_WAITING_ON_AGENT, self::STATUS_ESCALATED, self::STATUS_RESOLVED, self::STATUS_CLOSED],
     ];
 
     #[ORM\Id]
@@ -136,6 +138,15 @@ class Ticket
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $closedAt = null;
 
+    #[ORMColumn(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $snoozedUntil = null;
+
+    #[ORMColumn(type: Types::INTEGER, nullable: true)]
+    private ?int $snoozedBy = null;
+
+    #[ORMColumn(type: Types::STRING, length: 32, nullable: true)]
+    private ?string $statusBeforeSnooze = null;
+
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private ?array $metadata = null;
 
@@ -187,6 +198,11 @@ class Ticket
     public function isOpen(): bool
     {
         return !in_array($this->status, [self::STATUS_RESOLVED, self::STATUS_CLOSED], true);
+    }
+
+    public function isSnoozed(): bool
+    {
+        return self::STATUS_SNOOZED === $this->status && null !== $this->snoozedUntil;
     }
 
     public function isGuest(): bool
@@ -543,6 +559,42 @@ class Ticket
     public function setDeletedAt(?\DateTimeImmutable $deletedAt): self
     {
         $this->deletedAt = $deletedAt;
+
+        return $this;
+    }
+
+    public function getSnoozedUntil(): ?\DateTimeImmutable
+    {
+        return $this->snoozedUntil;
+    }
+
+    public function setSnoozedUntil(?\DateTimeImmutable $snoozedUntil): self
+    {
+        $this->snoozedUntil = $snoozedUntil;
+
+        return $this;
+    }
+
+    public function getSnoozedBy(): ?int
+    {
+        return $this->snoozedBy;
+    }
+
+    public function setSnoozedBy(?int $snoozedBy): self
+    {
+        $this->snoozedBy = $snoozedBy;
+
+        return $this;
+    }
+
+    public function getStatusBeforeSnooze(): ?string
+    {
+        return $this->statusBeforeSnooze;
+    }
+
+    public function setStatusBeforeSnooze(?string $statusBeforeSnooze): self
+    {
+        $this->statusBeforeSnooze = $statusBeforeSnooze;
 
         return $this;
     }

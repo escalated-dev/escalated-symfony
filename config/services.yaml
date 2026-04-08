@@ -16,6 +16,8 @@ services:
 
     Escalated\Symfony\Service\AssignmentService: ~
 
+    Escalated\Symfony\Service\TicketSplittingService: ~
+
     Escalated\Symfony\Service\SlaService:
         arguments:
             $slaEnabled: '%escalated.sla.enabled%'
@@ -34,6 +36,10 @@ services:
 
     Escalated\Symfony\Security\EnsureAdminVoter:
         tags: ['security.voter']
+
+    # Commands
+    EscalatedSymfonyCommandWakeSnoozedTicketsCommand:
+        tags: ['console.command']
 
     # Event Subscribers
     EscalatedSymfonySecurityKnowledgeBaseGuard:
@@ -54,6 +60,9 @@ services:
         tags: ['controller.service_arguments']
 
     Escalated\Symfony\Controller\Agent\TicketController:
+        tags: ['controller.service_arguments']
+
+    Escalated\Symfony\Controller\Agent\TicketSplitController:
         tags: ['controller.service_arguments']
 
     Escalated\Symfony\Controller\Admin\TicketController:

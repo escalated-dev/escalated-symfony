@@ -26,6 +26,7 @@ class MentionService
         $users = $this->findUsers($usernames);
         $mentions = $this->createMentions($reply, $users);
         $this->notifyMentionedUsers($reply, $mentions);
+
         return $mentions;
     }
 
@@ -35,6 +36,7 @@ class MentionService
             return [];
         }
         preg_match_all(self::MENTION_REGEX, $text, $matches);
+
         return array_unique($matches[1] ?? []);
     }
 
@@ -48,6 +50,7 @@ class MentionService
             'SELECT id, email, COALESCE(name, email) as name FROM users WHERE email LIKE ? OR name LIKE ? LIMIT ?',
             ["%{$query}%", "%{$query}%", $limit]
         );
+
         return array_map(fn ($u) => [
             'id' => $u['id'],
             'name' => $u['name'],
@@ -94,6 +97,7 @@ class MentionService
                 $users[] = $user;
             }
         }
+
         return $users;
     }
 
@@ -113,6 +117,7 @@ class MentionService
                 // Duplicate - skip
             }
         }
+
         return $mentions;
     }
 

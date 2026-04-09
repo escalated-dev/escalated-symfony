@@ -1,32 +1,32 @@
 <p align="center">
-  <a href="docs/translations/README.ar.md">العربية</a> •
-  <a href="docs/translations/README.de.md">Deutsch</a> •
-  <b>English</b> •
-  <a href="docs/translations/README.es.md">Español</a> •
-  <a href="docs/translations/README.fr.md">Français</a> •
-  <a href="docs/translations/README.it.md">Italiano</a> •
-  <a href="docs/translations/README.ja.md">日本語</a> •
-  <a href="docs/translations/README.ko.md">한국어</a> •
-  <a href="docs/translations/README.nl.md">Nederlands</a> •
-  <a href="docs/translations/README.pl.md">Polski</a> •
-  <a href="docs/translations/README.pt-BR.md">Português (BR)</a> •
-  <a href="docs/translations/README.ru.md">Русский</a> •
-  <a href="docs/translations/README.tr.md">Türkçe</a> •
-  <a href="docs/translations/README.zh-CN.md">简体中文</a>
+  <a href="README.ar.md">العربية</a> •
+  <a href="README.de.md">Deutsch</a> •
+  <a href="../../README.md">English</a> •
+  <a href="README.es.md">Español</a> •
+  <a href="README.fr.md">Français</a> •
+  <a href="README.it.md">Italiano</a> •
+  <a href="README.ja.md">日本語</a> •
+  <a href="README.ko.md">한국어</a> •
+  <a href="README.nl.md">Nederlands</a> •
+  <b>Polski</b> •
+  <a href="README.pt-BR.md">Português (BR)</a> •
+  <a href="README.ru.md">Русский</a> •
+  <a href="README.tr.md">Türkçe</a> •
+  <a href="README.zh-CN.md">简体中文</a>
 </p>
 
 # Escalated for Symfony
 
 An embeddable support ticket system for Symfony applications. Drop-in helpdesk with tickets, replies, departments, tags, SLA policies, and role-based access control.
 
-## Requirements
+## Wymagania
 
 - PHP 8.2+
 - Symfony 6.4 or 7.x
 - Doctrine ORM 2.17+ / 3.x
 - Doctrine Migrations Bundle
 
-## Installation
+## Instalacja
 
 ```bash
 composer require escalated-dev/escalated-symfony
@@ -97,7 +97,7 @@ composer require skipthedragon/inertia-bundle
 
 Set `ui_enabled: false` if you want to use only the API and services with a custom frontend.
 
-## Features
+## Funkcje
 
 - **Ticket lifecycle** — Create, assign, reply, resolve, close, reopen with configurable status transitions
 - **SLA engine** — Per-priority response and resolution targets, business hours calculation, automatic breach detection
@@ -181,12 +181,12 @@ closed -> reopened
 reopened -> in_progress, waiting_on_customer, waiting_on_agent, escalated, resolved, closed
 ```
 
-## Testing
+## Testowanie
 
 ```bash
 vendor/bin/phpunit
 ```
 
-## License
+## Licencja
 
 MIT

@@ -17,12 +17,12 @@
 
 # Escalated for Symfony
 
-An embeddable support ticket system for Symfony applications. Drop-in helpdesk with tickets, replies, departments, tags, SLA policies, and role-based access control.
+Symfony 应用程序的可嵌入支持工单系统。即插即用的帮助台，包含工单、回复、部门、标签、SLA 策略和基于角色的访问控制。
 
 ## 系统要求
 
 - PHP 8.2+
-- Symfony 6.4 or 7.x
+- Symfony 6.4 或 7.x
 - Doctrine ORM 2.17+ / 3.x
 - Doctrine Migrations Bundle
 
@@ -32,9 +32,9 @@ An embeddable support ticket system for Symfony applications. Drop-in helpdesk w
 composer require escalated-dev/escalated-symfony
 ```
 
-### 1. Register the bundle
+### 1. 注册 Bundle
 
-If Symfony Flex is installed, the bundle is registered automatically. Otherwise, add it to `config/bundles.php`:
+如果安装了 Symfony Flex，Bundle 会自动注册。否则，将其添加到 `config/bundles.php`：
 
 ```php
 return [
@@ -43,9 +43,9 @@ return [
 ];
 ```
 
-### 2. Configure the bundle
+### 2. 配置 Bundle
 
-Create `config/packages/escalated.yaml`:
+创建 `config/packages/escalated.yaml`：
 
 ```yaml
 escalated:
@@ -66,17 +66,17 @@ escalated:
             days: [1, 2, 3, 4, 5]
 ```
 
-### 3. Run migrations
+### 3. 运行迁移
 
 ```bash
 php bin/console doctrine:migrations:migrate
 ```
 
-The migration creates all necessary tables (`escalated_tickets`, `escalated_replies`, `escalated_departments`, `escalated_tags`, `escalated_sla_policies`, `escalated_ticket_activities`, `escalated_agent_profiles`).
+迁移会创建所有必要的表（`escalated_tickets`、`escalated_replies`、`escalated_departments`、`escalated_tags`、`escalated_sla_policies`、`escalated_ticket_activities`、`escalated_agent_profiles`）。
 
-### 4. Set up security
+### 4. 设置安全性
 
-Add the `ROLE_ESCALATED_ADMIN` role to admin users in your user provider. Agent access is determined by the presence of an `AgentProfile` entity linked to the user.
+在用户提供者中为管理员用户添加 `ROLE_ESCALATED_ADMIN` 角色。代理访问由与用户关联的 `AgentProfile` 实体的存在来确定。
 
 ```yaml
 # config/packages/security.yaml
@@ -85,80 +85,80 @@ security:
         ROLE_ESCALATED_ADMIN: ROLE_USER
 ```
 
-### 5. (Optional) Install Inertia
+### 5.（可选）安装 Inertia
 
-For the built-in frontend UI, install an Inertia bundle:
+对于内置前端 UI，安装一个 Inertia Bundle：
 
 ```bash
 composer require rompetomp/inertia-bundle
-# or
+# 或
 composer require skipthedragon/inertia-bundle
 ```
 
-Set `ui_enabled: false` if you want to use only the API and services with a custom frontend.
+如果您只想使用 API 和服务配合自定义前端，请设置 `ui_enabled: false`。
 
 ## 功能特性
 
-- **Ticket lifecycle** — Create, assign, reply, resolve, close, reopen with configurable status transitions
-- **SLA engine** — Per-priority response and resolution targets, business hours calculation, automatic breach detection
-- **Agent dashboard** — Ticket queue with filters, internal notes, canned responses
-- **Customer portal** — Self-service ticket creation, replies, and status tracking
-- **Admin panel** — Manage departments, SLA policies, tags, and view reports
-- **File attachments** — Drag-and-drop uploads with configurable storage and size limits
-- **Activity timeline** — Full audit log of every action on every ticket
-- **Email notifications** — Configurable per-event notifications
-- **Department routing** — Organize agents into departments with auto-assignment
-- **Tagging system** — Categorize tickets with colored tags
-- **Ticket splitting** — Split a reply into a new standalone ticket while preserving the original context
-- **Ticket snooze** — Snooze tickets with presets (1h, 4h, tomorrow, next week); `php bin/console escalated:wake-snoozed-tickets` Console command auto-wakes them on schedule
-- **Saved views / custom queues** — Save, name, and share filter presets as reusable ticket views
-- **Embeddable support widget** — Lightweight `<script>` widget with KB search, ticket form, and status check
-- **Email threading** — Outbound emails include proper `In-Reply-To` and `References` headers for correct threading in mail clients
-- **Branded email templates** — Configurable logo, primary color, and footer text for all outbound emails
-- **Real-time broadcasting** — Opt-in broadcasting via Mercure with automatic polling fallback
-- **Knowledge base toggle** — Enable or disable the public knowledge base from admin settings
+- **工单生命周期** — 创建、分配、回复、解决、关闭、重新打开，支持可配置的状态转换
+- **SLA 引擎** — 按优先级的响应和解决目标、营业时间计算、自动违规检测
+- **代理仪表板** — 带有过滤器、内部备注、预设回复的工单队列
+- **客户门户** — 自助工单创建、回复和状态跟踪
+- **管理面板** — 管理部门、SLA 策略、标签并查看报告
+- **文件附件** — 可配置存储和大小限制的拖放上传
+- **活动时间线** — 每个工单上每个操作的完整审计日志
+- **邮件通知** — 按事件可配置的通知
+- **部门路由** — 将代理组织到部门中并自动分配
+- **标签系统** — 用彩色标签分类工单
+- **工单拆分** — 将回复拆分为新的独立工单，同时保留原始上下文
+- **工单延后** — 使用预设（1小时、4小时、明天、下周）延后工单；`php bin/console escalated:wake-snoozed-tickets` 控制台命令按计划自动唤醒
+- **保存的视图 / 自定义队列** — 将过滤器预设保存、命名和共享为可重用的工单视图
+- **可嵌入支持小部件** — 带有知识库搜索、工单表单和状态检查的轻量级 `<script>` 小部件
+- **邮件线程** — 发送的邮件包含正确的 `In-Reply-To` 和 `References` 头部，以便在邮件客户端中正确显示线程
+- **品牌邮件模板** — 所有发送邮件可配置的标志、主色调和页脚文本
+- **实时广播** — 通过 Mercure 的可选广播，带有自动轮询回退
+- **知识库开关** — 从管理设置中启用或禁用公共知识库
 
-## Architecture
+## 架构
 
-### Entities
+### 实体
 
-| Entity | Description |
+| 实体 | 描述 |
 |---|---|
-| `Ticket` | Support ticket with status, priority, SLA tracking |
-| `Reply` | Public reply or internal note on a ticket |
-| `Department` | Organizational grouping for tickets and agents |
-| `Tag` | Labels for categorizing tickets |
-| `SlaPolicy` | First response and resolution time targets per priority |
-| `TicketActivity` | Audit log of all ticket changes |
-| `AgentProfile` | Agent metadata (type, capacity) |
+| `Ticket` | 带有状态、优先级、SLA 跟踪的支持工单 |
+| `Reply` | 工单的公开回复或内部备注 |
+| `Department` | 工单和代理的组织分组 |
+| `Tag` | 用于分类工单的标签 |
+| `SlaPolicy` | 按优先级的首次响应和解决时间目标 |
+| `TicketActivity` | 所有工单变更的审计日志 |
+| `AgentProfile` | 代理元数据（类型、容量） |
 
-### Services
+### 服务
 
-| Service | Description |
+| 服务 | 描述 |
 |---|---|
-| `TicketService` | Create, update, transition, reply to tickets |
-| `AssignmentService` | Assign/unassign agents, check workload |
-| `SlaService` | Attach SLA policies, check for breaches |
+| `TicketService` | 创建、更新、转换、回复工单 |
+| `AssignmentService` | 分配/取消分配代理、检查工作负载 |
+| `SlaService` | 附加 SLA 策略、检查违规 |
 
-### Controllers
+### 控制器
 
-Routes are organized into four groups, all under the configured `route_prefix`:
+路由组织为四个组，全部在配置的 `route_prefix` 下：
 
-- **Customer** (`/customer/tickets`) -- Ticket CRUD for authenticated end-users
-- **Agent** (`/agent`) -- Dashboard and ticket management for support agents
-- **Admin** (`/admin`) -- Full management of tickets, departments, tags, settings
-- **API** (`/api/v1`) -- JSON REST API for external integrations
+- **Customer**（`/customer/tickets`）-- 已认证终端用户的工单 CRUD
+- **Agent**（`/agent`）-- 支持代理的仪表板和工单管理
+- **Admin**（`/admin`）-- 工单、部门、标签、设置的完整管理
+- **API**（`/api/v1`）-- 用于外部集成的 JSON REST API
 
-### Security
+### 安全性
 
-Two Symfony voters control access:
+两个 Symfony voter 控制访问：
 
-- `ESCALATED_AGENT` -- Granted when the user has an `AgentProfile` record
-- `ESCALATED_ADMIN` -- Granted when the user has the `ROLE_ESCALATED_ADMIN` role
+- `ESCALATED_AGENT` -- 当用户拥有 `AgentProfile` 记录时授予
+- `ESCALATED_ADMIN` -- 当用户拥有 `ROLE_ESCALATED_ADMIN` 角色时授予
 
-### UI Rendering
+### UI 渲染
 
-Controllers use `UiRendererInterface` to render pages. The default `InertiaUiRenderer` delegates to whichever Inertia bundle is installed. To use Twig or another renderer, implement `UiRendererInterface` and override the service in your container config:
+控制器使用 `UiRendererInterface` 来渲染页面。默认的 `InertiaUiRenderer` 委托给已安装的 Inertia Bundle。要使用 Twig 或其他渲染器，请实现 `UiRendererInterface` 并在容器配置中覆盖该服务：
 
 ```yaml
 services:
@@ -166,9 +166,9 @@ services:
         class: App\Rendering\TwigUiRenderer
 ```
 
-## Status Transitions
+## 状态转换
 
-Tickets follow a state machine with these transitions:
+工单遵循以下转换的状态机：
 
 ```
 open -> in_progress, waiting_on_customer, waiting_on_agent, escalated, resolved, closed

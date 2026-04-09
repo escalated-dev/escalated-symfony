@@ -17,12 +17,12 @@
 
 # Escalated for Symfony
 
-An embeddable support ticket system for Symfony applications. Drop-in helpdesk with tickets, replies, departments, tags, SLA policies, and role-based access control.
+Symfonyアプリケーション向けの組み込み可能なサポートチケットシステム。チケット、返信、部門、タグ、SLAポリシー、ロールベースのアクセス制御を備えたプラグアンドプレイのヘルプデスク。
 
 ## 要件
 
 - PHP 8.2+
-- Symfony 6.4 or 7.x
+- Symfony 6.4 または 7.x
 - Doctrine ORM 2.17+ / 3.x
 - Doctrine Migrations Bundle
 
@@ -32,9 +32,9 @@ An embeddable support ticket system for Symfony applications. Drop-in helpdesk w
 composer require escalated-dev/escalated-symfony
 ```
 
-### 1. Register the bundle
+### 1. バンドルの登録
 
-If Symfony Flex is installed, the bundle is registered automatically. Otherwise, add it to `config/bundles.php`:
+Symfony Flexがインストールされている場合、バンドルは自動的に登録されます。そうでない場合は、`config/bundles.php`に追加してください:
 
 ```php
 return [
@@ -43,9 +43,9 @@ return [
 ];
 ```
 
-### 2. Configure the bundle
+### 2. バンドルの設定
 
-Create `config/packages/escalated.yaml`:
+`config/packages/escalated.yaml`を作成します:
 
 ```yaml
 escalated:
@@ -66,17 +66,17 @@ escalated:
             days: [1, 2, 3, 4, 5]
 ```
 
-### 3. Run migrations
+### 3. マイグレーションの実行
 
 ```bash
 php bin/console doctrine:migrations:migrate
 ```
 
-The migration creates all necessary tables (`escalated_tickets`, `escalated_replies`, `escalated_departments`, `escalated_tags`, `escalated_sla_policies`, `escalated_ticket_activities`, `escalated_agent_profiles`).
+マイグレーションにより、必要なテーブルがすべて作成されます（`escalated_tickets`、`escalated_replies`、`escalated_departments`、`escalated_tags`、`escalated_sla_policies`、`escalated_ticket_activities`、`escalated_agent_profiles`）。
 
-### 4. Set up security
+### 4. セキュリティの設定
 
-Add the `ROLE_ESCALATED_ADMIN` role to admin users in your user provider. Agent access is determined by the presence of an `AgentProfile` entity linked to the user.
+ユーザープロバイダーの管理者ユーザーに`ROLE_ESCALATED_ADMIN`ロールを追加します。エージェントアクセスは、ユーザーにリンクされた`AgentProfile`エンティティの存在によって決定されます。
 
 ```yaml
 # config/packages/security.yaml
@@ -85,80 +85,80 @@ security:
         ROLE_ESCALATED_ADMIN: ROLE_USER
 ```
 
-### 5. (Optional) Install Inertia
+### 5. （オプション）Inertiaのインストール
 
-For the built-in frontend UI, install an Inertia bundle:
+組み込みフロントエンドUIには、Inertiaバンドルをインストールします:
 
 ```bash
 composer require rompetomp/inertia-bundle
-# or
+# または
 composer require skipthedragon/inertia-bundle
 ```
 
-Set `ui_enabled: false` if you want to use only the API and services with a custom frontend.
+カスタムフロントエンドでAPIとサービスのみを使用する場合は、`ui_enabled: false`に設定してください。
 
 ## 機能
 
-- **Ticket lifecycle** — Create, assign, reply, resolve, close, reopen with configurable status transitions
-- **SLA engine** — Per-priority response and resolution targets, business hours calculation, automatic breach detection
-- **Agent dashboard** — Ticket queue with filters, internal notes, canned responses
-- **Customer portal** — Self-service ticket creation, replies, and status tracking
-- **Admin panel** — Manage departments, SLA policies, tags, and view reports
-- **File attachments** — Drag-and-drop uploads with configurable storage and size limits
-- **Activity timeline** — Full audit log of every action on every ticket
-- **Email notifications** — Configurable per-event notifications
-- **Department routing** — Organize agents into departments with auto-assignment
-- **Tagging system** — Categorize tickets with colored tags
-- **Ticket splitting** — Split a reply into a new standalone ticket while preserving the original context
-- **Ticket snooze** — Snooze tickets with presets (1h, 4h, tomorrow, next week); `php bin/console escalated:wake-snoozed-tickets` Console command auto-wakes them on schedule
-- **Saved views / custom queues** — Save, name, and share filter presets as reusable ticket views
-- **Embeddable support widget** — Lightweight `<script>` widget with KB search, ticket form, and status check
-- **Email threading** — Outbound emails include proper `In-Reply-To` and `References` headers for correct threading in mail clients
-- **Branded email templates** — Configurable logo, primary color, and footer text for all outbound emails
-- **Real-time broadcasting** — Opt-in broadcasting via Mercure with automatic polling fallback
-- **Knowledge base toggle** — Enable or disable the public knowledge base from admin settings
+- **チケットライフサイクル** — 設定可能なステータス遷移で作成、割り当て、返信、解決、クローズ、再オープン
+- **SLAエンジン** — 優先度ごとの応答・解決目標、営業時間計算、自動違反検出
+- **エージェントダッシュボード** — フィルター、内部メモ、定型応答を備えたチケットキュー
+- **カスタマーポータル** — セルフサービスのチケット作成、返信、ステータス追跡
+- **管理パネル** — 部門、SLAポリシー、タグの管理とレポート表示
+- **ファイル添付** — 設定可能なストレージとサイズ制限付きのドラッグ＆ドロップアップロード
+- **アクティビティタイムライン** — すべてのチケットのすべてのアクションの完全な監査ログ
+- **メール通知** — イベントごとの設定可能な通知
+- **部門ルーティング** — 自動割り当てでエージェントを部門に組織化
+- **タグシステム** — 色付きタグでチケットを分類
+- **チケット分割** — 元のコンテキストを保持しながら、返信を新しい独立したチケットに分割
+- **チケットスヌーズ** — プリセット（1時間、4時間、明日、来週）でチケットをスヌーズ；`php bin/console escalated:wake-snoozed-tickets`コンソールコマンドがスケジュールに従って自動的にウェイクアップ
+- **保存されたビュー / カスタムキュー** — フィルタープリセットを再利用可能なチケットビューとして保存、名前付け、共有
+- **埋め込み可能なサポートウィジェット** — KB検索、チケットフォーム、ステータス確認を備えた軽量な`<script>`ウィジェット
+- **メールスレッディング** — 送信メールにはメールクライアントでの正しいスレッディングのために適切な`In-Reply-To`および`References`ヘッダーが含まれます
+- **ブランドメールテンプレート** — すべての送信メールに設定可能なロゴ、プライマリカラー、フッターテキスト
+- **リアルタイムブロードキャスト** — Mercure経由のオプトインブロードキャスト、自動ポーリングフォールバック付き
+- **ナレッジベーストグル** — 管理設定から公開ナレッジベースの有効化・無効化
 
-## Architecture
+## アーキテクチャ
 
-### Entities
+### エンティティ
 
-| Entity | Description |
+| エンティティ | 説明 |
 |---|---|
-| `Ticket` | Support ticket with status, priority, SLA tracking |
-| `Reply` | Public reply or internal note on a ticket |
-| `Department` | Organizational grouping for tickets and agents |
-| `Tag` | Labels for categorizing tickets |
-| `SlaPolicy` | First response and resolution time targets per priority |
-| `TicketActivity` | Audit log of all ticket changes |
-| `AgentProfile` | Agent metadata (type, capacity) |
+| `Ticket` | ステータス、優先度、SLAトラッキング付きのサポートチケット |
+| `Reply` | チケットへの公開返信または内部メモ |
+| `Department` | チケットとエージェントの組織的グループ |
+| `Tag` | チケットを分類するためのラベル |
+| `SlaPolicy` | 優先度ごとの初回応答・解決時間目標 |
+| `TicketActivity` | すべてのチケット変更の監査ログ |
+| `AgentProfile` | エージェントのメタデータ（タイプ、キャパシティ） |
 
-### Services
+### サービス
 
-| Service | Description |
+| サービス | 説明 |
 |---|---|
-| `TicketService` | Create, update, transition, reply to tickets |
-| `AssignmentService` | Assign/unassign agents, check workload |
-| `SlaService` | Attach SLA policies, check for breaches |
+| `TicketService` | チケットの作成、更新、遷移、返信 |
+| `AssignmentService` | エージェントの割り当て・解除、ワークロード確認 |
+| `SlaService` | SLAポリシーの添付、違反チェック |
 
-### Controllers
+### コントローラー
 
-Routes are organized into four groups, all under the configured `route_prefix`:
+ルートは設定された`route_prefix`の下に4つのグループで構成されています:
 
-- **Customer** (`/customer/tickets`) -- Ticket CRUD for authenticated end-users
-- **Agent** (`/agent`) -- Dashboard and ticket management for support agents
-- **Admin** (`/admin`) -- Full management of tickets, departments, tags, settings
-- **API** (`/api/v1`) -- JSON REST API for external integrations
+- **Customer** (`/customer/tickets`) -- 認証済みエンドユーザー向けチケットCRUD
+- **Agent** (`/agent`) -- サポートエージェント向けダッシュボードとチケット管理
+- **Admin** (`/admin`) -- チケット、部門、タグ、設定の完全な管理
+- **API** (`/api/v1`) -- 外部統合用JSON REST API
 
-### Security
+### セキュリティ
 
-Two Symfony voters control access:
+2つのSymfony voterがアクセスを制御します:
 
-- `ESCALATED_AGENT` -- Granted when the user has an `AgentProfile` record
-- `ESCALATED_ADMIN` -- Granted when the user has the `ROLE_ESCALATED_ADMIN` role
+- `ESCALATED_AGENT` -- ユーザーが`AgentProfile`レコードを持つ場合に付与
+- `ESCALATED_ADMIN` -- ユーザーが`ROLE_ESCALATED_ADMIN`ロールを持つ場合に付与
 
-### UI Rendering
+### UIレンダリング
 
-Controllers use `UiRendererInterface` to render pages. The default `InertiaUiRenderer` delegates to whichever Inertia bundle is installed. To use Twig or another renderer, implement `UiRendererInterface` and override the service in your container config:
+コントローラーは`UiRendererInterface`を使用してページをレンダリングします。デフォルトの`InertiaUiRenderer`はインストールされているInertiaバンドルに委譲します。Twigや他のレンダラーを使用するには、`UiRendererInterface`を実装し、コンテナ設定でサービスをオーバーライドしてください:
 
 ```yaml
 services:
@@ -166,9 +166,9 @@ services:
         class: App\Rendering\TwigUiRenderer
 ```
 
-## Status Transitions
+## ステータス遷移
 
-Tickets follow a state machine with these transitions:
+チケットは以下の遷移を持つステートマシンに従います:
 
 ```
 open -> in_progress, waiting_on_customer, waiting_on_agent, escalated, resolved, closed

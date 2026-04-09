@@ -17,12 +17,12 @@
 
 # Escalated for Symfony
 
-An embeddable support ticket system for Symfony applications. Drop-in helpdesk with tickets, replies, departments, tags, SLA policies, and role-based access control.
+نظام تذاكر دعم قابل للتضمين لتطبيقات Symfony. مكتب مساعدة جاهز مع تذاكر وردود وأقسام ووسوم وسياسات SLA وتحكم في الوصول على أساس الأدوار.
 
 ## المتطلبات
 
 - PHP 8.2+
-- Symfony 6.4 or 7.x
+- Symfony 6.4 أو 7.x
 - Doctrine ORM 2.17+ / 3.x
 - Doctrine Migrations Bundle
 
@@ -32,9 +32,9 @@ An embeddable support ticket system for Symfony applications. Drop-in helpdesk w
 composer require escalated-dev/escalated-symfony
 ```
 
-### 1. Register the bundle
+### 1. تسجيل الحزمة
 
-If Symfony Flex is installed, the bundle is registered automatically. Otherwise, add it to `config/bundles.php`:
+إذا كان Symfony Flex مثبتاً، يتم تسجيل الحزمة تلقائياً. وإلا، أضفها إلى `config/bundles.php`:
 
 ```php
 return [
@@ -43,9 +43,9 @@ return [
 ];
 ```
 
-### 2. Configure the bundle
+### 2. تكوين الحزمة
 
-Create `config/packages/escalated.yaml`:
+أنشئ `config/packages/escalated.yaml`:
 
 ```yaml
 escalated:
@@ -66,17 +66,17 @@ escalated:
             days: [1, 2, 3, 4, 5]
 ```
 
-### 3. Run migrations
+### 3. تشغيل الترحيلات
 
 ```bash
 php bin/console doctrine:migrations:migrate
 ```
 
-The migration creates all necessary tables (`escalated_tickets`, `escalated_replies`, `escalated_departments`, `escalated_tags`, `escalated_sla_policies`, `escalated_ticket_activities`, `escalated_agent_profiles`).
+يقوم الترحيل بإنشاء جميع الجداول الضرورية (`escalated_tickets`، `escalated_replies`، `escalated_departments`، `escalated_tags`، `escalated_sla_policies`، `escalated_ticket_activities`، `escalated_agent_profiles`).
 
-### 4. Set up security
+### 4. إعداد الأمان
 
-Add the `ROLE_ESCALATED_ADMIN` role to admin users in your user provider. Agent access is determined by the presence of an `AgentProfile` entity linked to the user.
+أضف دور `ROLE_ESCALATED_ADMIN` لمستخدمي المسؤول في مزود المستخدمين الخاص بك. يتم تحديد وصول الوكيل من خلال وجود كيان `AgentProfile` مرتبط بالمستخدم.
 
 ```yaml
 # config/packages/security.yaml
@@ -85,80 +85,80 @@ security:
         ROLE_ESCALATED_ADMIN: ROLE_USER
 ```
 
-### 5. (Optional) Install Inertia
+### 5. (اختياري) تثبيت Inertia
 
-For the built-in frontend UI, install an Inertia bundle:
+للواجهة الأمامية المدمجة، قم بتثبيت حزمة Inertia:
 
 ```bash
 composer require rompetomp/inertia-bundle
-# or
+# أو
 composer require skipthedragon/inertia-bundle
 ```
 
-Set `ui_enabled: false` if you want to use only the API and services with a custom frontend.
+اضبط `ui_enabled: false` إذا كنت تريد استخدام API والخدمات فقط مع واجهة أمامية مخصصة.
 
 ## الميزات
 
-- **Ticket lifecycle** — Create, assign, reply, resolve, close, reopen with configurable status transitions
-- **SLA engine** — Per-priority response and resolution targets, business hours calculation, automatic breach detection
-- **Agent dashboard** — Ticket queue with filters, internal notes, canned responses
-- **Customer portal** — Self-service ticket creation, replies, and status tracking
-- **Admin panel** — Manage departments, SLA policies, tags, and view reports
-- **File attachments** — Drag-and-drop uploads with configurable storage and size limits
-- **Activity timeline** — Full audit log of every action on every ticket
-- **Email notifications** — Configurable per-event notifications
-- **Department routing** — Organize agents into departments with auto-assignment
-- **Tagging system** — Categorize tickets with colored tags
-- **Ticket splitting** — Split a reply into a new standalone ticket while preserving the original context
-- **Ticket snooze** — Snooze tickets with presets (1h, 4h, tomorrow, next week); `php bin/console escalated:wake-snoozed-tickets` Console command auto-wakes them on schedule
-- **Saved views / custom queues** — Save, name, and share filter presets as reusable ticket views
-- **Embeddable support widget** — Lightweight `<script>` widget with KB search, ticket form, and status check
-- **Email threading** — Outbound emails include proper `In-Reply-To` and `References` headers for correct threading in mail clients
-- **Branded email templates** — Configurable logo, primary color, and footer text for all outbound emails
-- **Real-time broadcasting** — Opt-in broadcasting via Mercure with automatic polling fallback
-- **Knowledge base toggle** — Enable or disable the public knowledge base from admin settings
+- **دورة حياة التذكرة** — إنشاء، تعيين، رد، حل، إغلاق، إعادة فتح مع انتقالات حالة قابلة للتكوين
+- **محرك SLA** — أهداف الاستجابة والحل لكل أولوية، حساب ساعات العمل، كشف الانتهاكات التلقائي
+- **لوحة تحكم الوكلاء** — قائمة تذاكر مع فلاتر، ملاحظات داخلية، ردود جاهزة
+- **بوابة العملاء** — إنشاء تذاكر ذاتية الخدمة، ردود، وتتبع الحالة
+- **لوحة الإدارة** — إدارة الأقسام، سياسات SLA، الوسوم وعرض التقارير
+- **مرفقات الملفات** — رفع بالسحب والإفلات مع تخزين وحدود حجم قابلة للتكوين
+- **الجدول الزمني للنشاط** — سجل تدقيق كامل لكل إجراء على كل تذكرة
+- **إشعارات البريد الإلكتروني** — إشعارات قابلة للتكوين لكل حدث
+- **توجيه الأقسام** — تنظيم الوكلاء في أقسام مع التعيين التلقائي
+- **نظام الوسوم** — تصنيف التذاكر بوسوم ملونة
+- **تقسيم التذاكر** — تقسيم رد إلى تذكرة مستقلة جديدة مع الحفاظ على السياق الأصلي
+- **تأجيل التذاكر** — تأجيل التذاكر مع إعدادات مسبقة (ساعة، 4 ساعات، غداً، الأسبوع القادم)؛ أمر `php bin/console escalated:wake-snoozed-tickets` يوقظها تلقائياً حسب الجدول
+- **العروض المحفوظة / قوائم مخصصة** — حفظ وتسمية ومشاركة إعدادات الفلتر كعروض تذاكر قابلة لإعادة الاستخدام
+- **أداة دعم قابلة للتضمين** — أداة `<script>` خفيفة مع بحث في قاعدة المعرفة ونموذج تذكرة وفحص الحالة
+- **ربط سلاسل البريد** — رسائل البريد الصادرة تتضمن رؤوس `In-Reply-To` و `References` الصحيحة لترابط صحيح في عملاء البريد
+- **قوالب بريد ذات علامة تجارية** — شعار ولون أساسي ونص تذييل قابل للتكوين لجميع رسائل البريد الصادرة
+- **البث في الوقت الفعلي** — بث اختياري عبر Mercure مع رجوع تلقائي إلى الاستطلاع
+- **مفتاح قاعدة المعرفة** — تمكين أو تعطيل قاعدة المعرفة العامة من إعدادات الإدارة
 
-## Architecture
+## الهندسة المعمارية
 
-### Entities
+### الكيانات
 
-| Entity | Description |
+| الكيان | الوصف |
 |---|---|
-| `Ticket` | Support ticket with status, priority, SLA tracking |
-| `Reply` | Public reply or internal note on a ticket |
-| `Department` | Organizational grouping for tickets and agents |
-| `Tag` | Labels for categorizing tickets |
-| `SlaPolicy` | First response and resolution time targets per priority |
-| `TicketActivity` | Audit log of all ticket changes |
-| `AgentProfile` | Agent metadata (type, capacity) |
+| `Ticket` | تذكرة دعم مع الحالة والأولوية وتتبع SLA |
+| `Reply` | رد عام أو ملاحظة داخلية على تذكرة |
+| `Department` | تجميع تنظيمي للتذاكر والوكلاء |
+| `Tag` | تسميات لتصنيف التذاكر |
+| `SlaPolicy` | أهداف وقت الاستجابة الأولى والحل لكل أولوية |
+| `TicketActivity` | سجل تدقيق لجميع تغييرات التذاكر |
+| `AgentProfile` | بيانات الوكيل الوصفية (النوع، السعة) |
 
-### Services
+### الخدمات
 
-| Service | Description |
+| الخدمة | الوصف |
 |---|---|
-| `TicketService` | Create, update, transition, reply to tickets |
-| `AssignmentService` | Assign/unassign agents, check workload |
-| `SlaService` | Attach SLA policies, check for breaches |
+| `TicketService` | إنشاء، تحديث، انتقال، رد على التذاكر |
+| `AssignmentService` | تعيين/إلغاء تعيين الوكلاء، فحص عبء العمل |
+| `SlaService` | إرفاق سياسات SLA، فحص الانتهاكات |
 
-### Controllers
+### وحدات التحكم
 
-Routes are organized into four groups, all under the configured `route_prefix`:
+يتم تنظيم المسارات في أربع مجموعات، جميعها تحت `route_prefix` المُعدّ:
 
-- **Customer** (`/customer/tickets`) -- Ticket CRUD for authenticated end-users
-- **Agent** (`/agent`) -- Dashboard and ticket management for support agents
-- **Admin** (`/admin`) -- Full management of tickets, departments, tags, settings
-- **API** (`/api/v1`) -- JSON REST API for external integrations
+- **Customer** (`/customer/tickets`) -- عمليات CRUD للتذاكر للمستخدمين المصادق عليهم
+- **Agent** (`/agent`) -- لوحة التحكم وإدارة التذاكر لوكلاء الدعم
+- **Admin** (`/admin`) -- إدارة كاملة للتذاكر والأقسام والوسوم والإعدادات
+- **API** (`/api/v1`) -- JSON REST API للتكاملات الخارجية
 
-### Security
+### الأمان
 
-Two Symfony voters control access:
+يتحكم مصوتان في Symfony في الوصول:
 
-- `ESCALATED_AGENT` -- Granted when the user has an `AgentProfile` record
-- `ESCALATED_ADMIN` -- Granted when the user has the `ROLE_ESCALATED_ADMIN` role
+- `ESCALATED_AGENT` -- يُمنح عندما يكون لدى المستخدم سجل `AgentProfile`
+- `ESCALATED_ADMIN` -- يُمنح عندما يكون لدى المستخدم دور `ROLE_ESCALATED_ADMIN`
 
-### UI Rendering
+### عرض واجهة المستخدم
 
-Controllers use `UiRendererInterface` to render pages. The default `InertiaUiRenderer` delegates to whichever Inertia bundle is installed. To use Twig or another renderer, implement `UiRendererInterface` and override the service in your container config:
+تستخدم وحدات التحكم `UiRendererInterface` لعرض الصفحات. يفوض `InertiaUiRenderer` الافتراضي إلى حزمة Inertia المثبتة. لاستخدام Twig أو عارض آخر، قم بتنفيذ `UiRendererInterface` وتجاوز الخدمة في تكوين الحاوية:
 
 ```yaml
 services:
@@ -166,9 +166,9 @@ services:
         class: App\Rendering\TwigUiRenderer
 ```
 
-## Status Transitions
+## انتقالات الحالة
 
-Tickets follow a state machine with these transitions:
+تتبع التذاكر آلة حالة مع هذه الانتقالات:
 
 ```
 open -> in_progress, waiting_on_customer, waiting_on_agent, escalated, resolved, closed

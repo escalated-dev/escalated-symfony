@@ -17,12 +17,12 @@
 
 # Escalated for Symfony
 
-An embeddable support ticket system for Symfony applications. Drop-in helpdesk with tickets, replies, departments, tags, SLA policies, and role-based access control.
+Um sistema de tickets de suporte embutível para aplicações Symfony. Helpdesk pronto para uso com tickets, respostas, departamentos, tags, políticas SLA e controle de acesso baseado em papéis.
 
 ## Requisitos
 
 - PHP 8.2+
-- Symfony 6.4 or 7.x
+- Symfony 6.4 ou 7.x
 - Doctrine ORM 2.17+ / 3.x
 - Doctrine Migrations Bundle
 
@@ -32,9 +32,9 @@ An embeddable support ticket system for Symfony applications. Drop-in helpdesk w
 composer require escalated-dev/escalated-symfony
 ```
 
-### 1. Register the bundle
+### 1. Registrar o bundle
 
-If Symfony Flex is installed, the bundle is registered automatically. Otherwise, add it to `config/bundles.php`:
+Se o Symfony Flex estiver instalado, o bundle é registrado automaticamente. Caso contrário, adicione-o ao `config/bundles.php`:
 
 ```php
 return [
@@ -43,9 +43,9 @@ return [
 ];
 ```
 
-### 2. Configure the bundle
+### 2. Configurar o bundle
 
-Create `config/packages/escalated.yaml`:
+Crie `config/packages/escalated.yaml`:
 
 ```yaml
 escalated:
@@ -66,17 +66,17 @@ escalated:
             days: [1, 2, 3, 4, 5]
 ```
 
-### 3. Run migrations
+### 3. Executar migrações
 
 ```bash
 php bin/console doctrine:migrations:migrate
 ```
 
-The migration creates all necessary tables (`escalated_tickets`, `escalated_replies`, `escalated_departments`, `escalated_tags`, `escalated_sla_policies`, `escalated_ticket_activities`, `escalated_agent_profiles`).
+A migração cria todas as tabelas necessárias (`escalated_tickets`, `escalated_replies`, `escalated_departments`, `escalated_tags`, `escalated_sla_policies`, `escalated_ticket_activities`, `escalated_agent_profiles`).
 
-### 4. Set up security
+### 4. Configurar segurança
 
-Add the `ROLE_ESCALATED_ADMIN` role to admin users in your user provider. Agent access is determined by the presence of an `AgentProfile` entity linked to the user.
+Adicione o papel `ROLE_ESCALATED_ADMIN` aos usuários administradores no seu provedor de usuários. O acesso de agentes é determinado pela presença de uma entidade `AgentProfile` vinculada ao usuário.
 
 ```yaml
 # config/packages/security.yaml
@@ -85,80 +85,80 @@ security:
         ROLE_ESCALATED_ADMIN: ROLE_USER
 ```
 
-### 5. (Optional) Install Inertia
+### 5. (Opcional) Instalar Inertia
 
-For the built-in frontend UI, install an Inertia bundle:
+Para a interface frontend embutida, instale um bundle Inertia:
 
 ```bash
 composer require rompetomp/inertia-bundle
-# or
+# ou
 composer require skipthedragon/inertia-bundle
 ```
 
-Set `ui_enabled: false` if you want to use only the API and services with a custom frontend.
+Defina `ui_enabled: false` se quiser usar apenas a API e os serviços com um frontend personalizado.
 
 ## Recursos
 
-- **Ticket lifecycle** — Create, assign, reply, resolve, close, reopen with configurable status transitions
-- **SLA engine** — Per-priority response and resolution targets, business hours calculation, automatic breach detection
-- **Agent dashboard** — Ticket queue with filters, internal notes, canned responses
-- **Customer portal** — Self-service ticket creation, replies, and status tracking
-- **Admin panel** — Manage departments, SLA policies, tags, and view reports
-- **File attachments** — Drag-and-drop uploads with configurable storage and size limits
-- **Activity timeline** — Full audit log of every action on every ticket
-- **Email notifications** — Configurable per-event notifications
-- **Department routing** — Organize agents into departments with auto-assignment
-- **Tagging system** — Categorize tickets with colored tags
-- **Ticket splitting** — Split a reply into a new standalone ticket while preserving the original context
-- **Ticket snooze** — Snooze tickets with presets (1h, 4h, tomorrow, next week); `php bin/console escalated:wake-snoozed-tickets` Console command auto-wakes them on schedule
-- **Saved views / custom queues** — Save, name, and share filter presets as reusable ticket views
-- **Embeddable support widget** — Lightweight `<script>` widget with KB search, ticket form, and status check
-- **Email threading** — Outbound emails include proper `In-Reply-To` and `References` headers for correct threading in mail clients
-- **Branded email templates** — Configurable logo, primary color, and footer text for all outbound emails
-- **Real-time broadcasting** — Opt-in broadcasting via Mercure with automatic polling fallback
-- **Knowledge base toggle** — Enable or disable the public knowledge base from admin settings
+- **Ciclo de vida do ticket** — Criar, atribuir, responder, resolver, fechar, reabrir com transições de status configuráveis
+- **Motor SLA** — Metas de resposta e resolução por prioridade, cálculo de horário comercial, detecção automática de violações
+- **Painel de agentes** — Fila de tickets com filtros, notas internas, respostas prontas
+- **Portal do cliente** — Criação self-service de tickets, respostas e rastreamento de status
+- **Painel administrativo** — Gerenciar departamentos, políticas SLA, tags e visualizar relatórios
+- **Anexos de arquivos** — Upload por arrastar e soltar com armazenamento e limites de tamanho configuráveis
+- **Linha do tempo de atividades** — Log de auditoria completo de cada ação em cada ticket
+- **Notificações por email** — Notificações configuráveis por evento
+- **Roteamento por departamento** — Organizar agentes em departamentos com atribuição automática
+- **Sistema de tags** — Categorizar tickets com tags coloridas
+- **Divisão de tickets** — Dividir uma resposta em um novo ticket independente preservando o contexto original
+- **Suspensão de tickets** — Suspender tickets com predefinições (1h, 4h, amanhã, próxima semana); o comando `php bin/console escalated:wake-snoozed-tickets` os reativa automaticamente conforme programação
+- **Visualizações salvas / filas personalizadas** — Salvar, nomear e compartilhar predefinições de filtros como visualizações de tickets reutilizáveis
+- **Widget de suporte embutível** — Widget leve `<script>` com pesquisa na base de conhecimento, formulário de ticket e verificação de status
+- **Threading de email** — Emails enviados incluem cabeçalhos `In-Reply-To` e `References` adequados para threading correto em clientes de email
+- **Templates de email com marca** — Logo, cor primária e texto de rodapé configuráveis para todos os emails enviados
+- **Transmissão em tempo real** — Transmissão opt-in via Mercure com fallback automático para polling
+- **Interruptor da base de conhecimento** — Habilitar ou desabilitar a base de conhecimento pública nas configurações de administração
 
-## Architecture
+## Arquitetura
 
-### Entities
+### Entidades
 
-| Entity | Description |
+| Entidade | Descrição |
 |---|---|
-| `Ticket` | Support ticket with status, priority, SLA tracking |
-| `Reply` | Public reply or internal note on a ticket |
-| `Department` | Organizational grouping for tickets and agents |
-| `Tag` | Labels for categorizing tickets |
-| `SlaPolicy` | First response and resolution time targets per priority |
-| `TicketActivity` | Audit log of all ticket changes |
-| `AgentProfile` | Agent metadata (type, capacity) |
+| `Ticket` | Ticket de suporte com status, prioridade, rastreamento SLA |
+| `Reply` | Resposta pública ou nota interna em um ticket |
+| `Department` | Agrupamento organizacional para tickets e agentes |
+| `Tag` | Rótulos para categorizar tickets |
+| `SlaPolicy` | Metas de tempo de primeira resposta e resolução por prioridade |
+| `TicketActivity` | Log de auditoria de todas as alterações de tickets |
+| `AgentProfile` | Metadados do agente (tipo, capacidade) |
 
-### Services
+### Serviços
 
-| Service | Description |
+| Serviço | Descrição |
 |---|---|
-| `TicketService` | Create, update, transition, reply to tickets |
-| `AssignmentService` | Assign/unassign agents, check workload |
-| `SlaService` | Attach SLA policies, check for breaches |
+| `TicketService` | Criar, atualizar, transicionar, responder tickets |
+| `AssignmentService` | Atribuir/desatribuir agentes, verificar carga de trabalho |
+| `SlaService` | Anexar políticas SLA, verificar violações |
 
-### Controllers
+### Controladores
 
-Routes are organized into four groups, all under the configured `route_prefix`:
+As rotas são organizadas em quatro grupos, todos sob o `route_prefix` configurado:
 
-- **Customer** (`/customer/tickets`) -- Ticket CRUD for authenticated end-users
-- **Agent** (`/agent`) -- Dashboard and ticket management for support agents
-- **Admin** (`/admin`) -- Full management of tickets, departments, tags, settings
-- **API** (`/api/v1`) -- JSON REST API for external integrations
+- **Customer** (`/customer/tickets`) -- CRUD de tickets para usuários finais autenticados
+- **Agent** (`/agent`) -- Painel e gerenciamento de tickets para agentes de suporte
+- **Admin** (`/admin`) -- Gerenciamento completo de tickets, departamentos, tags, configurações
+- **API** (`/api/v1`) -- JSON REST API para integrações externas
 
-### Security
+### Segurança
 
-Two Symfony voters control access:
+Dois voters Symfony controlam o acesso:
 
-- `ESCALATED_AGENT` -- Granted when the user has an `AgentProfile` record
-- `ESCALATED_ADMIN` -- Granted when the user has the `ROLE_ESCALATED_ADMIN` role
+- `ESCALATED_AGENT` -- Concedido quando o usuário tem um registro `AgentProfile`
+- `ESCALATED_ADMIN` -- Concedido quando o usuário tem o papel `ROLE_ESCALATED_ADMIN`
 
-### UI Rendering
+### Renderização de UI
 
-Controllers use `UiRendererInterface` to render pages. The default `InertiaUiRenderer` delegates to whichever Inertia bundle is installed. To use Twig or another renderer, implement `UiRendererInterface` and override the service in your container config:
+Os controladores usam `UiRendererInterface` para renderizar páginas. O `InertiaUiRenderer` padrão delega ao bundle Inertia instalado. Para usar Twig ou outro renderizador, implemente `UiRendererInterface` e sobrescreva o serviço na configuração do seu container:
 
 ```yaml
 services:
@@ -166,9 +166,9 @@ services:
         class: App\Rendering\TwigUiRenderer
 ```
 
-## Status Transitions
+## Transições de Status
 
-Tickets follow a state machine with these transitions:
+Os tickets seguem uma máquina de estados com estas transições:
 
 ```
 open -> in_progress, waiting_on_customer, waiting_on_agent, escalated, resolved, closed

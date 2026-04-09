@@ -17,12 +17,12 @@
 
 # Escalated for Symfony
 
-An embeddable support ticket system for Symfony applications. Drop-in helpdesk with tickets, replies, departments, tags, SLA policies, and role-based access control.
+Symfony uygulamaları için gömülebilir destek bilet sistemi. Biletler, yanıtlar, departmanlar, etiketler, SLA politikaları ve rol tabanlı erişim kontrolü ile hazır yardım masası.
 
 ## Gereksinimler
 
 - PHP 8.2+
-- Symfony 6.4 or 7.x
+- Symfony 6.4 veya 7.x
 - Doctrine ORM 2.17+ / 3.x
 - Doctrine Migrations Bundle
 
@@ -32,9 +32,9 @@ An embeddable support ticket system for Symfony applications. Drop-in helpdesk w
 composer require escalated-dev/escalated-symfony
 ```
 
-### 1. Register the bundle
+### 1. Bundle'ı kaydetme
 
-If Symfony Flex is installed, the bundle is registered automatically. Otherwise, add it to `config/bundles.php`:
+Symfony Flex kuruluysa, bundle otomatik olarak kaydedilir. Aksi takdirde `config/bundles.php` dosyasına ekleyin:
 
 ```php
 return [
@@ -43,9 +43,9 @@ return [
 ];
 ```
 
-### 2. Configure the bundle
+### 2. Bundle'ı yapılandırma
 
-Create `config/packages/escalated.yaml`:
+`config/packages/escalated.yaml` dosyasını oluşturun:
 
 ```yaml
 escalated:
@@ -66,17 +66,17 @@ escalated:
             days: [1, 2, 3, 4, 5]
 ```
 
-### 3. Run migrations
+### 3. Migrasyonları çalıştırma
 
 ```bash
 php bin/console doctrine:migrations:migrate
 ```
 
-The migration creates all necessary tables (`escalated_tickets`, `escalated_replies`, `escalated_departments`, `escalated_tags`, `escalated_sla_policies`, `escalated_ticket_activities`, `escalated_agent_profiles`).
+Migrasyon tüm gerekli tabloları oluşturur (`escalated_tickets`, `escalated_replies`, `escalated_departments`, `escalated_tags`, `escalated_sla_policies`, `escalated_ticket_activities`, `escalated_agent_profiles`).
 
-### 4. Set up security
+### 4. Güvenliği ayarlama
 
-Add the `ROLE_ESCALATED_ADMIN` role to admin users in your user provider. Agent access is determined by the presence of an `AgentProfile` entity linked to the user.
+Kullanıcı sağlayıcınızda yönetici kullanıcılara `ROLE_ESCALATED_ADMIN` rolünü ekleyin. Temsilci erişimi, kullanıcıya bağlı bir `AgentProfile` varlığının varlığıyla belirlenir.
 
 ```yaml
 # config/packages/security.yaml
@@ -85,80 +85,80 @@ security:
         ROLE_ESCALATED_ADMIN: ROLE_USER
 ```
 
-### 5. (Optional) Install Inertia
+### 5. (İsteğe bağlı) Inertia kurulumu
 
-For the built-in frontend UI, install an Inertia bundle:
+Yerleşik frontend arayüzü için bir Inertia bundle'ı kurun:
 
 ```bash
 composer require rompetomp/inertia-bundle
-# or
+# veya
 composer require skipthedragon/inertia-bundle
 ```
 
-Set `ui_enabled: false` if you want to use only the API and services with a custom frontend.
+Yalnızca API ve hizmetleri özel bir frontend ile kullanmak istiyorsanız `ui_enabled: false` olarak ayarlayın.
 
 ## Özellikler
 
-- **Ticket lifecycle** — Create, assign, reply, resolve, close, reopen with configurable status transitions
-- **SLA engine** — Per-priority response and resolution targets, business hours calculation, automatic breach detection
-- **Agent dashboard** — Ticket queue with filters, internal notes, canned responses
-- **Customer portal** — Self-service ticket creation, replies, and status tracking
-- **Admin panel** — Manage departments, SLA policies, tags, and view reports
-- **File attachments** — Drag-and-drop uploads with configurable storage and size limits
-- **Activity timeline** — Full audit log of every action on every ticket
-- **Email notifications** — Configurable per-event notifications
-- **Department routing** — Organize agents into departments with auto-assignment
-- **Tagging system** — Categorize tickets with colored tags
-- **Ticket splitting** — Split a reply into a new standalone ticket while preserving the original context
-- **Ticket snooze** — Snooze tickets with presets (1h, 4h, tomorrow, next week); `php bin/console escalated:wake-snoozed-tickets` Console command auto-wakes them on schedule
-- **Saved views / custom queues** — Save, name, and share filter presets as reusable ticket views
-- **Embeddable support widget** — Lightweight `<script>` widget with KB search, ticket form, and status check
-- **Email threading** — Outbound emails include proper `In-Reply-To` and `References` headers for correct threading in mail clients
-- **Branded email templates** — Configurable logo, primary color, and footer text for all outbound emails
-- **Real-time broadcasting** — Opt-in broadcasting via Mercure with automatic polling fallback
-- **Knowledge base toggle** — Enable or disable the public knowledge base from admin settings
+- **Bilet yaşam döngüsü** — Yapılandırılabilir durum geçişleriyle oluşturma, atama, yanıtlama, çözme, kapatma, yeniden açma
+- **SLA motoru** — Önceliğe göre yanıt ve çözüm hedefleri, iş saatleri hesaplaması, otomatik ihlal tespiti
+- **Temsilci paneli** — Filtreler, dahili notlar, hazır yanıtlar ile bilet kuyruğu
+- **Müşteri portalı** — Self-servis bilet oluşturma, yanıtlar ve durum takibi
+- **Yönetici paneli** — Departmanları, SLA politikalarını, etiketleri yönetme ve raporları görüntüleme
+- **Dosya ekleri** — Yapılandırılabilir depolama ve boyut limitleri ile sürükle-bırak yükleme
+- **Aktivite zaman çizelgesi** — Her bilet üzerindeki her eylemin tam denetim günlüğü
+- **E-posta bildirimleri** — Olay bazında yapılandırılabilir bildirimler
+- **Departman yönlendirmesi** — Otomatik atamayla temsilcileri departmanlara organize etme
+- **Etiket sistemi** — Renkli etiketlerle biletleri kategorize etme
+- **Bilet bölme** — Orijinal bağlamı koruyarak bir yanıtı yeni bağımsız bir bilete bölme
+- **Bilet erteleme** — Ön ayarlarla (1s, 4s, yarın, gelecek hafta) biletleri erteleme; `php bin/console escalated:wake-snoozed-tickets` komutu programa göre otomatik uyandırır
+- **Kayıtlı görünümler / özel kuyruklar** — Filtre ön ayarlarını yeniden kullanılabilir bilet görünümleri olarak kaydetme, adlandırma ve paylaşma
+- **Gömülebilir destek widget'ı** — KB araması, bilet formu ve durum kontrolü olan hafif `<script>` widget'ı
+- **E-posta threading** — Giden e-postalar, posta istemcilerinde doğru iş parçacığı oluşturma için uygun `In-Reply-To` ve `References` başlıkları içerir
+- **Markalı e-posta şablonları** — Tüm giden e-postalar için yapılandırılabilir logo, ana renk ve alt bilgi metni
+- **Gerçek zamanlı yayın** — Otomatik yoklama geri dönüşlü Mercure üzerinden isteğe bağlı yayın
+- **Bilgi tabanı anahtarı** — Yönetici ayarlarından genel bilgi tabanını etkinleştirme veya devre dışı bırakma
 
-## Architecture
+## Mimari
 
-### Entities
+### Varlıklar
 
-| Entity | Description |
+| Varlık | Açıklama |
 |---|---|
-| `Ticket` | Support ticket with status, priority, SLA tracking |
-| `Reply` | Public reply or internal note on a ticket |
-| `Department` | Organizational grouping for tickets and agents |
-| `Tag` | Labels for categorizing tickets |
-| `SlaPolicy` | First response and resolution time targets per priority |
-| `TicketActivity` | Audit log of all ticket changes |
-| `AgentProfile` | Agent metadata (type, capacity) |
+| `Ticket` | Durum, öncelik, SLA takibi olan destek bileti |
+| `Reply` | Bilet üzerindeki genel yanıt veya dahili not |
+| `Department` | Biletler ve temsilciler için organizasyonel gruplama |
+| `Tag` | Biletleri kategorize etmek için etiketler |
+| `SlaPolicy` | Önceliğe göre ilk yanıt ve çözüm süre hedefleri |
+| `TicketActivity` | Tüm bilet değişikliklerinin denetim günlüğü |
+| `AgentProfile` | Temsilci meta verileri (tür, kapasite) |
 
-### Services
+### Hizmetler
 
-| Service | Description |
+| Hizmet | Açıklama |
 |---|---|
-| `TicketService` | Create, update, transition, reply to tickets |
-| `AssignmentService` | Assign/unassign agents, check workload |
-| `SlaService` | Attach SLA policies, check for breaches |
+| `TicketService` | Bilet oluşturma, güncelleme, geçiş, yanıtlama |
+| `AssignmentService` | Temsilci atama/kaldırma, iş yükü kontrolü |
+| `SlaService` | SLA politikalarını ekleme, ihlalleri kontrol etme |
 
-### Controllers
+### Denetleyiciler
 
-Routes are organized into four groups, all under the configured `route_prefix`:
+Rotalar, yapılandırılmış `route_prefix` altında dört gruba ayrılmıştır:
 
-- **Customer** (`/customer/tickets`) -- Ticket CRUD for authenticated end-users
-- **Agent** (`/agent`) -- Dashboard and ticket management for support agents
-- **Admin** (`/admin`) -- Full management of tickets, departments, tags, settings
-- **API** (`/api/v1`) -- JSON REST API for external integrations
+- **Customer** (`/customer/tickets`) -- Kimliği doğrulanmış son kullanıcılar için bilet CRUD
+- **Agent** (`/agent`) -- Destek temsilcileri için panel ve bilet yönetimi
+- **Admin** (`/admin`) -- Biletler, departmanlar, etiketler, ayarların tam yönetimi
+- **API** (`/api/v1`) -- Dış entegrasyonlar için JSON REST API
 
-### Security
+### Güvenlik
 
-Two Symfony voters control access:
+İki Symfony voter erişimi kontrol eder:
 
-- `ESCALATED_AGENT` -- Granted when the user has an `AgentProfile` record
-- `ESCALATED_ADMIN` -- Granted when the user has the `ROLE_ESCALATED_ADMIN` role
+- `ESCALATED_AGENT` -- Kullanıcının bir `AgentProfile` kaydı olduğunda verilir
+- `ESCALATED_ADMIN` -- Kullanıcının `ROLE_ESCALATED_ADMIN` rolü olduğunda verilir
 
-### UI Rendering
+### UI Oluşturma
 
-Controllers use `UiRendererInterface` to render pages. The default `InertiaUiRenderer` delegates to whichever Inertia bundle is installed. To use Twig or another renderer, implement `UiRendererInterface` and override the service in your container config:
+Denetleyiciler sayfaları oluşturmak için `UiRendererInterface` kullanır. Varsayılan `InertiaUiRenderer`, kurulu Inertia bundle'ına yetki verir. Twig veya başka bir oluşturucu kullanmak için `UiRendererInterface`'i uygulayın ve konteyner yapılandırmanızda hizmeti geçersiz kılın:
 
 ```yaml
 services:
@@ -166,9 +166,9 @@ services:
         class: App\Rendering\TwigUiRenderer
 ```
 
-## Status Transitions
+## Durum Geçişleri
 
-Tickets follow a state machine with these transitions:
+Biletler bu geçişlerle bir durum makinesini takip eder:
 
 ```
 open -> in_progress, waiting_on_customer, waiting_on_agent, escalated, resolved, closed

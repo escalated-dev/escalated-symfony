@@ -17,12 +17,12 @@
 
 # Escalated for Symfony
 
-An embeddable support ticket system for Symfony applications. Drop-in helpdesk with tickets, replies, departments, tags, SLA policies, and role-based access control.
+Встраиваемая система тикетов поддержки для приложений Symfony. Готовый helpdesk с тикетами, ответами, отделами, тегами, политиками SLA и управлением доступом на основе ролей.
 
 ## Требования
 
 - PHP 8.2+
-- Symfony 6.4 or 7.x
+- Symfony 6.4 или 7.x
 - Doctrine ORM 2.17+ / 3.x
 - Doctrine Migrations Bundle
 
@@ -32,9 +32,9 @@ An embeddable support ticket system for Symfony applications. Drop-in helpdesk w
 composer require escalated-dev/escalated-symfony
 ```
 
-### 1. Register the bundle
+### 1. Регистрация бандла
 
-If Symfony Flex is installed, the bundle is registered automatically. Otherwise, add it to `config/bundles.php`:
+Если установлен Symfony Flex, бандл регистрируется автоматически. В противном случае добавьте его в `config/bundles.php`:
 
 ```php
 return [
@@ -43,9 +43,9 @@ return [
 ];
 ```
 
-### 2. Configure the bundle
+### 2. Настройка бандла
 
-Create `config/packages/escalated.yaml`:
+Создайте `config/packages/escalated.yaml`:
 
 ```yaml
 escalated:
@@ -66,17 +66,17 @@ escalated:
             days: [1, 2, 3, 4, 5]
 ```
 
-### 3. Run migrations
+### 3. Выполнение миграций
 
 ```bash
 php bin/console doctrine:migrations:migrate
 ```
 
-The migration creates all necessary tables (`escalated_tickets`, `escalated_replies`, `escalated_departments`, `escalated_tags`, `escalated_sla_policies`, `escalated_ticket_activities`, `escalated_agent_profiles`).
+Миграция создаёт все необходимые таблицы (`escalated_tickets`, `escalated_replies`, `escalated_departments`, `escalated_tags`, `escalated_sla_policies`, `escalated_ticket_activities`, `escalated_agent_profiles`).
 
-### 4. Set up security
+### 4. Настройка безопасности
 
-Add the `ROLE_ESCALATED_ADMIN` role to admin users in your user provider. Agent access is determined by the presence of an `AgentProfile` entity linked to the user.
+Добавьте роль `ROLE_ESCALATED_ADMIN` пользователям-администраторам в вашем провайдере пользователей. Доступ агентов определяется наличием сущности `AgentProfile`, связанной с пользователем.
 
 ```yaml
 # config/packages/security.yaml
@@ -85,80 +85,80 @@ security:
         ROLE_ESCALATED_ADMIN: ROLE_USER
 ```
 
-### 5. (Optional) Install Inertia
+### 5. (Необязательно) Установка Inertia
 
-For the built-in frontend UI, install an Inertia bundle:
+Для встроенного фронтенд-интерфейса установите бандл Inertia:
 
 ```bash
 composer require rompetomp/inertia-bundle
-# or
+# или
 composer require skipthedragon/inertia-bundle
 ```
 
-Set `ui_enabled: false` if you want to use only the API and services with a custom frontend.
+Установите `ui_enabled: false`, если хотите использовать только API и сервисы с собственным фронтендом.
 
 ## Возможности
 
-- **Ticket lifecycle** — Create, assign, reply, resolve, close, reopen with configurable status transitions
-- **SLA engine** — Per-priority response and resolution targets, business hours calculation, automatic breach detection
-- **Agent dashboard** — Ticket queue with filters, internal notes, canned responses
-- **Customer portal** — Self-service ticket creation, replies, and status tracking
-- **Admin panel** — Manage departments, SLA policies, tags, and view reports
-- **File attachments** — Drag-and-drop uploads with configurable storage and size limits
-- **Activity timeline** — Full audit log of every action on every ticket
-- **Email notifications** — Configurable per-event notifications
-- **Department routing** — Organize agents into departments with auto-assignment
-- **Tagging system** — Categorize tickets with colored tags
-- **Ticket splitting** — Split a reply into a new standalone ticket while preserving the original context
-- **Ticket snooze** — Snooze tickets with presets (1h, 4h, tomorrow, next week); `php bin/console escalated:wake-snoozed-tickets` Console command auto-wakes them on schedule
-- **Saved views / custom queues** — Save, name, and share filter presets as reusable ticket views
-- **Embeddable support widget** — Lightweight `<script>` widget with KB search, ticket form, and status check
-- **Email threading** — Outbound emails include proper `In-Reply-To` and `References` headers for correct threading in mail clients
-- **Branded email templates** — Configurable logo, primary color, and footer text for all outbound emails
-- **Real-time broadcasting** — Opt-in broadcasting via Mercure with automatic polling fallback
-- **Knowledge base toggle** — Enable or disable the public knowledge base from admin settings
+- **Жизненный цикл тикета** — Создание, назначение, ответ, решение, закрытие, повторное открытие с настраиваемыми переходами статусов
+- **SLA-движок** — Цели ответа и решения по приоритетам, расчёт рабочих часов, автоматическое обнаружение нарушений
+- **Панель агентов** — Очередь тикетов с фильтрами, внутренними заметками, шаблонными ответами
+- **Портал клиентов** — Самообслуживание: создание тикетов, ответы и отслеживание статуса
+- **Панель администратора** — Управление отделами, политиками SLA, тегами и просмотр отчётов
+- **Вложения файлов** — Загрузка перетаскиванием с настраиваемым хранилищем и лимитами размера
+- **Хронология активности** — Полный журнал аудита каждого действия по каждому тикету
+- **Уведомления по email** — Настраиваемые уведомления по событиям
+- **Маршрутизация по отделам** — Организация агентов по отделам с автоназначением
+- **Система тегов** — Категоризация тикетов цветными тегами
+- **Разделение тикетов** — Разделение ответа в новый самостоятельный тикет с сохранением оригинального контекста
+- **Отложение тикетов** — Откладывание тикетов с пресетами (1ч, 4ч, завтра, следующая неделя); команда `php bin/console escalated:wake-snoozed-tickets` автоматически пробуждает их по расписанию
+- **Сохранённые представления / пользовательские очереди** — Сохранение, именование и совместное использование пресетов фильтров как повторно используемых представлений тикетов
+- **Встраиваемый виджет поддержки** — Лёгкий виджет `<script>` с поиском по базе знаний, формой тикета и проверкой статуса
+- **Потоки email** — Исходящие письма включают корректные заголовки `In-Reply-To` и `References` для правильной группировки в почтовых клиентах
+- **Брендированные шаблоны email** — Настраиваемый логотип, основной цвет и текст подвала для всех исходящих писем
+- **Трансляция в реальном времени** — Опциональная трансляция через Mercure с автоматическим откатом на polling
+- **Переключатель базы знаний** — Включение или отключение публичной базы знаний из настроек администратора
 
-## Architecture
+## Архитектура
 
-### Entities
+### Сущности
 
-| Entity | Description |
+| Сущность | Описание |
 |---|---|
-| `Ticket` | Support ticket with status, priority, SLA tracking |
-| `Reply` | Public reply or internal note on a ticket |
-| `Department` | Organizational grouping for tickets and agents |
-| `Tag` | Labels for categorizing tickets |
-| `SlaPolicy` | First response and resolution time targets per priority |
-| `TicketActivity` | Audit log of all ticket changes |
-| `AgentProfile` | Agent metadata (type, capacity) |
+| `Ticket` | Тикет поддержки со статусом, приоритетом, отслеживанием SLA |
+| `Reply` | Публичный ответ или внутренняя заметка к тикету |
+| `Department` | Организационная группировка для тикетов и агентов |
+| `Tag` | Метки для категоризации тикетов |
+| `SlaPolicy` | Цели времени первого ответа и решения по приоритетам |
+| `TicketActivity` | Журнал аудита всех изменений тикетов |
+| `AgentProfile` | Метаданные агента (тип, ёмкость) |
 
-### Services
+### Сервисы
 
-| Service | Description |
+| Сервис | Описание |
 |---|---|
-| `TicketService` | Create, update, transition, reply to tickets |
-| `AssignmentService` | Assign/unassign agents, check workload |
-| `SlaService` | Attach SLA policies, check for breaches |
+| `TicketService` | Создание, обновление, переход, ответ на тикеты |
+| `AssignmentService` | Назначение/снятие агентов, проверка нагрузки |
+| `SlaService` | Привязка политик SLA, проверка нарушений |
 
-### Controllers
+### Контроллеры
 
-Routes are organized into four groups, all under the configured `route_prefix`:
+Маршруты организованы в четыре группы, все под настроенным `route_prefix`:
 
-- **Customer** (`/customer/tickets`) -- Ticket CRUD for authenticated end-users
-- **Agent** (`/agent`) -- Dashboard and ticket management for support agents
-- **Admin** (`/admin`) -- Full management of tickets, departments, tags, settings
-- **API** (`/api/v1`) -- JSON REST API for external integrations
+- **Customer** (`/customer/tickets`) -- CRUD тикетов для аутентифицированных конечных пользователей
+- **Agent** (`/agent`) -- Панель управления и управление тикетами для агентов поддержки
+- **Admin** (`/admin`) -- Полное управление тикетами, отделами, тегами, настройками
+- **API** (`/api/v1`) -- JSON REST API для внешних интеграций
 
-### Security
+### Безопасность
 
-Two Symfony voters control access:
+Два voter Symfony контролируют доступ:
 
-- `ESCALATED_AGENT` -- Granted when the user has an `AgentProfile` record
-- `ESCALATED_ADMIN` -- Granted when the user has the `ROLE_ESCALATED_ADMIN` role
+- `ESCALATED_AGENT` -- Предоставляется, когда у пользователя есть запись `AgentProfile`
+- `ESCALATED_ADMIN` -- Предоставляется, когда у пользователя есть роль `ROLE_ESCALATED_ADMIN`
 
-### UI Rendering
+### Рендеринг UI
 
-Controllers use `UiRendererInterface` to render pages. The default `InertiaUiRenderer` delegates to whichever Inertia bundle is installed. To use Twig or another renderer, implement `UiRendererInterface` and override the service in your container config:
+Контроллеры используют `UiRendererInterface` для рендеринга страниц. `InertiaUiRenderer` по умолчанию делегирует установленному бандлу Inertia. Чтобы использовать Twig или другой рендерер, реализуйте `UiRendererInterface` и переопределите сервис в конфигурации контейнера:
 
 ```yaml
 services:
@@ -166,9 +166,9 @@ services:
         class: App\Rendering\TwigUiRenderer
 ```
 
-## Status Transitions
+## Переходы статусов
 
-Tickets follow a state machine with these transitions:
+Тикеты следуют конечному автомату с этими переходами:
 
 ```
 open -> in_progress, waiting_on_customer, waiting_on_agent, escalated, resolved, closed

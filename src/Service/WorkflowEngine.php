@@ -6,7 +6,6 @@ namespace Escalated\Symfony\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Entity\Reply;
-use Escalated\Symfony\Entity\Tag;
 use Escalated\Symfony\Entity\Ticket;
 
 class WorkflowEngine
@@ -52,6 +51,7 @@ class WorkflowEngine
                     return false;
                 }
             }
+
             return true;
         }
         if (isset($conditions['any'])) {
@@ -60,6 +60,7 @@ class WorkflowEngine
                     return true;
                 }
             }
+
             return false;
         }
         if (isset($conditions['field'])) {
@@ -71,8 +72,10 @@ class WorkflowEngine
                     return false;
                 }
             }
+
             return true;
         }
+
         return false;
     }
 
@@ -86,6 +89,7 @@ class WorkflowEngine
             'value' => $this->interpolate((string) ($a['value'] ?? ''), $ticket),
             'would_execute' => $matched,
         ], $actions ?? []);
+
         return ['matched' => $matched, 'actions' => $preview];
     }
 
@@ -119,6 +123,7 @@ class WorkflowEngine
         $matched = $this->evaluateConditions($conditions ?? [], $ticket);
         if (!$matched) {
             $this->logExecution((int) $workflow['id'], $ticket->getId(), $eventName, 'skipped', []);
+
             return;
         }
         try {
@@ -136,6 +141,7 @@ class WorkflowEngine
         $operator = $condition['operator'] ?? 'equals';
         $expected = $condition['value'] ?? '';
         $actual = $this->resolveField($field, $ticket);
+
         return $this->applyOperator($operator, $actual, $expected);
     }
 
@@ -156,6 +162,7 @@ class WorkflowEngine
     {
         $actualS = (string) ($actual ?? '');
         $expectedS = (string) ($expected ?? '');
+
         return match ($operator) {
             'equals' => $actualS === $expectedS,
             'not_equals' => $actualS !== $expectedS,
@@ -180,6 +187,7 @@ class WorkflowEngine
             $result = $this->executeSingleAction($action, $ticket, $workflowId);
             $executed[] = ['type' => $action['type'], 'result' => $result];
         }
+
         return $executed;
     }
 
@@ -194,6 +202,7 @@ class WorkflowEngine
                 'set_type' => $ticket->setTicketType($action['value']) && $this->em->flush(),
                 default => null,
             };
+
             return 'executed';
         } catch (\Throwable $e) {
             return 'failed';

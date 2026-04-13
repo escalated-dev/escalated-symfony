@@ -169,4 +169,33 @@ class Workflow
     {
         return $this->updatedAt;
     }
+
+    /**
+     * Alias for frontend compatibility: the frontend uses `trigger` instead of `trigger_event`.
+     */
+    public function getTrigger(): string
+    {
+        return $this->triggerEvent;
+    }
+
+    /**
+     * Serialize workflow with `trigger` alias for frontend.
+     */
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'description' => $this->description,
+            'trigger_event' => $this->triggerEvent,
+            'trigger' => $this->triggerEvent,
+            'conditions' => $this->conditions,
+            'actions' => $this->actions,
+            'position' => $this->position,
+            'is_active' => $this->isActive,
+            'stop_on_match' => $this->stopOnMatch,
+            'created_at' => $this->createdAt->format('c'),
+            'updated_at' => $this->updatedAt->format('c'),
+        ];
+    }
 }

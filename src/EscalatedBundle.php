@@ -20,6 +20,9 @@ class EscalatedBundle extends AbstractBundle
         $builder->setParameter('escalated.ui_enabled', $config['ui_enabled']);
         $builder->setParameter('escalated.table_prefix', $config['table_prefix']);
 
+        // Storage config
+        $builder->setParameter('escalated.storage.base_url', $config['storage']['base_url'] ?? '');
+
         // SLA config
         $builder->setParameter('escalated.sla.enabled', $config['sla']['enabled']);
         $builder->setParameter('escalated.sla.business_hours_only', $config['sla']['business_hours_only']);

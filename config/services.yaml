@@ -50,6 +50,12 @@ services:
             $routePrefix: '%escalated.route_prefix%'
         tags: ['kernel.event_subscriber']
 
+    # Serializer Normalizers
+    Escalated\Symfony\Serializer\AttachmentNormalizer:
+        arguments:
+            $baseStorageUrl: '%escalated.storage.base_url%'
+        tags: ['serializer.normalizer']
+
     # Controllers
     Escalated\Symfony\Controller\Customer\TicketController:
         arguments:

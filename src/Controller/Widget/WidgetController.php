@@ -110,11 +110,22 @@ class WidgetController extends AbstractController
 
         $repliesArray = [];
         foreach ($ticket->getPublicReplies() as $r) {
+            $replyAttachments = [];
+            foreach ($r->getAttachments() as $a) {
+                $replyAttachments[] = $a->toArray();
+            }
+
             $repliesArray[] = [
                 'body' => $r->getBody(),
                 'is_agent' => null !== $r->getAuthorClass(),
                 'created_at' => $r->getCreatedAt()->format(\DateTimeInterface::ATOM),
+                'attachments' => $replyAttachments,
             ];
+        }
+
+        $ticketAttachments = [];
+        foreach ($ticket->getAttachments() as $a) {
+            $ticketAttachments[] = $a->toArray();
         }
 
         $response = $this->json([
@@ -124,6 +135,7 @@ class WidgetController extends AbstractController
                 'status' => $ticket->getStatus(),
                 'created_at' => $ticket->getCreatedAt()->format(\DateTimeInterface::ATOM),
                 'replies' => $repliesArray,
+                'attachments' => $ticketAttachments,
             ],
         ]);
 

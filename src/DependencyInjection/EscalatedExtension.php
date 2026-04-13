@@ -33,6 +33,7 @@ class EscalatedExtension extends Extension implements PrependExtensionInterface
         $container->setParameter('escalated.sla.enabled', $config['sla']['enabled']);
         $container->setParameter('escalated.sla.business_hours_only', $config['sla']['business_hours_only']);
         $container->setParameter('escalated.sla.business_hours', $config['sla']['business_hours']);
+        $container->setParameter('escalated.storage.base_url', $config['storage']['base_url']);
         $container->setParameter('escalated.tickets.allow_customer_close', $config['tickets']['allow_customer_close']);
         $container->setParameter('escalated.tickets.default_priority', $config['tickets']['default_priority']);
         $container->setParameter('escalated.kb.enabled', $config['knowledge_base']['enabled']);

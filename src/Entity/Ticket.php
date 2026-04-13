@@ -110,6 +110,11 @@ class Ticket
     #[ORM\JoinTable(name: 'escalated_ticket_tag')]
     private Collection $tags;
 
+    /** @var Collection<int, Attachment> */
+    #[ORM\OneToMany(targetEntity: Attachment::class, mappedBy: 'ticket', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OrderBy(['createdAt' => 'ASC'])]
+    private Collection $attachments;
+
     /** @var Collection<int, TicketActivity> */
     #[ORM\OneToMany(targetEntity: TicketActivity::class, mappedBy: 'ticket', cascade: ['persist', 'remove'], orphanRemoval: true)]
     #[ORM\OrderBy(['createdAt' => 'DESC'])]
@@ -179,6 +184,7 @@ class Ticket
     {
         $this->replies = new ArrayCollection();
         $this->tags = new ArrayCollection();
+        $this->attachments = new ArrayCollection();
         $this->activities = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
@@ -415,6 +421,33 @@ class Ticket
     public function removeTag(Tag $tag): self
     {
         $this->tags->removeElement($tag);
+
+        return $this;
+    }
+
+    /** @return Collection<int, Attachment> */
+    public function getAttachments(): Collection
+    {
+        return $this->attachments;
+    }
+
+    public function addAttachment(Attachment $attachment): self
+    {
+        if (!$this->attachments->contains($attachment)) {
+            $this->attachments->add($attachment);
+            $attachment->setTicket($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAttachment(Attachment $attachment): self
+    {
+        if ($this->attachments->removeElement($attachment)) {
+            if ($attachment->getTicket() === $this) {
+                $attachment->setTicket(null);
+            }
+        }
 
         return $this;
     }

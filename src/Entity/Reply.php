@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Escalated\Symfony\Entity;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -43,6 +45,11 @@ class Reply
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private ?array $metadata = null;
 
+    /** @var Collection<int, Attachment> */
+    #[ORM\OneToMany(targetEntity: Attachment::class, mappedBy: 'reply', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OrderBy(['createdAt' => 'ASC'])]
+    private Collection $attachments;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
 
@@ -54,6 +61,7 @@ class Reply
 
     public function __construct()
     {
+        $this->attachments = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
     }
@@ -163,6 +171,33 @@ class Reply
     public function setMetadata(?array $metadata): self
     {
         $this->metadata = $metadata;
+
+        return $this;
+    }
+
+    /** @return Collection<int, Attachment> */
+    public function getAttachments(): Collection
+    {
+        return $this->attachments;
+    }
+
+    public function addAttachment(Attachment $attachment): self
+    {
+        if (!$this->attachments->contains($attachment)) {
+            $this->attachments->add($attachment);
+            $attachment->setReply($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAttachment(Attachment $attachment): self
+    {
+        if ($this->attachments->removeElement($attachment)) {
+            if ($attachment->getReply() === $this) {
+                $attachment->setReply(null);
+            }
+        }
 
         return $this;
     }

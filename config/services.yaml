@@ -56,6 +56,9 @@ services:
             $baseStorageUrl: '%escalated.storage.base_url%'
         tags: ['serializer.normalizer']
 
+    Escalated\Symfony\Serializer\TicketNormalizer:
+        tags: ['serializer.normalizer']
+
     # Controllers
     Escalated\Symfony\Controller\Customer\TicketController:
         arguments:

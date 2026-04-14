@@ -197,7 +197,7 @@ class WorkflowLog
     /** Milliseconds between started_at and completed_at. */
     public function getDurationMs(): ?int
     {
-        if ($this->startedAt !== null && $this->completedAt !== null) {
+        if (null !== $this->startedAt && null !== $this->completedAt) {
             $diff = $this->completedAt->getTimestamp() - $this->startedAt->getTimestamp();
             $microDiff = ((int) $this->completedAt->format('u')) - ((int) $this->startedAt->format('u'));
 
@@ -210,7 +210,7 @@ class WorkflowLog
     /** Computed status: 'failed' when an error is present, otherwise 'success'. */
     public function getComputedStatus(): string
     {
-        return ($this->errorMessage !== null && $this->errorMessage !== '') ? 'failed' : 'success';
+        return (null !== $this->errorMessage && '' !== $this->errorMessage) ? 'failed' : 'success';
     }
 
     /**

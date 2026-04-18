@@ -39,10 +39,30 @@ class EnsureAgentVoter extends Voter
             return false;
         }
 
-        // Check if the user has an agent profile
+        // AgentProfile::userId is an integer FK into the configured user entity.
+        // getUserIdentifier() returns the identifier property (typically email),
+        // not the primary key — querying with it fails on strict-typed DBs
+        // (Postgres: SQLSTATE[22P02] Invalid text representation).
+        $userPk = $this->resolveUserPrimaryKey($user);
+        if (null === $userPk) {
+            return false;
+        }
+
         $profile = $this->em->getRepository(AgentProfile::class)
-            ->findOneBy(['userId' => $user->getUserIdentifier()]);
+            ->findOneBy(['userId' => $userPk]);
 
         return null !== $profile;
+    }
+
+    private function resolveUserPrimaryKey(UserInterface $user): ?int
+    {
+        if (!$this->em->getMetadataFactory()->hasMetadataFor($user::class)) {
+            return null;
+        }
+
+        $idValues = $this->em->getClassMetadata($user::class)->getIdentifierValues($user);
+        $id = reset($idValues);
+
+        return is_numeric($id) ? (int) $id : null;
     }
 }

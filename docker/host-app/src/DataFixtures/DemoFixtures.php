@@ -17,7 +17,8 @@ class DemoFixtures extends Fixture
 {
     public function __construct(
         private readonly UserPasswordHasherInterface $hasher,
-    ) {}
+    ) {
+    }
 
     public function load(ObjectManager $manager): void
     {
@@ -121,8 +122,8 @@ class DemoFixtures extends Fixture
 
     /**
      * @param array{admin:User,agents:User[],customers:User[]} $users
-     * @param array<string,Department> $departments
-     * @param Tag[] $tags
+     * @param array<string,Department>                         $departments
+     * @param Tag[]                                            $tags
      */
     private function seedTickets(ObjectManager $manager, array $users, array $departments, SlaPolicy $sla, array $tags): void
     {
@@ -164,7 +165,7 @@ class DemoFixtures extends Fixture
                 $reply = (new Reply())
                     ->setTicket($ticket)
                     ->setAuthorClass(User::class)
-                    ->setAuthorId(($r === 0 ? $customer : $agent)->getId())
+                    ->setAuthorId((0 === $r ? $customer : $agent)->getId())
                     ->setBody('Demo reply #'.($r + 1).' on '.$subject)
                     ->setType('reply')
                     ->setIsInternalNote(false);

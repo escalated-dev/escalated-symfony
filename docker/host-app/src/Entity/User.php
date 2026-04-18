@@ -29,16 +29,46 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: Types::JSON)]
     private array $roles = [];
 
-    public function getId(): ?int { return $this->id; }
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
 
-    public function getEmail(): string { return $this->email; }
-    public function setEmail(string $email): self { $this->email = $email; return $this; }
+    public function getEmail(): string
+    {
+        return $this->email;
+    }
 
-    public function getName(): string { return $this->name; }
-    public function setName(string $name): self { $this->name = $name; return $this; }
+    public function setEmail(string $email): self
+    {
+        $this->email = $email;
 
-    public function getPassword(): string { return $this->password; }
-    public function setPassword(string $password): self { $this->password = $password; return $this; }
+        return $this;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function setName(string $name): self
+    {
+        $this->name = $name;
+
+        return $this;
+    }
+
+    public function getPassword(): string
+    {
+        return $this->password;
+    }
+
+    public function setPassword(string $password): self
+    {
+        $this->password = $password;
+
+        return $this;
+    }
 
     /** @return list<string> */
     public function getRoles(): array
@@ -50,9 +80,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     /** @param list<string> $roles */
-    public function setRoles(array $roles): self { $this->roles = $roles; return $this; }
+    public function setRoles(array $roles): self
+    {
+        $this->roles = $roles;
 
-    public function getUserIdentifier(): string { return $this->email; }
+        return $this;
+    }
 
-    public function eraseCredentials(): void {}
+    public function getUserIdentifier(): string
+    {
+        return $this->email;
+    }
+
+    public function eraseCredentials(): void
+    {
+    }
 }

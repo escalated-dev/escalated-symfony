@@ -11,20 +11,19 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
-use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
-use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
 class DemoController extends AbstractController
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly string $appEnv,
-    ) {}
+    ) {
+    }
 
     #[Route('/', name: 'home')]
     public function home(): Response
     {
-        if ($this->appEnv === 'demo') {
+        if ('demo' === $this->appEnv) {
             return $this->redirectToRoute('demo_picker');
         }
 
@@ -47,7 +46,7 @@ class DemoController extends AbstractController
         $this->guardDemo();
 
         $user = $this->em->getRepository(User::class)->find($id);
-        if (! $user) {
+        if (!$user) {
             throw new NotFoundHttpException('No such demo user.');
         }
 
@@ -74,7 +73,7 @@ class DemoController extends AbstractController
 
     private function guardDemo(): void
     {
-        if ($this->appEnv !== 'demo') {
+        if ('demo' !== $this->appEnv) {
             throw new NotFoundHttpException();
         }
     }

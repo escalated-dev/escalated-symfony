@@ -1,0 +1,11 @@
+escalated:
+    user_class: App\Entity\User
+    route_prefix: /support
+    ui_enabled: false   # demo ships without Inertia bundle; the API is still wired up
+    table_prefix: escalated_
+    tickets:
+        allow_customer_close: true
+        default_priority: medium
+    sla:
+        enabled: true
+        business_hours_only: false

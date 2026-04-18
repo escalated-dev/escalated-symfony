@@ -4,20 +4,26 @@ services:
         autoconfigure: true
         public: false
 
-    # Repositories
+    # Auto-register everything under the bundle's src tree. Individual services
+    # below override arguments / tags where needed; this resource catches the
+    # rest (notably every class under Service/, Serializer/, Security/,
+    # EventSubscriber/, Repository/, Command/, Controller/ that otherwise
+    # wouldn't be registered and that the bundle depends on internally).
+    Escalated\Symfony\:
+        resource: '../src/'
+        exclude:
+            - '../src/Entity/'
+            - '../src/DependencyInjection/'
+            - '../src/EscalatedBundle.php'
+
+    # Repositories (override to attach the Doctrine tag)
     Escalated\Symfony\Repository\TicketRepository:
         tags: ['doctrine.repository_service']
 
     Escalated\Symfony\Repository\DepartmentRepository:
         tags: ['doctrine.repository_service']
 
-    # Services
-    Escalated\Symfony\Service\TicketService: ~
-
-    Escalated\Symfony\Service\AssignmentService: ~
-
-    Escalated\Symfony\Service\TicketSplittingService: ~
-
+    # SlaService needs parameter injection
     Escalated\Symfony\Service\SlaService:
         arguments:
             $slaEnabled: '%escalated.sla.enabled%'
@@ -38,11 +44,11 @@ services:
         tags: ['security.voter']
 
     # Commands
-    EscalatedSymfonyCommandWakeSnoozedTicketsCommand:
+    Escalated\Symfony\Command\WakeSnoozedTicketsCommand:
         tags: ['console.command']
 
     # Event Subscribers
-    EscalatedSymfonySecurityKnowledgeBaseGuard:
+    Escalated\Symfony\Security\KnowledgeBaseGuard:
         tags:
             - { name: kernel.event_listener, event: kernel.request, priority: 10 }
     Escalated\Symfony\EventSubscriber\InertiaDataSubscriber:

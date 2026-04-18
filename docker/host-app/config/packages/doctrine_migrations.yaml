@@ -1,0 +1,4 @@
+doctrine_migrations:
+    migrations_paths:
+        'Escalated\Symfony\Migrations': '%kernel.project_dir%/vendor/escalated-dev/escalated-symfony/migrations'
+    enable_profiler: false

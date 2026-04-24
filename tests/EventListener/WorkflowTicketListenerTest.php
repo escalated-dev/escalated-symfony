@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Escalated\Symfony\Tests\EventListener;
 
-use Doctrine\ORM\Event\PostPersistEventArgs;
 use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\EventListener\WorkflowTicketListener;
 use Escalated\Symfony\Service\WorkflowEngine;

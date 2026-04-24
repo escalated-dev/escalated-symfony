@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Escalated\Symfony\Controller;
 
+use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Mail\Inbound\InboundEmailParser;
-use Escalated\Symfony\Mail\Inbound\InboundEmailService;
+use Escalated\Symfony\Mail\Inbound\InboundRouter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\TaggedIterator;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -29,10 +30,10 @@ use Symfony\Component\Routing\Attribute\Route;
 final class InboundEmailController extends AbstractController
 {
     /**
-     * @param iterable<InboundEmailParser> $parsers
+     * @param iterable<InboundEmailParser>  $parsers
      */
     public function __construct(
-        private readonly InboundEmailService $service,
+        private readonly InboundRouter $router,
         #[TaggedIterator('escalated.inbound_parser')]
         private readonly iterable $parsers,
         private readonly string $inboundSecret = '',
@@ -42,7 +43,7 @@ final class InboundEmailController extends AbstractController
     #[Route('/inbound', name: 'inbound', methods: ['POST'])]
     public function inbound(Request $request): JsonResponse
     {
-        if (!$this->verifySecret($request)) {
+        if (! $this->verifySecret($request)) {
             return new JsonResponse(
                 ['error' => 'missing or invalid inbound secret'],
                 JsonResponse::HTTP_UNAUTHORIZED
@@ -50,12 +51,12 @@ final class InboundEmailController extends AbstractController
         }
 
         $adapter = (string) ($request->query->get('adapter') ?? $request->headers->get('X-Escalated-Adapter') ?? '');
-        if ('' === $adapter) {
+        if ($adapter === '') {
             return new JsonResponse(['error' => 'missing adapter'], JsonResponse::HTTP_BAD_REQUEST);
         }
 
         $parser = $this->findParser($adapter);
-        if (null === $parser) {
+        if ($parser === null) {
             return new JsonResponse(
                 ['error' => "unknown adapter: {$adapter}"],
                 JsonResponse::HTTP_BAD_REQUEST
@@ -63,7 +64,7 @@ final class InboundEmailController extends AbstractController
         }
 
         $payload = json_decode($request->getContent(), true);
-        if (!is_array($payload)) {
+        if (! is_array($payload)) {
             return new JsonResponse(['error' => 'invalid json body'], JsonResponse::HTTP_BAD_REQUEST);
         }
 
@@ -73,27 +74,11 @@ final class InboundEmailController extends AbstractController
             return new JsonResponse(['error' => 'invalid payload'], JsonResponse::HTTP_BAD_REQUEST);
         }
 
-        $result = $this->service->process($message);
+        $ticket = $this->router->resolveTicket($message);
 
         return new JsonResponse([
-            'status' => match ($result->outcome) {
-                InboundEmailService::OUTCOME_REPLIED_TO_EXISTING => 'matched',
-                InboundEmailService::OUTCOME_CREATED_NEW => 'created',
-                InboundEmailService::OUTCOME_SKIPPED => 'skipped',
-                default => 'unknown',
-            },
-            'outcome' => $result->outcome,
-            'ticket_id' => $result->ticketId,
-            'reply_id' => $result->replyId,
-            'pending_attachment_downloads' => array_map(
-                static fn ($p) => [
-                    'name' => $p->name,
-                    'content_type' => $p->contentType,
-                    'size_bytes' => $p->sizeBytes,
-                    'download_url' => $p->downloadUrl,
-                ],
-                $result->pendingAttachmentDownloads,
-            ),
+            'status' => $ticket instanceof Ticket ? 'matched' : 'unmatched',
+            'ticket_id' => $ticket instanceof Ticket ? $ticket->getId() : null,
         ], JsonResponse::HTTP_ACCEPTED);
     }
 
@@ -110,13 +95,13 @@ final class InboundEmailController extends AbstractController
 
     private function verifySecret(Request $request): bool
     {
-        if ('' === $this->inboundSecret) {
+        if ($this->inboundSecret === '') {
             // Inbound signing not configured → disable the webhook
             // (prevents accidental unauthenticated routing).
             return false;
         }
         $provided = (string) ($request->headers->get('X-Escalated-Inbound-Secret') ?? '');
-        if ('' === $provided) {
+        if ($provided === '') {
             return false;
         }
 

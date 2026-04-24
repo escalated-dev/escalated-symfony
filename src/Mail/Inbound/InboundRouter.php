@@ -25,7 +25,7 @@ use Escalated\Symfony\Repository\TicketRepository;
  * Mirrors the NestJS reference and the per-framework inbound-verify
  * PRs plus the greenfield .NET / Spring / Go / Phoenix routers.
  */
-final class InboundRouter
+class InboundRouter
 {
     private const SUBJECT_REF_PATTERN = '/\[([A-Z]+-[0-9A-Z-]+)\]/';
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Escalated\Symfony\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Escalated\Symfony\Entity\Contact;
 use Escalated\Symfony\Entity\Reply;
 use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Entity\TicketActivity;
@@ -55,6 +56,13 @@ class TicketService
             $ticket->setGuestName($data['guest_name']);
             $ticket->setGuestEmail($data['guest_email'] ?? null);
             $ticket->setGuestToken(Uuid::v4()->toRfc4122());
+
+            // Dedupe repeat guests by email (Pattern B). Inline guest_*
+            // fields remain set for the backwards-compat dual-read period.
+            if (! empty($data['guest_email'])) {
+                $contact = $this->findOrCreateContact($data['guest_email'], $data['guest_name']);
+                $ticket->setContact($contact);
+            }
         }
 
         if (isset($data['department_id'])) {
@@ -253,5 +261,41 @@ class TicketService
         $ticket->addActivity($activity);
         $this->em->persist($activity);
         $this->em->flush();
+    }
+
+    /**
+     * Resolve a Contact by email (case-insensitive, trimmed) or create
+     * one. Matches the behavior of the Pattern B reference impl in the
+     * other framework PRs.
+     */
+    private function findOrCreateContact(string $email, ?string $name = null): Contact
+    {
+        $normalized = Contact::normalizeEmail($email);
+        $repo = $this->em->getRepository(Contact::class);
+        $existing = $repo->findOneBy(['email' => $normalized]);
+
+        $action = Contact::decideAction($existing, $name);
+
+        if ('return-existing' === $action) {
+            return $existing;
+        }
+
+        if ('update-name' === $action) {
+            $existing->setName($name);
+            $this->em->flush();
+
+            return $existing;
+        }
+
+        // action === 'create'
+        $contact = new Contact();
+        $contact->setEmail($normalized);
+        if (! empty($name)) {
+            $contact->setName($name);
+        }
+        $this->em->persist($contact);
+        $this->em->flush();
+
+        return $contact;
     }
 }

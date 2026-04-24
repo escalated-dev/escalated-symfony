@@ -235,6 +235,14 @@ class TicketService
 
         $this->em->flush();
 
+        if (!empty($tagIds)) {
+            $this->dispatcher->dispatch(new TicketWorkflowEvent(
+                'ticket.tagged',
+                $ticket,
+                ['tag_ids' => array_values($tagIds), 'causer_id' => $causerId, 'action' => 'added'],
+            ));
+        }
+
         return $ticket;
     }
 

@@ -49,20 +49,20 @@ class PublicTicketsSettingsController extends AbstractController
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
 
         $mode = (string) $request->request->get('guest_policy_mode', 'unassigned');
-        if (! in_array($mode, ['unassigned', 'guest_user', 'prompt_signup'], true)) {
+        if (!in_array($mode, ['unassigned', 'guest_user', 'prompt_signup'], true)) {
             $mode = 'unassigned';
         }
 
         $this->settings->set('guest_policy_mode', $mode);
 
-        if ($mode === 'guest_user') {
+        if ('guest_user' === $mode) {
             $userId = (int) $request->request->get('guest_policy_user_id', 0);
             $this->settings->set('guest_policy_user_id', $userId > 0 ? (string) $userId : '');
         } else {
             $this->settings->set('guest_policy_user_id', '');
         }
 
-        if ($mode === 'prompt_signup') {
+        if ('prompt_signup' === $mode) {
             $template = substr(
                 (string) $request->request->get('guest_policy_signup_url_template', ''),
                 0,
@@ -91,7 +91,7 @@ class PublicTicketsSettingsController extends AbstractController
 
         return [
             'guest_policy_mode' => $this->settings->get('guest_policy_mode', 'unassigned') ?? 'unassigned',
-            'guest_policy_user_id' => $userIdRaw !== '' && is_numeric($userIdRaw) ? (int) $userIdRaw : null,
+            'guest_policy_user_id' => '' !== $userIdRaw && is_numeric($userIdRaw) ? (int) $userIdRaw : null,
             'guest_policy_signup_url_template' => $this->settings->get(
                 'guest_policy_signup_url_template',
                 ''

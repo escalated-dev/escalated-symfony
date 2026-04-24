@@ -44,7 +44,7 @@ class SettingsService
     public function getBool(string $key, bool $default = false): bool
     {
         $raw = $this->get($key);
-        if ($raw === null) {
+        if (null === $raw) {
             return $default;
         }
 
@@ -54,7 +54,7 @@ class SettingsService
     public function set(string $key, string $value): void
     {
         $row = $this->repository->find($key);
-        if ($row === null) {
+        if (null === $row) {
             $row = new EscalatedSetting($key, $value);
             $this->em->persist($row);
         } else {
@@ -69,7 +69,7 @@ class SettingsService
     public function delete(string $key): void
     {
         $row = $this->repository->find($key);
-        if ($row !== null) {
+        if (null !== $row) {
             $this->em->remove($row);
             $this->em->flush();
         }

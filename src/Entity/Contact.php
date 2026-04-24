@@ -70,12 +70,13 @@ class Contact
      */
     public static function decideAction(?self $existing, ?string $incomingName): string
     {
-        if ($existing === null) {
+        if (null === $existing) {
             return 'create';
         }
-        if (($existing->getName() === null || $existing->getName() === '') && ! empty($incomingName)) {
+        if ((null === $existing->getName() || '' === $existing->getName()) && !empty($incomingName)) {
             return 'update-name';
         }
+
         return 'return-existing';
     }
 
@@ -96,6 +97,7 @@ class Contact
     public function setEmail(string $email): self
     {
         $this->email = self::normalizeEmail($email);
+
         return $this;
     }
 
@@ -107,6 +109,7 @@ class Contact
     public function setName(?string $name): self
     {
         $this->name = $name;
+
         return $this;
     }
 
@@ -118,6 +121,7 @@ class Contact
     public function setUserId(?int $userId): self
     {
         $this->userId = $userId;
+
         return $this;
     }
 
@@ -131,6 +135,7 @@ class Contact
     public function setMetadata(array $metadata): self
     {
         $this->metadata = $metadata;
+
         return $this;
     }
 

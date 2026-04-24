@@ -59,7 +59,7 @@ class TicketService
 
             // Dedupe repeat guests by email (Pattern B). Inline guest_*
             // fields remain set for the backwards-compat dual-read period.
-            if (! empty($data['guest_email'])) {
+            if (!empty($data['guest_email'])) {
                 $contact = $this->findOrCreateContact($data['guest_email'], $data['guest_name']);
                 $ticket->setContact($contact);
             }
@@ -290,7 +290,7 @@ class TicketService
         // action === 'create'
         $contact = new Contact();
         $contact->setEmail($normalized);
-        if (! empty($name)) {
+        if (!empty($name)) {
             $contact->setName($name);
         }
         $this->em->persist($contact);

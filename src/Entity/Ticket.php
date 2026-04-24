@@ -129,6 +129,13 @@ class Ticket
     #[ORM\Column(type: Types::STRING, length: 64, nullable: true)]
     private ?string $guestToken = null;
 
+    // First-class Contact FK (Pattern B convergence). Nullable; on
+    // delete SET NULL. Populated for new public submissions and
+    // backfilled for existing guest-email tickets.
+    #[ORM\ManyToOne(targetEntity: Contact::class)]
+    #[ORM\JoinColumn(name: 'contact_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    private ?Contact $contact = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $firstResponseAt = null;
 
@@ -500,6 +507,18 @@ class Ticket
     public function setGuestToken(?string $guestToken): self
     {
         $this->guestToken = $guestToken;
+
+        return $this;
+    }
+
+    public function getContact(): ?Contact
+    {
+        return $this->contact;
+    }
+
+    public function setContact(?Contact $contact): self
+    {
+        $this->contact = $contact;
 
         return $this;
     }

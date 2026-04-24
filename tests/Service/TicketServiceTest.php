@@ -183,6 +183,46 @@ class TicketServiceTest extends TestCase
         $this->assertSame(Ticket::PRIORITY_HIGH, $result->getPriority());
     }
 
+    public function testUpdateDispatchesPriorityChangedWhenPriorityActuallyChanges(): void
+    {
+        $ticket = new Ticket();
+        $ticket->setSubject('Original');
+        $ticket->setPriority(Ticket::PRIORITY_LOW);
+
+        $dispatched = [];
+        $this->dispatcher->method('dispatch')
+            ->willReturnCallback(function ($event) use (&$dispatched) {
+                $dispatched[] = $event->triggerName;
+
+                return $event;
+            });
+
+        $this->service->update($ticket, ['priority' => Ticket::PRIORITY_HIGH]);
+
+        $this->assertContains('ticket.updated', $dispatched);
+        $this->assertContains('ticket.priority_changed', $dispatched);
+    }
+
+    public function testUpdateDoesNotDispatchPriorityChangedWhenUnchanged(): void
+    {
+        $ticket = new Ticket();
+        $ticket->setSubject('Original');
+        $ticket->setPriority(Ticket::PRIORITY_LOW);
+
+        $dispatched = [];
+        $this->dispatcher->method('dispatch')
+            ->willReturnCallback(function ($event) use (&$dispatched) {
+                $dispatched[] = $event->triggerName;
+
+                return $event;
+            });
+
+        $this->service->update($ticket, ['priority' => Ticket::PRIORITY_LOW]);
+
+        $this->assertContains('ticket.updated', $dispatched);
+        $this->assertNotContains('ticket.priority_changed', $dispatched);
+    }
+
     public function testAddReplyCreatesReply(): void
     {
         $this->em->expects($this->atLeastOnce())->method('persist');

@@ -84,6 +84,8 @@ class TicketService
      */
     public function update(Ticket $ticket, array $data): Ticket
     {
+        $oldPriority = $ticket->getPriority();
+
         if (isset($data['subject'])) {
             $ticket->setSubject($data['subject']);
         }
@@ -103,6 +105,14 @@ class TicketService
         $this->em->flush();
 
         $this->dispatcher->dispatch(new TicketWorkflowEvent('ticket.updated', $ticket, ['changes' => $data]));
+
+        if (isset($data['priority']) && $data['priority'] !== $oldPriority) {
+            $this->dispatcher->dispatch(new TicketWorkflowEvent(
+                'ticket.priority_changed',
+                $ticket,
+                ['old_priority' => $oldPriority, 'new_priority' => $data['priority']],
+            ));
+        }
 
         return $ticket;
     }

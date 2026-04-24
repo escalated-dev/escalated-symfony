@@ -44,7 +44,7 @@ final class InboundRouter
         // 1 + 2. Parse canonical Message-IDs out of our own headers.
         foreach (self::candidateHeaderMessageIds($message) as $raw) {
             $ticketId = MessageIdUtil::parseTicketIdFromMessageId($raw);
-            if (null !== $ticketId) {
+            if ($ticketId !== null) {
                 $ticket = $this->ticketRepository->find($ticketId);
                 if ($ticket instanceof Ticket) {
                     return $ticket;
@@ -53,9 +53,9 @@ final class InboundRouter
         }
 
         // 3. Signed Reply-To on the recipient address.
-        if ('' !== $this->inboundSecret && '' !== $message->toEmail) {
+        if ($this->inboundSecret !== '' && $message->toEmail !== '') {
             $verified = MessageIdUtil::verifyReplyTo($message->toEmail, $this->inboundSecret);
-            if (null !== $verified) {
+            if ($verified !== null) {
                 $ticket = $this->ticketRepository->find($verified);
                 if ($ticket instanceof Ticket) {
                     return $ticket;
@@ -83,13 +83,13 @@ final class InboundRouter
     public static function candidateHeaderMessageIds(InboundMessage $message): array
     {
         $ids = [];
-        if (!empty($message->inReplyTo)) {
+        if (! empty($message->inReplyTo)) {
             $ids[] = trim($message->inReplyTo);
         }
-        if (!empty($message->references)) {
+        if (! empty($message->references)) {
             foreach (preg_split('/\s+/', trim($message->references)) ?: [] as $ref) {
                 $ref = trim($ref);
-                if ('' !== $ref) {
+                if ($ref !== '') {
                     $ids[] = $ref;
                 }
             }

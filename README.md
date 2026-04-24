@@ -149,6 +149,8 @@ Routes are organized into four groups, all under the configured `route_prefix`:
 - **Admin** (`/admin`) -- Full management of tickets, departments, tags, settings
 - **API** (`/api/v1`) -- JSON REST API for external integrations
 
+The admin area includes a runtime settings page at `/admin/settings/public-tickets` (`PublicTicketsSettingsController`) for switching the guest-policy mode — `unassigned`, `guest_user`, or `prompt_signup` — without a redeploy. See [docs.escalated.dev/public-tickets](https://docs.escalated.dev/public-tickets).
+
 ### Security
 
 Two Symfony voters control access:

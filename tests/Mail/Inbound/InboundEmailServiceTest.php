@@ -90,9 +90,9 @@ class InboundEmailServiceTest extends TestCase
         $this->tickets->expects($this->once())
             ->method('create')
             ->with($this->callback(function (array $data) {
-                return 'New issue' === $data['subject']
-                    && 'real' === $data['description']
-                    && 'customer@example.com' === $data['guest_email'];
+                return $data['subject'] === 'New issue'
+                    && $data['description'] === 'real'
+                    && $data['guest_email'] === 'customer@example.com';
             }))
             ->willReturn($newTicket);
         $this->tickets->expects($this->never())->method('addInboundEmailReply');
@@ -110,7 +110,7 @@ class InboundEmailServiceTest extends TestCase
         $this->router->method('resolveTicket')->willReturn(null);
         $this->tickets->expects($this->once())
             ->method('create')
-            ->with($this->callback(fn (array $data) => '(no subject)' === $data['subject']))
+            ->with($this->callback(fn (array $data) => $data['subject'] === '(no subject)'))
             ->willReturn($this->ticket(1));
 
         $svc = new InboundEmailService($this->router, $this->tickets);

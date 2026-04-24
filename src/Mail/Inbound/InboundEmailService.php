@@ -25,7 +25,7 @@ use Psr\Log\NullLogger;
  * {@see ProcessResult::$pendingAttachmentDownloads} so a follow-up
  * worker can fetch + persist out-of-band.
  */
-final class InboundEmailService
+class InboundEmailService
 {
     public const OUTCOME_REPLIED_TO_EXISTING = 'replied_to_existing';
     public const OUTCOME_CREATED_NEW = 'created_new';

@@ -70,7 +70,7 @@ final class InboundEmailService
             );
         }
 
-        $subject = '' !== trim($message->subject) ? $message->subject : '(no subject)';
+        $subject = trim($message->subject) !== '' ? $message->subject : '(no subject)';
         $newTicket = $this->tickets->create([
             'subject' => $subject,
             'description' => $message->body(),
@@ -98,11 +98,11 @@ final class InboundEmailService
      */
     public static function isNoiseEmail(InboundMessage $message): bool
     {
-        if (0 === strcasecmp($message->fromEmail, 'no-reply@sns.amazonaws.com')) {
+        if (strcasecmp($message->fromEmail, 'no-reply@sns.amazonaws.com') === 0) {
             return true;
         }
 
-        return '' === trim($message->body()) && '' === trim($message->subject);
+        return trim($message->body()) === '' && trim($message->subject) === '';
     }
 
     /**
@@ -116,7 +116,7 @@ final class InboundEmailService
     {
         $pending = [];
         foreach ($message->attachments as $attachment) {
-            if (null !== $attachment->downloadUrl && '' !== $attachment->downloadUrl && null === $attachment->content) {
+            if ($attachment->downloadUrl !== null && $attachment->downloadUrl !== '' && $attachment->content === null) {
                 $pending[] = new PendingAttachment(
                     name: $attachment->name,
                     contentType: $attachment->contentType,

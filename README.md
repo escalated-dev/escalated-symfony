@@ -114,6 +114,7 @@ Set `ui_enabled: false` if you want to use only the API and services with a cust
 - **Saved views / custom queues** — Save, name, and share filter presets as reusable ticket views
 - **Embeddable support widget** — Lightweight `<script>` widget with KB search, ticket form, and status check
 - **Email threading** — Outbound emails include proper `In-Reply-To` and `References` headers for correct threading in mail clients
+- **Inbound email** — Single webhook endpoint with Postmark + Mailgun parsers, signed Reply-To verification, and Message-ID-based ticket resolution
 - **Branded email templates** — Configurable logo, primary color, and footer text for all outbound emails
 - **Real-time broadcasting** — Opt-in broadcasting via Mercure with automatic polling fallback
 - **Knowledge base toggle** — Enable or disable the public knowledge base from admin settings
@@ -165,6 +166,29 @@ services:
     Escalated\Symfony\Rendering\UiRendererInterface:
         class: App\Rendering\TwigUiRenderer
 ```
+
+## Inbound email
+
+Point your Postmark or Mailgun inbound webhook at:
+
+```
+POST /escalated/webhook/email/inbound?adapter=postmark
+POST /escalated/webhook/email/inbound?adapter=mailgun
+```
+
+The adapter can be selected via the query parameter or the `X-Escalated-Adapter` header. Your provider must attach the shared secret as `X-Escalated-Inbound-Secret`, which is compared with `hash_equals` (timing-safe).
+
+Configure the symmetric secret + mail domain (used for signed `Reply-To` + canonical `Message-ID` headers) under `config/packages/escalated.yaml`:
+
+```yaml
+escalated:
+    mail_domain: '%env(ESCALATED_MAIL_DOMAIN)%'
+    inbound_secret: '%env(ESCALATED_INBOUND_SECRET)%'
+```
+
+The service resolves inbound messages to existing tickets via, in order: canonical `Message-ID` headers, signed `Reply-To` verification, and subject-reference tags. Unmatched messages with real content create a new ticket; SNS subscription confirmations and empty body+subject messages are skipped.
+
+See the [inbound email docs](https://docs.escalated.dev/inbound-email) for provider setup, the response shape, and a ready-to-paste curl test recipe.
 
 ## Status Transitions
 

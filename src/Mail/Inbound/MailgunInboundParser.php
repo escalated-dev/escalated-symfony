@@ -51,7 +51,7 @@ final class MailgunInboundParser implements InboundEmailParser
                 'In-Reply-To' => $inReplyTo,
                 'References' => $references,
             ],
-            static fn ($v) => is_string($v) && '' !== $v,
+            static fn ($v) => is_string($v) && $v !== '',
         );
 
         return new InboundMessage(
@@ -78,15 +78,15 @@ final class MailgunInboundParser implements InboundEmailParser
 
     private static function extractFromName(?string $raw): ?string
     {
-        if (null === $raw || '' === $raw) {
+        if ($raw === null || $raw === '') {
             return null;
         }
         $angle = strpos($raw, '<');
-        if (false === $angle || 0 === $angle) {
+        if ($angle === false || $angle === 0) {
             return null;
         }
         $name = trim(substr($raw, 0, $angle));
-        if ('' === $name) {
+        if ($name === '') {
             return null;
         }
         // Strip surrounding quotes if present.
@@ -94,7 +94,7 @@ final class MailgunInboundParser implements InboundEmailParser
             $name = substr($name, 1, -1);
         }
 
-        return '' === $name ? null : $name;
+        return $name === '' ? null : $name;
     }
 
     /**
@@ -102,16 +102,16 @@ final class MailgunInboundParser implements InboundEmailParser
      */
     private static function parseAttachments(?string $json): array
     {
-        if (null === $json || '' === $json) {
+        if ($json === null || $json === '') {
             return [];
         }
         $decoded = json_decode($json, true);
-        if (!is_array($decoded)) {
+        if (! is_array($decoded)) {
             return [];
         }
         $list = [];
         foreach ($decoded as $entry) {
-            if (!is_array($entry)) {
+            if (! is_array($entry)) {
                 continue;
             }
             $size = $entry['size'] ?? null;
@@ -129,6 +129,6 @@ final class MailgunInboundParser implements InboundEmailParser
 
     private static function blankToNull(?string $value): ?string
     {
-        return null === $value || '' === $value ? null : $value;
+        return $value === null || $value === '' ? null : $value;
     }
 }

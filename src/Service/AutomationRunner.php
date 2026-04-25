@@ -47,7 +47,7 @@ class AutomationRunner
                 $tickets = $this->findMatchingTickets($automation);
                 foreach ($tickets as $ticket) {
                     $this->executeActions($automation, $ticket);
-                    $affected++;
+                    ++$affected;
                 }
                 $automation->setLastRunAt(new \DateTimeImmutable());
                 $this->em->flush();
@@ -84,49 +84,49 @@ class AutomationRunner
             $value = $condition['value'] ?? null;
 
             switch ($field) {
-                case 'hours_since_created': {
+                case 'hours_since_created':
                     $threshold = $this->hoursAgo((int) $value);
-                    $p = 'p' . $params++;
+                    $p = 'p'.$params++;
                     $qb->andWhere(sprintf('t.createdAt %s :%s', $this->flipOperator($operator), $p))
                        ->setParameter($p, $threshold);
                     break;
-                }
-                case 'hours_since_updated': {
+
+                case 'hours_since_updated':
                     $threshold = $this->hoursAgo((int) $value);
-                    $p = 'p' . $params++;
+                    $p = 'p'.$params++;
                     $qb->andWhere(sprintf('t.updatedAt %s :%s', $this->flipOperator($operator), $p))
                        ->setParameter($p, $threshold);
                     break;
-                }
-                case 'hours_since_assigned': {
+
+                case 'hours_since_assigned':
                     $threshold = $this->hoursAgo((int) $value);
-                    $p = 'p' . $params++;
+                    $p = 'p'.$params++;
                     $qb->andWhere('t.assignedTo IS NOT NULL')
                        ->andWhere(sprintf('t.updatedAt %s :%s', $this->flipOperator($operator), $p))
                        ->setParameter($p, $threshold);
                     break;
-                }
+
                 case 'status':
-                    $p = 'p' . $params++;
+                    $p = 'p'.$params++;
                     $qb->andWhere(sprintf('t.status = :%s', $p))->setParameter($p, $value);
                     break;
                 case 'priority':
-                    $p = 'p' . $params++;
+                    $p = 'p'.$params++;
                     $qb->andWhere(sprintf('t.priority = :%s', $p))->setParameter($p, $value);
                     break;
                 case 'assigned':
-                    if ($value === 'unassigned') {
+                    if ('unassigned' === $value) {
                         $qb->andWhere('t.assignedTo IS NULL');
-                    } elseif ($value === 'assigned') {
+                    } elseif ('assigned' === $value) {
                         $qb->andWhere('t.assignedTo IS NOT NULL');
                     }
                     break;
                 case 'subject_contains':
-                    $p = 'p' . $params++;
+                    $p = 'p'.$params++;
                     $qb->andWhere(sprintf('t.subject LIKE :%s', $p))
-                       ->setParameter($p, '%' . $value . '%');
+                       ->setParameter($p, '%'.$value.'%');
                     break;
-                // Unknown fields skipped silently for forward-compat.
+                    // Unknown fields skipped silently for forward-compat.
             }
         }
 
@@ -156,15 +156,15 @@ class AutomationRunner
                         $ticket->setAssignedTo((int) $value);
                         $this->em->flush();
                         break;
-                    case 'add_tag': {
+                    case 'add_tag':
                         $tag = $this->em->getRepository(Tag::class)
                             ->findOneBy(['name' => (string) $value]);
-                        if ($tag !== null && !$ticket->getTags()->contains($tag)) {
+                        if (null !== $tag && !$ticket->getTags()->contains($tag)) {
                             $ticket->getTags()->add($tag);
                             $this->em->flush();
                         }
                         break;
-                    }
+
                     case 'add_note':
                         $reply = new Reply();
                         $reply->setTicket($ticket);
@@ -177,7 +177,7 @@ class AutomationRunner
                         $this->em->persist($reply);
                         $this->em->flush();
                         break;
-                    // Unknown action types skipped silently for forward-compat.
+                        // Unknown action types skipped silently for forward-compat.
                 }
             } catch (\Throwable $e) {
                 $this->logger->warning(

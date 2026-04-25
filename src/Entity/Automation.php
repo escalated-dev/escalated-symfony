@@ -64,29 +64,102 @@ class Automation
         $this->updatedAt = new \DateTimeImmutable();
     }
 
-    public function getId(): ?int { return $this->id; }
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
 
-    public function getName(): string { return $this->name; }
-    public function setName(string $name): self { $this->name = $name; return $this; }
+    public function getName(): string
+    {
+        return $this->name;
+    }
 
-    public function getDescription(): ?string { return $this->description; }
-    public function setDescription(?string $description): self { $this->description = $description; return $this; }
+    public function setName(string $name): self
+    {
+        $this->name = $name;
 
-    public function getConditions(): array { return $this->conditions; }
-    public function setConditions(array $conditions): self { $this->conditions = $conditions; return $this; }
+        return $this;
+    }
 
-    public function getActions(): array { return $this->actions; }
-    public function setActions(array $actions): self { $this->actions = $actions; return $this; }
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
 
-    public function isActive(): bool { return $this->active; }
-    public function setActive(bool $active): self { $this->active = $active; return $this; }
+    public function setDescription(?string $description): self
+    {
+        $this->description = $description;
 
-    public function getPosition(): int { return $this->position; }
-    public function setPosition(int $position): self { $this->position = $position; return $this; }
+        return $this;
+    }
 
-    public function getLastRunAt(): ?\DateTimeImmutable { return $this->lastRunAt; }
-    public function setLastRunAt(?\DateTimeImmutable $lastRunAt): self { $this->lastRunAt = $lastRunAt; return $this; }
+    public function getConditions(): array
+    {
+        return $this->conditions;
+    }
 
-    public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
-    public function getUpdatedAt(): \DateTimeImmutable { return $this->updatedAt; }
+    public function setConditions(array $conditions): self
+    {
+        $this->conditions = $conditions;
+
+        return $this;
+    }
+
+    public function getActions(): array
+    {
+        return $this->actions;
+    }
+
+    public function setActions(array $actions): self
+    {
+        $this->actions = $actions;
+
+        return $this;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->active;
+    }
+
+    public function setActive(bool $active): self
+    {
+        $this->active = $active;
+
+        return $this;
+    }
+
+    public function getPosition(): int
+    {
+        return $this->position;
+    }
+
+    public function setPosition(int $position): self
+    {
+        $this->position = $position;
+
+        return $this;
+    }
+
+    public function getLastRunAt(): ?\DateTimeImmutable
+    {
+        return $this->lastRunAt;
+    }
+
+    public function setLastRunAt(?\DateTimeImmutable $lastRunAt): self
+    {
+        $this->lastRunAt = $lastRunAt;
+
+        return $this;
+    }
+
+    public function getCreatedAt(): \DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function getUpdatedAt(): \DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
 }

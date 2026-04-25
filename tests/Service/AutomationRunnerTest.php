@@ -6,8 +6,8 @@ namespace Escalated\Symfony\Tests\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
-use Doctrine\ORM\QueryBuilder;
 use Doctrine\ORM\Query;
+use Doctrine\ORM\QueryBuilder;
 use Escalated\Symfony\Entity\Automation;
 use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Service\AutomationRunner;

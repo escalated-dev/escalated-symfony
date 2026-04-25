@@ -132,7 +132,7 @@ class AutomationController extends AbstractController
             $automation->setName((string) $payload['name']);
         }
         if (array_key_exists('description', $payload)) {
-            $automation->setDescription($payload['description'] === null ? null : (string) $payload['description']);
+            $automation->setDescription(null === $payload['description'] ? null : (string) $payload['description']);
         }
         if (isset($payload['conditions']) && is_array($payload['conditions'])) {
             $automation->setConditions($payload['conditions']);

@@ -41,7 +41,7 @@ class RunAutomationsCommand extends Command
 
         $affected = $this->runner->run();
 
-        if ($affected === 0) {
+        if (0 === $affected) {
             $io->info('No tickets matched.');
 
             return Command::SUCCESS;

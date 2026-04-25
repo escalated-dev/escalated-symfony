@@ -71,10 +71,18 @@ class MacroService
 
     public function update(Macro $macro, array $data): Macro
     {
-        if (isset($data['name'])) $macro->setName($data['name']);
-        if (array_key_exists('description', $data)) $macro->setDescription($data['description']);
-        if (isset($data['actions'])) $macro->setActions($data['actions']);
-        if (isset($data['isShared'])) $macro->setIsShared($data['isShared']);
+        if (isset($data['name'])) {
+            $macro->setName($data['name']);
+        }
+        if (array_key_exists('description', $data)) {
+            $macro->setDescription($data['description']);
+        }
+        if (isset($data['actions'])) {
+            $macro->setActions($data['actions']);
+        }
+        if (isset($data['isShared'])) {
+            $macro->setIsShared($data['isShared']);
+        }
 
         $this->em->flush();
 
@@ -114,15 +122,15 @@ class MacroService
                         $ticket->setAssignedTo((int) $value);
                         $this->em->flush();
                         break;
-                    case 'add_tag': {
+                    case 'add_tag':
                         $tag = $this->em->getRepository(Tag::class)
                             ->findOneBy(['name' => (string) $value]);
-                        if ($tag !== null && !$ticket->getTags()->contains($tag)) {
+                        if (null !== $tag && !$ticket->getTags()->contains($tag)) {
                             $ticket->getTags()->add($tag);
                             $this->em->flush();
                         }
                         break;
-                    }
+
                     case 'add_reply':
                         $this->createReply($ticket, $agentId, (string) $value, isInternal: false);
                         break;
@@ -134,7 +142,7 @@ class MacroService
                         // POSTing; stored value is the resolved text.
                         $this->createReply($ticket, $agentId, (string) $value, isInternal: false);
                         break;
-                    // Unknown action types skipped silently.
+                        // Unknown action types skipped silently.
                 }
             } catch (\Throwable $e) {
                 $this->logger->warning(sprintf(

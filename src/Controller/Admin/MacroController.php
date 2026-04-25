@@ -115,7 +115,7 @@ class MacroController extends AbstractController
             $macro->setName((string) $payload['name']);
         }
         if (array_key_exists('description', $payload)) {
-            $macro->setDescription($payload['description'] === null ? null : (string) $payload['description']);
+            $macro->setDescription(null === $payload['description'] ? null : (string) $payload['description']);
         }
         if (isset($payload['actions']) && is_array($payload['actions'])) {
             $macro->setActions($payload['actions']);
@@ -131,10 +131,11 @@ class MacroController extends AbstractController
     private function currentUserId(): ?int
     {
         $user = $this->getUser();
-        if ($user === null) {
+        if (null === $user) {
             return null;
         }
         $id = $user->getUserIdentifier();
+
         return is_numeric($id) ? (int) $id : null;
     }
 

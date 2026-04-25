@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Escalated\Symfony\Tests\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\EntityRepository;
 use Escalated\Symfony\Entity\Macro;
 use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Service\MacroService;

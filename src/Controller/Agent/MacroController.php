@@ -10,7 +10,6 @@ use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Service\MacroService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
@@ -77,10 +76,11 @@ class MacroController extends AbstractController
     private function currentUserId(): ?int
     {
         $user = $this->getUser();
-        if ($user === null) {
+        if (null === $user) {
             return null;
         }
         $id = $user->getUserIdentifier();
+
         return is_numeric($id) ? (int) $id : null;
     }
 

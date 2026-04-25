@@ -69,23 +69,78 @@ class Macro
         $this->updatedAt = new \DateTimeImmutable();
     }
 
-    public function getId(): ?int { return $this->id; }
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
 
-    public function getName(): string { return $this->name; }
-    public function setName(string $name): self { $this->name = $name; return $this; }
+    public function getName(): string
+    {
+        return $this->name;
+    }
 
-    public function getDescription(): ?string { return $this->description; }
-    public function setDescription(?string $description): self { $this->description = $description; return $this; }
+    public function setName(string $name): self
+    {
+        $this->name = $name;
 
-    public function getActions(): array { return $this->actions; }
-    public function setActions(array $actions): self { $this->actions = $actions; return $this; }
+        return $this;
+    }
 
-    public function isShared(): bool { return $this->isShared; }
-    public function setIsShared(bool $isShared): self { $this->isShared = $isShared; return $this; }
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
 
-    public function getCreatedBy(): ?int { return $this->createdBy; }
-    public function setCreatedBy(?int $createdBy): self { $this->createdBy = $createdBy; return $this; }
+    public function setDescription(?string $description): self
+    {
+        $this->description = $description;
 
-    public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
-    public function getUpdatedAt(): \DateTimeImmutable { return $this->updatedAt; }
+        return $this;
+    }
+
+    public function getActions(): array
+    {
+        return $this->actions;
+    }
+
+    public function setActions(array $actions): self
+    {
+        $this->actions = $actions;
+
+        return $this;
+    }
+
+    public function isShared(): bool
+    {
+        return $this->isShared;
+    }
+
+    public function setIsShared(bool $isShared): self
+    {
+        $this->isShared = $isShared;
+
+        return $this;
+    }
+
+    public function getCreatedBy(): ?int
+    {
+        return $this->createdBy;
+    }
+
+    public function setCreatedBy(?int $createdBy): self
+    {
+        $this->createdBy = $createdBy;
+
+        return $this;
+    }
+
+    public function getCreatedAt(): \DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function getUpdatedAt(): \DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
 }

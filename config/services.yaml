@@ -23,6 +23,9 @@ services:
     Escalated\Symfony\Repository\DepartmentRepository:
         tags: ['doctrine.repository_service']
 
+    Escalated\Symfony\Repository\EscalatedSettingRepository:
+        tags: ['doctrine.repository_service']
+
     # SlaService needs parameter injection
     Escalated\Symfony\Service\SlaService:
         arguments:
@@ -87,6 +90,9 @@ services:
         tags: ['controller.service_arguments']
 
     Escalated\Symfony\Controller\Admin\SettingsController:
+        tags: ['controller.service_arguments']
+
+    Escalated\Symfony\Controller\Admin\PublicTicketsSettingsController:
         tags: ['controller.service_arguments']
 
     Escalated\Symfony\Controller\Admin\TagController:

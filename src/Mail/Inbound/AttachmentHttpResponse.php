@@ -12,7 +12,7 @@ final class AttachmentHttpResponse
 {
     /**
      * @param array<string, string> $headers lower-cased header names
-     *     → first value.
+     *                                       → first value
      */
     public function __construct(
         public readonly int $status,

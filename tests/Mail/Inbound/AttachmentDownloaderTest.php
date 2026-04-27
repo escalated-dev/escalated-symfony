@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Escalated\Symfony\Tests\Mail\Inbound;
 
 use Doctrine\ORM\EntityManagerInterface;
-use Escalated\Symfony\Entity\Attachment;
 use Escalated\Symfony\Entity\Reply;
 use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Mail\Inbound\AttachmentDownloader;
@@ -194,7 +193,7 @@ class AttachmentDownloaderTest extends TestCase
 
     public function testLocalFileStorageWritesFile(): void
     {
-        $root = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'esc-tests-' . uniqid();
+        $root = sys_get_temp_dir().DIRECTORY_SEPARATOR.'esc-tests-'.uniqid();
         $storage = new LocalFileAttachmentStorage($root);
 
         $path = $storage->put('hello.txt', 'payload', 'text/plain');
@@ -215,7 +214,7 @@ class AttachmentDownloaderTest extends TestCase
 
     public function testLocalFileStorageProducesUniquePaths(): void
     {
-        $root = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'esc-tests-' . uniqid();
+        $root = sys_get_temp_dir().DIRECTORY_SEPARATOR.'esc-tests-'.uniqid();
         $storage = new LocalFileAttachmentStorage($root);
 
         $p1 = $storage->put('x.txt', 'a', 'text/plain');
@@ -244,12 +243,14 @@ class StubHttpClient implements AttachmentHttpClientInterface
     public function enqueue(AttachmentHttpResponse $response): self
     {
         $this->queue[] = $response;
+
         return $this;
     }
 
     public function get(string $url, array $headers = []): AttachmentHttpResponse
     {
         $this->lastHeaders = $headers;
+
         return array_shift($this->queue) ?? new AttachmentHttpResponse(200, '');
     }
 }
@@ -276,7 +277,8 @@ class RecordingStorage implements AttachmentStorageInterface
         $this->lastFilename = $filename;
         $this->lastContent = $content;
         $this->lastContentType = $contentType;
-        $this->putCount++;
+        ++$this->putCount;
+
         return $this->returnPath;
     }
 }

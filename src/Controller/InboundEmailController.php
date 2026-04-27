@@ -29,7 +29,7 @@ use Symfony\Component\Routing\Attribute\Route;
 final class InboundEmailController extends AbstractController
 {
     /**
-     * @param iterable<InboundEmailParser>  $parsers
+     * @param iterable<InboundEmailParser> $parsers
      */
     public function __construct(
         private readonly InboundEmailService $service,
@@ -42,7 +42,7 @@ final class InboundEmailController extends AbstractController
     #[Route('/inbound', name: 'inbound', methods: ['POST'])]
     public function inbound(Request $request): JsonResponse
     {
-        if (! $this->verifySecret($request)) {
+        if (!$this->verifySecret($request)) {
             return new JsonResponse(
                 ['error' => 'missing or invalid inbound secret'],
                 JsonResponse::HTTP_UNAUTHORIZED
@@ -50,12 +50,12 @@ final class InboundEmailController extends AbstractController
         }
 
         $adapter = (string) ($request->query->get('adapter') ?? $request->headers->get('X-Escalated-Adapter') ?? '');
-        if ($adapter === '') {
+        if ('' === $adapter) {
             return new JsonResponse(['error' => 'missing adapter'], JsonResponse::HTTP_BAD_REQUEST);
         }
 
         $parser = $this->findParser($adapter);
-        if ($parser === null) {
+        if (null === $parser) {
             return new JsonResponse(
                 ['error' => "unknown adapter: {$adapter}"],
                 JsonResponse::HTTP_BAD_REQUEST
@@ -63,7 +63,7 @@ final class InboundEmailController extends AbstractController
         }
 
         $payload = json_decode($request->getContent(), true);
-        if (! is_array($payload)) {
+        if (!is_array($payload)) {
             return new JsonResponse(['error' => 'invalid json body'], JsonResponse::HTTP_BAD_REQUEST);
         }
 
@@ -110,13 +110,13 @@ final class InboundEmailController extends AbstractController
 
     private function verifySecret(Request $request): bool
     {
-        if ($this->inboundSecret === '') {
+        if ('' === $this->inboundSecret) {
             // Inbound signing not configured → disable the webhook
             // (prevents accidental unauthenticated routing).
             return false;
         }
         $provided = (string) ($request->headers->get('X-Escalated-Inbound-Secret') ?? '');
-        if ($provided === '') {
+        if ('' === $provided) {
             return false;
         }
 

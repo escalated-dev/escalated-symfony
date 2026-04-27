@@ -23,6 +23,6 @@ final class AttachmentDownloadResult
 
     public function succeeded(): bool
     {
-        return $this->persisted !== null;
+        return null !== $this->persisted;
     }
 }

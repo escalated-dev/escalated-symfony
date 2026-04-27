@@ -40,7 +40,7 @@ class InboundEmailControllerTest extends TestCase
 
     private function controller(array $parsers = []): InboundEmailController
     {
-        if ($parsers === []) {
+        if ([] === $parsers) {
             $parsers = [$this->stubParser('postmark')];
         }
 
@@ -50,8 +50,15 @@ class InboundEmailControllerTest extends TestCase
     private function stubParser(string $name): InboundEmailParser
     {
         return new class($name) implements InboundEmailParser {
-            public function __construct(private readonly string $n) {}
-            public function name(): string { return $this->n; }
+            public function __construct(private readonly string $n)
+            {
+            }
+
+            public function name(): string
+            {
+                return $this->n;
+            }
+
             public function parse(array $rawPayload): InboundMessage
             {
                 return new InboundMessage(
@@ -73,14 +80,14 @@ class InboundEmailControllerTest extends TestCase
         $body = $options['body'] ?? '{}';
 
         $server = [];
-        if ($secret !== null) {
+        if (null !== $secret) {
             $server['HTTP_X_ESCALATED_INBOUND_SECRET'] = $secret;
         }
-        if ($headerAdapter !== null) {
+        if (null !== $headerAdapter) {
             $server['HTTP_X_ESCALATED_ADAPTER'] = $headerAdapter;
         }
 
-        $query = $queryAdapter !== null ? ['adapter' => $queryAdapter] : [];
+        $query = null !== $queryAdapter ? ['adapter' => $queryAdapter] : [];
 
         return new Request(
             query: $query,

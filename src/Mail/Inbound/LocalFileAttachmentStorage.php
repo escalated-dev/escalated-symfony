@@ -20,10 +20,10 @@ final class LocalFileAttachmentStorage implements AttachmentStorageInterface
     public function __construct(
         private readonly string $root,
     ) {
-        if (trim($root) === '') {
+        if ('' === trim($root)) {
             throw new \InvalidArgumentException('Local file storage root is required.');
         }
-        if (! is_dir($root) && ! mkdir($root, 0o755, true) && ! is_dir($root)) {
+        if (!is_dir($root) && !mkdir($root, 0o755, true) && !is_dir($root)) {
             throw new \RuntimeException("Cannot create storage root: {$root}");
         }
     }
@@ -39,13 +39,14 @@ final class LocalFileAttachmentStorage implements AttachmentStorageInterface
         // rapid concurrent writes with the same original filename.
         [$usec, $sec] = explode(' ', microtime());
         $micros = (int) (((float) $usec) * 1_000_000);
-        $prefix = gmdate('YmdHis', (int) $sec) . '-' . str_pad((string) $micros, 6, '0', STR_PAD_LEFT);
+        $prefix = gmdate('YmdHis', (int) $sec).'-'.str_pad((string) $micros, 6, '0', STR_PAD_LEFT);
         $storedName = "{$prefix}-{$filename}";
-        $fullPath = rtrim($this->root, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $storedName;
+        $fullPath = rtrim($this->root, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.$storedName;
 
         if (false === file_put_contents($fullPath, $content)) {
             throw new \RuntimeException("Cannot write file: {$fullPath}");
         }
+
         return $fullPath;
     }
 }

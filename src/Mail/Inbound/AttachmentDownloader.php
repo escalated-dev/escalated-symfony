@@ -47,35 +47,31 @@ class AttachmentDownloader
      * Download one {@see PendingAttachment} and persist it.
      *
      * @throws AttachmentTooLargeException when the body exceeds
-     *     {@link AttachmentDownloaderOptions::$maxBytes}.
-     * @throws \RuntimeException on any other failure (HTTP non-2xx,
-     *     storage write error, missing ticket row, etc.).
+     *                                     {@link AttachmentDownloaderOptions::$maxBytes}
+     * @throws \RuntimeException           on any other failure (HTTP non-2xx,
+     *                                     storage write error, missing ticket row, etc.).
      */
     public function download(
         PendingAttachment $pending,
         int $ticketId,
         ?int $replyId = null,
     ): Attachment {
-        if ($pending->downloadUrl === '') {
+        if ('' === $pending->downloadUrl) {
             throw new \InvalidArgumentException('Pending attachment has no download URL.');
         }
 
         $headers = [];
-        if ($this->options->basicAuth !== null) {
+        if (null !== $this->options->basicAuth) {
             $encoded = base64_encode(
-                $this->options->basicAuth->username . ':' . $this->options->basicAuth->password
+                $this->options->basicAuth->username.':'.$this->options->basicAuth->password
             );
-            $headers['Authorization'] = 'Basic ' . $encoded;
+            $headers['Authorization'] = 'Basic '.$encoded;
         }
 
         $response = $this->httpClient->get($pending->downloadUrl, $headers);
 
         if ($response->status < 200 || $response->status >= 300) {
-            throw new \RuntimeException(sprintf(
-                'Attachment download failed: %s → HTTP %d',
-                $pending->downloadUrl,
-                $response->status
-            ));
+            throw new \RuntimeException(sprintf('Attachment download failed: %s → HTTP %d', $pending->downloadUrl, $response->status));
         }
 
         $size = strlen($response->body);
@@ -83,7 +79,7 @@ class AttachmentDownloader
             throw new AttachmentTooLargeException($pending->name, $size, $this->options->maxBytes);
         }
 
-        $contentType = $pending->contentType !== ''
+        $contentType = '' !== $pending->contentType
             ? $pending->contentType
             : ($response->headerValue('content-type') ?? 'application/octet-stream');
         $content = $response->body;
@@ -92,7 +88,7 @@ class AttachmentDownloader
         $path = $this->storage->put($filename, $content, $contentType);
 
         $ticket = $this->em->find(Ticket::class, $ticketId);
-        if ($ticket === null) {
+        if (null === $ticket) {
             throw new \RuntimeException("Ticket #{$ticketId} not found");
         }
 
@@ -105,9 +101,9 @@ class AttachmentDownloader
         $attachment->setPath($path);
         $attachment->setTicket($ticket);
 
-        if ($replyId !== null) {
+        if (null !== $replyId) {
             $reply = $this->em->find(Reply::class, $replyId);
-            if ($reply === null) {
+            if (null === $reply) {
                 throw new \RuntimeException("Reply #{$replyId} not found");
             }
             $attachment->setReply($reply);
@@ -130,6 +126,7 @@ class AttachmentDownloader
      * the rest from persisting.
      *
      * @param PendingAttachment[] $pending
+     *
      * @return AttachmentDownloadResult[]
      */
     public function downloadAll(array $pending, int $ticketId, ?int $replyId = null): array
@@ -147,6 +144,7 @@ class AttachmentDownloader
                 $results[] = new AttachmentDownloadResult($p, null, $ex);
             }
         }
+
         return $results;
     }
 
@@ -157,14 +155,15 @@ class AttachmentDownloader
      */
     public static function safeFilename(?string $name): string
     {
-        if ($name === null || trim($name) === '') {
+        if (null === $name || '' === trim($name)) {
             return 'attachment';
         }
         $normalized = str_replace('\\', '/', trim($name));
         $base = basename($normalized);
-        if ($base === '' || $base === '.' || $base === '..') {
+        if ('' === $base || '.' === $base || '..' === $base) {
             return 'attachment';
         }
+
         return $base;
     }
 }

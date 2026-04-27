@@ -53,7 +53,7 @@ class ParserEquivalenceTest extends TestCase
     {
         return [
             'sender' => $e['fromEmail'],
-            'from' => $e['fromName'] . ' <' . $e['fromEmail'] . '>',
+            'from' => $e['fromName'].' <'.$e['fromEmail'].'>',
             'recipient' => $e['toEmail'],
             'subject' => $e['subject'],
             'body-plain' => $e['bodyText'],
@@ -68,14 +68,14 @@ class ParserEquivalenceTest extends TestCase
         // Include full raw MIME as base64 so body extraction is
         // exercised — keeps the payload close to a real SES delivery.
         $mime = "From: {$e['fromName']} <{$e['fromEmail']}>\r\n"
-            . "To: {$e['toEmail']}\r\n"
-            . "Subject: {$e['subject']}\r\n"
-            . "Message-ID: {$e['messageId']}\r\n"
-            . "In-Reply-To: {$e['inReplyTo']}\r\n"
-            . "References: {$e['references']}\r\n"
-            . "Content-Type: text/plain; charset=\"utf-8\"\r\n"
-            . "\r\n"
-            . $e['bodyText'];
+            ."To: {$e['toEmail']}\r\n"
+            ."Subject: {$e['subject']}\r\n"
+            ."Message-ID: {$e['messageId']}\r\n"
+            ."In-Reply-To: {$e['inReplyTo']}\r\n"
+            ."References: {$e['references']}\r\n"
+            ."Content-Type: text/plain; charset=\"utf-8\"\r\n"
+            ."\r\n"
+            .$e['bodyText'];
 
         $sesMessage = [
             'notificationType' => 'Received',
@@ -83,7 +83,7 @@ class ParserEquivalenceTest extends TestCase
                 'source' => $e['fromEmail'],
                 'destination' => [$e['toEmail']],
                 'headers' => [
-                    ['name' => 'From', 'value' => $e['fromName'] . ' <' . $e['fromEmail'] . '>'],
+                    ['name' => 'From', 'value' => $e['fromName'].' <'.$e['fromEmail'].'>'],
                     ['name' => 'To', 'value' => $e['toEmail']],
                     ['name' => 'Subject', 'value' => $e['subject']],
                     ['name' => 'Message-ID', 'value' => $e['messageId']],
@@ -91,7 +91,7 @@ class ParserEquivalenceTest extends TestCase
                     ['name' => 'References', 'value' => $e['references']],
                 ],
                 'commonHeaders' => [
-                    'from' => [$e['fromName'] . ' <' . $e['fromEmail'] . '>'],
+                    'from' => [$e['fromName'].' <'.$e['fromEmail'].'>'],
                     'to' => [$e['toEmail']],
                     'subject' => $e['subject'],
                 ],

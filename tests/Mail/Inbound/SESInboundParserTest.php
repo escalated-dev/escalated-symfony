@@ -83,11 +83,11 @@ class SESInboundParserTest extends TestCase
     public function testNotificationDecodesPlainTextBody(): void
     {
         $mime = "From: alice@example.com\r\n"
-            . "To: support@example.com\r\n"
-            . "Subject: Hi\r\n"
-            . "Content-Type: text/plain; charset=\"utf-8\"\r\n"
-            . "\r\n"
-            . "This is the plain text body.";
+            ."To: support@example.com\r\n"
+            ."Subject: Hi\r\n"
+            ."Content-Type: text/plain; charset=\"utf-8\"\r\n"
+            ."\r\n"
+            .'This is the plain text body.';
 
         $envelope = [
             'Type' => 'Notification',
@@ -112,19 +112,19 @@ class SESInboundParserTest extends TestCase
     {
         $boundary = 'boundary-abc';
         $mime = "From: alice@example.com\r\n"
-            . "To: support@example.com\r\n"
-            . "Subject: Hi\r\n"
-            . "Content-Type: multipart/alternative; boundary=\"{$boundary}\"\r\n"
-            . "\r\n"
-            . "--{$boundary}\r\n"
-            . "Content-Type: text/plain; charset=\"utf-8\"\r\n"
-            . "\r\n"
-            . "Plain body\r\n"
-            . "--{$boundary}\r\n"
-            . "Content-Type: text/html; charset=\"utf-8\"\r\n"
-            . "\r\n"
-            . "<p>HTML body</p>\r\n"
-            . "--{$boundary}--\r\n";
+            ."To: support@example.com\r\n"
+            ."Subject: Hi\r\n"
+            ."Content-Type: multipart/alternative; boundary=\"{$boundary}\"\r\n"
+            ."\r\n"
+            ."--{$boundary}\r\n"
+            ."Content-Type: text/plain; charset=\"utf-8\"\r\n"
+            ."\r\n"
+            ."Plain body\r\n"
+            ."--{$boundary}\r\n"
+            ."Content-Type: text/html; charset=\"utf-8\"\r\n"
+            ."\r\n"
+            ."<p>HTML body</p>\r\n"
+            ."--{$boundary}--\r\n";
 
         $envelope = [
             'Type' => 'Notification',

@@ -15,7 +15,7 @@ namespace Escalated\Symfony\Mail\Inbound;
 final class ProcessResult
 {
     /**
-     * @param list<PendingAttachment>  $pendingAttachmentDownloads
+     * @param list<PendingAttachment> $pendingAttachmentDownloads
      */
     public function __construct(
         public readonly string $outcome,

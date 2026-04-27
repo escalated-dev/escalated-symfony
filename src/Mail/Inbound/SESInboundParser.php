@@ -42,28 +42,19 @@ final class SESInboundParser implements InboundEmailParser
         $type = (string) ($rawPayload['Type'] ?? '');
 
         match ($type) {
-            'SubscriptionConfirmation' => throw new SESSubscriptionConfirmationException(
-                topicArn: (string) ($rawPayload['TopicArn'] ?? ''),
-                subscribeUrl: (string) ($rawPayload['SubscribeURL'] ?? ''),
-                token: (string) ($rawPayload['Token'] ?? ''),
-            ),
+            'SubscriptionConfirmation' => throw new SESSubscriptionConfirmationException(topicArn: (string) ($rawPayload['TopicArn'] ?? ''), subscribeUrl: (string) ($rawPayload['SubscribeURL'] ?? ''), token: (string) ($rawPayload['Token'] ?? '')),
             'Notification' => null,
-            default => throw new \InvalidArgumentException(
-                "Unsupported SNS envelope type: \"{$type}\"",
-            ),
+            default => throw new \InvalidArgumentException("Unsupported SNS envelope type: \"{$type}\""),
         };
 
         $messageJson = (string) ($rawPayload['Message'] ?? '');
-        if ($messageJson === '') {
+        if ('' === $messageJson) {
             throw new \InvalidArgumentException('SES notification has no Message body');
         }
 
         $notification = json_decode($messageJson, true);
-        if (! is_array($notification)) {
-            throw new \InvalidArgumentException(
-                'SES notification Message is not valid JSON: '
-                . json_last_error_msg()
-            );
+        if (!is_array($notification)) {
+            throw new \InvalidArgumentException('SES notification Message is not valid JSON: '.json_last_error_msg());
         }
 
         $mail = is_array($notification['mail'] ?? null) ? $notification['mail'] : [];
@@ -105,18 +96,22 @@ final class SESInboundParser implements InboundEmailParser
      */
     private static function parseFirstAddressList(mixed $list): array
     {
-        if (! is_array($list) || $list === []) {
+        if (!is_array($list) || [] === $list) {
             return ['', null];
         }
         foreach ($list as $entry) {
-            if (! is_string($entry) || trim($entry) === '') continue;
+            if (!is_string($entry) || '' === trim($entry)) {
+                continue;
+            }
             $trimmed = trim($entry);
-            if (preg_match('/^\s*"?([^<"]*?)"?\s*<([^>]+)>\s*$/', $trimmed, $m) === 1) {
+            if (1 === preg_match('/^\s*"?([^<"]*?)"?\s*<([^>]+)>\s*$/', $trimmed, $m)) {
                 return [trim($m[2]), self::blankToNull(trim($m[1]))];
             }
+
             // Bare address.
             return [$trimmed, null];
         }
+
         return ['', null];
     }
 
@@ -130,17 +125,20 @@ final class SESInboundParser implements InboundEmailParser
     {
         $out = [];
         $arr = $mail['headers'] ?? null;
-        if (! is_array($arr)) {
+        if (!is_array($arr)) {
             return $out;
         }
         foreach ($arr as $entry) {
-            if (! is_array($entry)) continue;
+            if (!is_array($entry)) {
+                continue;
+            }
             $name = $entry['name'] ?? null;
             $value = $entry['value'] ?? null;
-            if (is_string($name) && is_string($value) && $name !== '') {
+            if (is_string($name) && is_string($value) && '' !== $name) {
                 $out[$name] = $value;
             }
         }
+
         return $out;
     }
 
@@ -154,16 +152,16 @@ final class SESInboundParser implements InboundEmailParser
      */
     private static function extractBody(string $contentBase64): array
     {
-        if ($contentBase64 === '') {
+        if ('' === $contentBase64) {
             return [null, null];
         }
         $raw = base64_decode($contentBase64, true);
-        if ($raw === false) {
+        if (false === $raw) {
             return [null, null];
         }
 
         $split = self::splitHeaders($raw);
-        if ($split === null) {
+        if (null === $split) {
             return [null, null];
         }
         [$headers, $body] = $split;
@@ -178,6 +176,7 @@ final class SESInboundParser implements InboundEmailParser
         if (str_starts_with($lowerCt, 'text/html')) {
             return [null, self::decodeBody($body, $transferEnc)];
         }
+
         return [self::decodeBody($body, $transferEnc), null];
     }
 
@@ -188,11 +187,11 @@ final class SESInboundParser implements InboundEmailParser
     {
         $pos = strpos($raw, "\r\n\r\n");
         $skip = 4;
-        if ($pos === false) {
+        if (false === $pos) {
             $pos = strpos($raw, "\n\n");
             $skip = 2;
         }
-        if ($pos === false) {
+        if (false === $pos) {
             return null;
         }
         $headerBlock = substr($raw, 0, $pos);
@@ -200,13 +199,18 @@ final class SESInboundParser implements InboundEmailParser
 
         $headers = [];
         foreach (preg_split('/\r?\n/', $headerBlock) ?: [] as $line) {
-            if ($line === '') continue;
+            if ('' === $line) {
+                continue;
+            }
             $colon = strpos($line, ':');
-            if ($colon === false || $colon === 0) continue;
+            if (false === $colon || 0 === $colon) {
+                continue;
+            }
             $name = strtolower(trim(substr($line, 0, $colon)));
             $value = trim(substr($line, $colon + 1));
             $headers[$name] = $value;
         }
+
         return [$headers, $body];
     }
 
@@ -215,10 +219,10 @@ final class SESInboundParser implements InboundEmailParser
      */
     private static function walkMultipart(string $body, string $contentType): array
     {
-        if (preg_match('/boundary\s*=\s*"?([^";\s]+)"?/i', $contentType, $m) !== 1) {
+        if (1 !== preg_match('/boundary\s*=\s*"?([^";\s]+)"?/i', $contentType, $m)) {
             return [null, null];
         }
-        $delimiter = '--' . $m[1];
+        $delimiter = '--'.$m[1];
         $parts = explode($delimiter, $body);
         // Drop preamble (before first delimiter) + closing epilogue.
         array_shift($parts);
@@ -227,41 +231,49 @@ final class SESInboundParser implements InboundEmailParser
 
         foreach ($parts as $part) {
             $trimmed = ltrim($part, "\r\n");
-            if ($trimmed === '' || str_starts_with($trimmed, '--')) {
+            if ('' === $trimmed || str_starts_with($trimmed, '--')) {
                 continue;
             }
             $partSplit = self::splitHeaders($trimmed);
-            if ($partSplit === null) continue;
+            if (null === $partSplit) {
+                continue;
+            }
             [$partHeaders, $partBody] = $partSplit;
             $partType = strtolower($partHeaders['content-type'] ?? '');
             $partEnc = $partHeaders['content-transfer-encoding'] ?? '7bit';
             $decoded = self::decodeBody(rtrim($partBody, "\r\n"), $partEnc);
 
-            if (str_starts_with($partType, 'text/plain') && $text === null) {
+            if (str_starts_with($partType, 'text/plain') && null === $text) {
                 $text = $decoded;
-            } elseif (str_starts_with($partType, 'text/html') && $html === null) {
+            } elseif (str_starts_with($partType, 'text/html') && null === $html) {
                 $html = $decoded;
             }
         }
+
         return [$text, $html];
     }
 
     private static function decodeBody(string $body, string $transferEnc): string
     {
         $enc = strtolower(trim($transferEnc));
-        if ($enc === 'quoted-printable') {
+        if ('quoted-printable' === $enc) {
             return quoted_printable_decode($body);
         }
-        if ($enc === 'base64') {
+        if ('base64' === $enc) {
             $decoded = base64_decode($body, true);
-            return $decoded === false ? $body : $decoded;
+
+            return false === $decoded ? $body : $decoded;
         }
+
         return $body;
     }
 
     private static function blankToNull(mixed $value): ?string
     {
-        if (! is_string($value)) return null;
-        return trim($value) === '' ? null : $value;
+        if (!is_string($value)) {
+            return null;
+        }
+
+        return '' === trim($value) ? null : $value;
     }
 }

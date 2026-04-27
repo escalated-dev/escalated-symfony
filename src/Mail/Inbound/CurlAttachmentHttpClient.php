@@ -22,12 +22,12 @@ final class CurlAttachmentHttpClient implements AttachmentHttpClientInterface
 
     public function get(string $url, array $headers = []): AttachmentHttpResponse
     {
-        if (! function_exists('curl_init')) {
+        if (!function_exists('curl_init')) {
             throw new \RuntimeException('cURL extension is not available.');
         }
 
         $ch = curl_init($url);
-        if ($ch === false) {
+        if (false === $ch) {
             throw new \RuntimeException("Failed to initialize cURL for {$url}");
         }
 
@@ -47,15 +47,16 @@ final class CurlAttachmentHttpClient implements AttachmentHttpClientInterface
             CURLOPT_HEADERFUNCTION => function ($_handle, $rawHeader) use (&$collectedHeaders) {
                 $len = strlen($rawHeader);
                 $parts = explode(':', $rawHeader, 2);
-                if (count($parts) === 2) {
+                if (2 === count($parts)) {
                     $collectedHeaders[strtolower(trim($parts[0]))] = trim($parts[1]);
                 }
+
                 return $len;
             },
         ]);
 
         $body = curl_exec($ch);
-        if ($body === false) {
+        if (false === $body) {
             $err = curl_error($ch);
             curl_close($ch);
             throw new \RuntimeException("HTTP request failed for {$url}: {$err}");

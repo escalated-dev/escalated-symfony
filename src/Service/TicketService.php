@@ -9,6 +9,7 @@ use Escalated\Symfony\Entity\Contact;
 use Escalated\Symfony\Entity\Reply;
 use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Entity\TicketActivity;
+use Escalated\Symfony\Event\TicketWorkflowEvent;
 use Escalated\Symfony\Repository\TicketRepository;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
@@ -91,6 +92,8 @@ class TicketService
      */
     public function update(Ticket $ticket, array $data): Ticket
     {
+        $oldPriority = $ticket->getPriority();
+
         if (isset($data['subject'])) {
             $ticket->setSubject($data['subject']);
         }
@@ -108,6 +111,16 @@ class TicketService
         }
 
         $this->em->flush();
+
+        $this->dispatcher->dispatch(new TicketWorkflowEvent('ticket.updated', $ticket, ['changes' => $data]));
+
+        if (isset($data['priority']) && $data['priority'] !== $oldPriority) {
+            $this->dispatcher->dispatch(new TicketWorkflowEvent(
+                'ticket.priority_changed',
+                $ticket,
+                ['old_priority' => $oldPriority, 'new_priority' => $data['priority']],
+            ));
+        }
 
         return $ticket;
     }
@@ -140,6 +153,12 @@ class TicketService
             'new_status' => $newStatus,
         ]);
 
+        $this->dispatcher->dispatch(new TicketWorkflowEvent(
+            'ticket.status_changed',
+            $ticket,
+            ['old_status' => $oldStatus, 'new_status' => $newStatus, 'causer_id' => $causerId],
+        ));
+
         return $ticket;
     }
 
@@ -162,6 +181,16 @@ class TicketService
 
         $activityType = $isNote ? TicketActivity::TYPE_NOTE_ADDED : TicketActivity::TYPE_REPLIED;
         $this->logActivity($ticket, $activityType, $authorId);
+
+        // Internal notes don't trigger public workflows (e.g. reply
+        // autoresponders should not fire on private agent notes).
+        if (!$isNote) {
+            $this->dispatcher->dispatch(new TicketWorkflowEvent(
+                'ticket.replied',
+                $ticket,
+                ['reply_id' => $reply->getId(), 'author_id' => $authorId],
+            ));
+        }
 
         return $reply;
     }
@@ -223,6 +252,14 @@ class TicketService
         }
 
         $this->em->flush();
+
+        if (!empty($tagIds)) {
+            $this->dispatcher->dispatch(new TicketWorkflowEvent(
+                'ticket.tagged',
+                $ticket,
+                ['tag_ids' => array_values($tagIds), 'causer_id' => $causerId, 'action' => 'added'],
+            ));
+        }
 
         return $ticket;
     }

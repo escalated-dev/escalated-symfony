@@ -7,13 +7,16 @@ namespace Escalated\Symfony\Service;
 use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Entity\TicketActivity;
+use Escalated\Symfony\Event\TicketWorkflowEvent;
 use Escalated\Symfony\Repository\TicketRepository;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class AssignmentService
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly TicketRepository $ticketRepository,
+        private readonly EventDispatcherInterface $dispatcher,
     ) {
     }
 
@@ -22,12 +25,19 @@ class AssignmentService
      */
     public function assign(Ticket $ticket, int $agentId, ?int $causerId = null): Ticket
     {
+        $previousAgentId = $ticket->getAssignedTo();
         $ticket->setAssignedTo($agentId);
         $this->em->flush();
 
         $this->logActivity($ticket, TicketActivity::TYPE_ASSIGNED, $causerId, [
             'agent_id' => $agentId,
         ]);
+
+        $this->dispatcher->dispatch(new TicketWorkflowEvent(
+            'ticket.assigned',
+            $ticket,
+            ['agent_id' => $agentId, 'previous_agent_id' => $previousAgentId, 'causer_id' => $causerId],
+        ));
 
         return $ticket;
     }

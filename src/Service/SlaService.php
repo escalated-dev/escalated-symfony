@@ -7,13 +7,16 @@ namespace Escalated\Symfony\Service;
 use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Entity\SlaPolicy;
 use Escalated\Symfony\Entity\Ticket;
+use Escalated\Symfony\Event\TicketWorkflowEvent;
 use Escalated\Symfony\Repository\TicketRepository;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class SlaService
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly TicketRepository $ticketRepository,
+        private readonly EventDispatcherInterface $dispatcher,
         private readonly bool $slaEnabled,
         private readonly bool $businessHoursOnly,
         private readonly array $businessHours,
@@ -96,6 +99,11 @@ class SlaService
         foreach ($tickets as $ticket) {
             $ticket->setSlaFirstResponseBreached(true);
             ++$breached;
+            $this->dispatcher->dispatch(new TicketWorkflowEvent(
+                'sla.breached',
+                $ticket,
+                ['breach_type' => 'first_response'],
+            ));
         }
 
         // Check resolution breaches
@@ -115,6 +123,11 @@ class SlaService
         foreach ($tickets as $ticket) {
             $ticket->setSlaResolutionBreached(true);
             ++$breached;
+            $this->dispatcher->dispatch(new TicketWorkflowEvent(
+                'sla.breached',
+                $ticket,
+                ['breach_type' => 'resolution'],
+            ));
         }
 
         if ($breached > 0) {

@@ -16,8 +16,8 @@ namespace Escalated\Symfony\Mail\Inbound;
 final class InboundMessage
 {
     /**
-     * @param array<string,string>  $headers
-     * @param list<InboundAttachment>  $attachments
+     * @param array<string,string>    $headers
+     * @param list<InboundAttachment> $attachments
      */
     public function __construct(
         public readonly string $fromEmail,
@@ -39,7 +39,7 @@ final class InboundMessage
      */
     public function body(): string
     {
-        if ($this->bodyText !== null && $this->bodyText !== '') {
+        if (null !== $this->bodyText && '' !== $this->bodyText) {
             return $this->bodyText;
         }
 

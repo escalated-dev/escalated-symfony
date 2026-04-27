@@ -58,13 +58,13 @@ final class PostmarkInboundParser implements InboundEmailParser
     private static function firstToEmail(array $payload): ?string
     {
         $toFull = $payload['ToFull'] ?? null;
-        if (! is_array($toFull)) {
+        if (!is_array($toFull)) {
             return null;
         }
         foreach ($toFull as $entry) {
             if (is_array($entry)) {
                 $email = $entry['Email'] ?? null;
-                if (is_string($email) && $email !== '') {
+                if (is_string($email) && '' !== $email) {
                     return $email;
                 }
             }
@@ -80,16 +80,16 @@ final class PostmarkInboundParser implements InboundEmailParser
     {
         $out = [];
         $arr = $payload['Headers'] ?? null;
-        if (! is_array($arr)) {
+        if (!is_array($arr)) {
             return $out;
         }
         foreach ($arr as $entry) {
-            if (! is_array($entry)) {
+            if (!is_array($entry)) {
                 continue;
             }
             $name = $entry['Name'] ?? null;
             $value = $entry['Value'] ?? null;
-            if (is_string($name) && $name !== '' && is_string($value)) {
+            if (is_string($name) && '' !== $name && is_string($value)) {
                 $out[$name] = $value;
             }
         }
@@ -104,17 +104,17 @@ final class PostmarkInboundParser implements InboundEmailParser
     {
         $list = [];
         $arr = $payload['Attachments'] ?? null;
-        if (! is_array($arr)) {
+        if (!is_array($arr)) {
             return $list;
         }
         foreach ($arr as $entry) {
-            if (! is_array($entry)) {
+            if (!is_array($entry)) {
                 continue;
             }
             $content = null;
-            if (isset($entry['Content']) && is_string($entry['Content']) && $entry['Content'] !== '') {
+            if (isset($entry['Content']) && is_string($entry['Content']) && '' !== $entry['Content']) {
                 $decoded = base64_decode($entry['Content'], true);
-                if ($decoded !== false) {
+                if (false !== $decoded) {
                     $content = $decoded;
                 }
             }
@@ -137,7 +137,7 @@ final class PostmarkInboundParser implements InboundEmailParser
     private static function firstNonEmpty(mixed ...$values): ?string
     {
         foreach ($values as $value) {
-            if (is_string($value) && $value !== '') {
+            if (is_string($value) && '' !== $value) {
                 return $value;
             }
         }
@@ -147,7 +147,7 @@ final class PostmarkInboundParser implements InboundEmailParser
 
     private static function blankToNull(mixed $value): ?string
     {
-        if ($value === null || $value === '') {
+        if (null === $value || '' === $value) {
             return null;
         }
 

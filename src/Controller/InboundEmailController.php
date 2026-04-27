@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace Escalated\Symfony\Controller;
 
-use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Mail\Inbound\InboundEmailParser;
-use Escalated\Symfony\Mail\Inbound\InboundRouter;
+use Escalated\Symfony\Mail\Inbound\InboundEmailService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\TaggedIterator;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -33,7 +32,7 @@ final class InboundEmailController extends AbstractController
      * @param iterable<InboundEmailParser> $parsers
      */
     public function __construct(
-        private readonly InboundRouter $router,
+        private readonly InboundEmailService $service,
         #[TaggedIterator('escalated.inbound_parser')]
         private readonly iterable $parsers,
         private readonly string $inboundSecret = '',
@@ -74,11 +73,27 @@ final class InboundEmailController extends AbstractController
             return new JsonResponse(['error' => 'invalid payload'], JsonResponse::HTTP_BAD_REQUEST);
         }
 
-        $ticket = $this->router->resolveTicket($message);
+        $result = $this->service->process($message);
 
         return new JsonResponse([
-            'status' => $ticket instanceof Ticket ? 'matched' : 'unmatched',
-            'ticket_id' => $ticket instanceof Ticket ? $ticket->getId() : null,
+            'status' => match ($result->outcome) {
+                InboundEmailService::OUTCOME_REPLIED_TO_EXISTING => 'matched',
+                InboundEmailService::OUTCOME_CREATED_NEW => 'created',
+                InboundEmailService::OUTCOME_SKIPPED => 'skipped',
+                default => 'unknown',
+            },
+            'outcome' => $result->outcome,
+            'ticket_id' => $result->ticketId,
+            'reply_id' => $result->replyId,
+            'pending_attachment_downloads' => array_map(
+                static fn ($p) => [
+                    'name' => $p->name,
+                    'content_type' => $p->contentType,
+                    'size_bytes' => $p->sizeBytes,
+                    'download_url' => $p->downloadUrl,
+                ],
+                $result->pendingAttachmentDownloads,
+            ),
         ], JsonResponse::HTTP_ACCEPTED);
     }
 

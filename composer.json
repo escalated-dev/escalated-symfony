@@ -6,7 +6,7 @@
     "type": "symfony-bundle",
     "require": {
         "php": "^8.2",
-        "doctrine/doctrine-bundle": "^2.11",
+        "doctrine/doctrine-bundle": "^3.2",
         "doctrine/doctrine-migrations-bundle": "^3.3",
         "doctrine/orm": "^2.17|^3.0",
         "symfony/framework-bundle": "^6.4|^7.0",

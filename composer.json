@@ -18,7 +18,7 @@
         "egulias/email-validator": "^4.0",
         "friendsofphp/php-cs-fixer": "^3.94",
         "phpunit/phpunit": "^10.5|^11.0",
-        "symfony/phpunit-bridge": "^6.4|^7.0"
+        "symfony/phpunit-bridge": "^8.0.8"
     },
     "suggest": {
         "rompetomp/inertia-bundle": "Required for built-in Inertia.js UI (^2.0)",

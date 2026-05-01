@@ -12,7 +12,7 @@
         "symfony/framework-bundle": "^6.4|^7.0",
         "symfony/mime": "^8.0",
         "symfony/security-bundle": "^6.4|^7.0",
-        "symfony/uid": "^6.4|^7.0"
+        "symfony/uid": "^8.0.9"
     },
     "require-dev": {
         "egulias/email-validator": "^4.0",

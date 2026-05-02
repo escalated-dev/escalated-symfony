@@ -82,7 +82,7 @@ class EscalatedBundle extends AbstractBundle
         // resolves later-registered paths with higher priority, so we list the
         // central package first and the plugin-local overrides second.
         $centralLocaleDir = $this->locateCentralLocaleDir();
-        if ($centralLocaleDir !== null) {
+        if (null !== $centralLocaleDir) {
             $builder->prependExtensionConfig('framework', [
                 'translator' => [
                     'paths' => [

@@ -9,6 +9,7 @@
         "doctrine/doctrine-bundle": "^2.11|^3.2",
         "doctrine/doctrine-migrations-bundle": "^3.3",
         "doctrine/orm": "^2.17|^3.0",
+        "escalated-dev/locale": "^0.1",
         "symfony/framework-bundle": "^6.4|^7.0",
         "symfony/mime": "^6.4|^7.0|^8.0",
         "symfony/security-bundle": "^6.4|^7.0|^8.0.8",

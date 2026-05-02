@@ -183,6 +183,20 @@ closed -> reopened
 reopened -> in_progress, waiting_on_customer, waiting_on_agent, escalated, resolved, closed
 ```
 
+## Translations
+
+Escalated bundles ship their UI strings from a single source of truth:
+[`escalated-dev/locale`](https://github.com/escalated-dev/escalated-locale).
+The package is pulled in as a Composer dependency and its `translations/`
+directory is prepended onto `framework.translator.paths` automatically by
+the bundle's `prependExtension` hook.
+
+The plugin-local `translations/` directory and your application's
+`translations/` directory both override the central package on a key-by-key
+basis. To override a single string, drop a `messages.<locale>.yaml` file
+into your app's `translations/` directory with only the keys you want to
+change — Symfony will merge the rest from the central package.
+
 ## Testing
 
 ```bash

@@ -6,19 +6,19 @@
     "type": "symfony-bundle",
     "require": {
         "php": "^8.2",
-        "doctrine/doctrine-bundle": "^2.11",
+        "doctrine/doctrine-bundle": "^2.11|^3.2",
         "doctrine/doctrine-migrations-bundle": "^3.3",
         "doctrine/orm": "^2.17|^3.0",
         "symfony/framework-bundle": "^6.4|^7.0",
-        "symfony/mime": "^8.0",
-        "symfony/security-bundle": "^6.4|^7.0",
-        "symfony/uid": "^6.4|^7.0"
+        "symfony/mime": "^6.4|^7.0|^8.0",
+        "symfony/security-bundle": "^6.4|^7.0|^8.0.8",
+        "symfony/uid": "^6.4|^7.0|^8.0.9"
     },
     "require-dev": {
         "egulias/email-validator": "^4.0",
         "friendsofphp/php-cs-fixer": "^3.94",
         "phpunit/phpunit": "^10.5|^11.0",
-        "symfony/phpunit-bridge": "^6.4|^7.0"
+        "symfony/phpunit-bridge": "^6.4|^7.0|^8.0.8"
     },
     "suggest": {
         "rompetomp/inertia-bundle": "Required for built-in Inertia.js UI (^2.0)",

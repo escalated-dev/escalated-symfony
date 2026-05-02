@@ -4,6 +4,9 @@
     "keywords": ["symfony", "support", "tickets", "helpdesk", "customer-support", "bundle"],
     "license": "MIT",
     "type": "symfony-bundle",
+    "repositories": [
+        {"type": "vcs", "url": "https://github.com/escalated-dev/escalated-locale"}
+    ],
     "require": {
         "php": "^8.2",
         "doctrine/doctrine-bundle": "^2.11|^3.2",

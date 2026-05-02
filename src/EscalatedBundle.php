@@ -75,5 +75,45 @@ class EscalatedBundle extends AbstractBundle
                 ],
             ],
         ]);
+
+        // Register the central escalated-dev/locale translations as a lower-priority
+        // path so the plugin-local translations/ directory (and the app's own
+        // translations/) can override individual keys. Symfony's translator
+        // resolves later-registered paths with higher priority, so we list the
+        // central package first and the plugin-local overrides second.
+        $centralLocaleDir = $this->locateCentralLocaleDir();
+        if (null !== $centralLocaleDir) {
+            $builder->prependExtensionConfig('framework', [
+                'translator' => [
+                    'paths' => [
+                        $centralLocaleDir,
+                        __DIR__.'/../translations',
+                    ],
+                ],
+            ]);
+        }
+    }
+
+    /**
+     * Resolve the translations directory shipped by the escalated-dev/locale
+     * Composer package. Returns null when the package is not installed (e.g.
+     * during bundle-only tests) so the host app continues to boot.
+     */
+    private function locateCentralLocaleDir(): ?string
+    {
+        // Walk up from this file until we find a vendor/ directory containing
+        // the central locale package. This avoids hard-coding a relative path
+        // and keeps the bundle usable when symlinked into a host app.
+        $candidates = [
+            __DIR__.'/../vendor/escalated-dev/locale/translations',
+            __DIR__.'/../../../escalated-dev/locale/translations',
+        ];
+        foreach ($candidates as $candidate) {
+            if (is_dir($candidate)) {
+                return realpath($candidate) ?: $candidate;
+            }
+        }
+
+        return null;
     }
 }

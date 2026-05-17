@@ -103,6 +103,13 @@ services:
             $userClass: '%escalated.user_class%'
         tags: ['controller.service_arguments']
 
+    Escalated\Symfony\Controller\Admin\SkillController:
+        tags: ['controller.service_arguments']
+
+    Escalated\Symfony\Service\SkillService:
+        arguments:
+            $userClass: '%escalated.user_class%'
+
     Escalated\Symfony\Controller\Api\TicketController:
         tags: ['controller.service_arguments']
 

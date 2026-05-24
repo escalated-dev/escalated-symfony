@@ -11,10 +11,19 @@ class BounceSuppressionStore
 {
     private const KEY = 'newsletter.suppressed_emails';
 
-    public function __construct(private readonly EntityManagerInterface $em) {}
+    public function __construct(private readonly EntityManagerInterface $em)
+    {
+    }
 
-    public function markBounced(string $email): void { $this->mark($email); }
-    public function markComplained(string $email): void { $this->mark($email); }
+    public function markBounced(string $email): void
+    {
+        $this->mark($email);
+    }
+
+    public function markComplained(string $email): void
+    {
+        $this->mark($email);
+    }
 
     public function isBounced(string $email): bool
     {
@@ -25,6 +34,7 @@ class BounceSuppressionStore
     public function filterSendable(array $emails): array
     {
         $suppressed = array_flip($this->load());
+
         return array_values(array_filter($emails, fn ($e) => !isset($suppressed[strtolower($e)])));
     }
 
@@ -32,7 +42,9 @@ class BounceSuppressionStore
     {
         $lower = strtolower($email);
         $list = $this->load();
-        if (in_array($lower, $list, true)) return;
+        if (in_array($lower, $list, true)) {
+            return;
+        }
         $list[] = $lower;
 
         $repo = $this->em->getRepository(EscalatedSetting::class);
@@ -49,8 +61,11 @@ class BounceSuppressionStore
     private function load(): array
     {
         $row = $this->em->getRepository(EscalatedSetting::class)->findOneBy(['key' => self::KEY]);
-        if (!$row || $row->getValue() === null) return [];
+        if (!$row || null === $row->getValue()) {
+            return [];
+        }
         $parsed = json_decode($row->getValue(), true);
+
         return is_array($parsed) ? array_map('strtolower', array_map('strval', $parsed)) : [];
     }
 }

@@ -45,18 +45,85 @@ class NewsletterList
         $this->updatedAt = new \DateTimeImmutable();
     }
 
-    public function getId(): ?int { return $this->id; }
-    public function getName(): string { return $this->name; }
-    public function setName(string $v): self { $this->name = $v; return $this; }
-    public function getDescription(): ?string { return $this->description; }
-    public function setDescription(?string $v): self { $this->description = $v; return $this; }
-    public function getKind(): string { return $this->kind; }
-    public function setKind(string $v): self { $this->kind = $v; return $this; }
-    public function getFilterJson(): ?array { return $this->filterJson; }
-    public function setFilterJson(?array $v): self { $this->filterJson = $v; return $this; }
-    public function getCreatedBy(): ?string { return $this->createdBy; }
-    public function setCreatedBy(?string $v): self { $this->createdBy = $v; return $this; }
-    public function getCreatedAt(): \DateTimeInterface { return $this->createdAt; }
-    public function getUpdatedAt(): \DateTimeInterface { return $this->updatedAt; }
-    public function touch(): self { $this->updatedAt = new \DateTimeImmutable(); return $this; }
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function setName(string $v): self
+    {
+        $this->name = $v;
+
+        return $this;
+    }
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+
+    public function setDescription(?string $v): self
+    {
+        $this->description = $v;
+
+        return $this;
+    }
+
+    public function getKind(): string
+    {
+        return $this->kind;
+    }
+
+    public function setKind(string $v): self
+    {
+        $this->kind = $v;
+
+        return $this;
+    }
+
+    public function getFilterJson(): ?array
+    {
+        return $this->filterJson;
+    }
+
+    public function setFilterJson(?array $v): self
+    {
+        $this->filterJson = $v;
+
+        return $this;
+    }
+
+    public function getCreatedBy(): ?string
+    {
+        return $this->createdBy;
+    }
+
+    public function setCreatedBy(?string $v): self
+    {
+        $this->createdBy = $v;
+
+        return $this;
+    }
+
+    public function getCreatedAt(): \DateTimeInterface
+    {
+        return $this->createdAt;
+    }
+
+    public function getUpdatedAt(): \DateTimeInterface
+    {
+        return $this->updatedAt;
+    }
+
+    public function touch(): self
+    {
+        $this->updatedAt = new \DateTimeImmutable();
+
+        return $this;
+    }
 }

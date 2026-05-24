@@ -26,18 +26,21 @@ class NewsletterDispatcher
         private readonly float $autoPauseBounceRate = 0.05,
         private readonly int $autoPauseThreshold = 100,
         private readonly LoggerInterface $logger = new NullLogger(),
-    ) {}
+    ) {
+    }
 
     public function dispatchBatch(): void
     {
-        if (!$this->enabled) return;
+        if (!$this->enabled) {
+            return;
+        }
         $this->reclaimStuckRows();
 
         $conn = $this->em->getConnection();
         $conn->beginTransaction();
         try {
             $ids = array_map('intval', $conn->fetchFirstColumn(
-                'SELECT id FROM escalated_newsletter_deliveries WHERE status = :s ORDER BY id ASC LIMIT ' . $this->batchSize,
+                'SELECT id FROM escalated_newsletter_deliveries WHERE status = :s ORDER BY id ASC LIMIT '.$this->batchSize,
                 ['s' => 'pending'],
             ));
             if ($ids) {
@@ -55,7 +58,9 @@ class NewsletterDispatcher
 
         foreach ($ids as $id) {
             $d = $this->em->find(NewsletterDelivery::class, $id);
-            if ($d) $this->dispatchOne($d);
+            if ($d) {
+                $this->dispatchOne($d);
+            }
         }
 
         $this->finalizeCompletedNewsletters();
@@ -71,7 +76,9 @@ class NewsletterDispatcher
                 : null;
             $templateArr = $template ? ['body_markdown' => $template->getBodyMarkdown(), 'theme' => $template->getTheme()] : null;
             $contact = $this->em->find(Contact::class, $delivery->getContactId());
-            if (!$newsletter || !$contact) return;
+            if (!$newsletter || !$contact) {
+                return;
+            }
 
             $html = $this->renderer->render($delivery, $newsletter, $contact, $templateArr);
             $unsub = $this->renderer->unsubscribeUrl($delivery);
@@ -82,7 +89,9 @@ class NewsletterDispatcher
                 ->to($delivery->getEmailAtSend())
                 ->subject($newsletter->getSubject())
                 ->html($html);
-            if ($newsletter->getReplyTo()) $email->replyTo($newsletter->getReplyTo());
+            if ($newsletter->getReplyTo()) {
+                $email->replyTo($newsletter->getReplyTo());
+            }
             $email->getHeaders()->addTextHeader('List-Unsubscribe', "<{$unsub}>");
             $email->getHeaders()->addTextHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click');
             $email->getHeaders()->addTextHeader('X-Escalated-Newsletter-Id', (string) $newsletter->getId());
@@ -94,7 +103,7 @@ class NewsletterDispatcher
             $newsletter->incrementSummarySent();
             $this->em->flush();
         } catch (\Throwable $e) {
-            $this->logger->warning("Newsletter delivery {$delivery->getId()} failed: " . $e->getMessage());
+            $this->logger->warning("Newsletter delivery {$delivery->getId()} failed: ".$e->getMessage());
             $attempts = $delivery->getAttemptCount() + 1;
             if ($attempts >= 3) {
                 $delivery->setStatus('failed')->setFailureReason($e->getMessage())->setAttemptCount($attempts)->setClaimedAt(null);
@@ -125,9 +134,11 @@ class NewsletterDispatcher
                 ->setParameter('id', $n->getId())
                 ->setParameter('s', ['pending', 'queued'])
                 ->getQuery()->getSingleScalarResult();
-            if ($remaining === 0) {
+            if (0 === $remaining) {
                 $n->setStatus('sent');
-                if (!$n->getSentAt()) $n->setSentAt(new \DateTimeImmutable());
+                if (!$n->getSentAt()) {
+                    $n->setSentAt(new \DateTimeImmutable());
+                }
                 $this->em->flush();
             }
         }
@@ -142,7 +153,9 @@ class NewsletterDispatcher
                 ->setParameter('id', $n->getId())
                 ->setParameter('s', ['sent', 'bounced', 'complained', 'failed'])
                 ->getQuery()->getSingleScalarResult();
-            if ($total < $this->autoPauseThreshold) continue;
+            if ($total < $this->autoPauseThreshold) {
+                continue;
+            }
             $bounced = (int) $this->em->createQueryBuilder()
                 ->from(NewsletterDelivery::class, 'd')->select('COUNT(d.id)')
                 ->where('d.newsletterId = :id AND d.status = :s')

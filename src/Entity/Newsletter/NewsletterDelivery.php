@@ -68,33 +68,176 @@ class NewsletterDelivery
         $this->createdAt = new \DateTimeImmutable();
     }
 
-    public function getId(): ?string { return $this->id; }
-    public function getNewsletterId(): int { return $this->newsletterId; }
-    public function setNewsletterId(int $v): self { $this->newsletterId = $v; return $this; }
-    public function getContactId(): int { return $this->contactId; }
-    public function setContactId(int $v): self { $this->contactId = $v; return $this; }
-    public function getEmailAtSend(): string { return $this->emailAtSend; }
-    public function setEmailAtSend(string $v): self { $this->emailAtSend = $v; return $this; }
-    public function getStatus(): string { return $this->status; }
-    public function setStatus(string $v): self { $this->status = $v; return $this; }
-    public function getTrackingToken(): string { return $this->trackingToken; }
-    public function setTrackingToken(string $v): self { $this->trackingToken = $v; return $this; }
-    public function getSentAt(): ?\DateTimeInterface { return $this->sentAt; }
-    public function setSentAt(?\DateTimeInterface $v): self { $this->sentAt = $v; return $this; }
-    public function getOpenedAt(): ?\DateTimeInterface { return $this->openedAt; }
-    public function setOpenedAt(?\DateTimeInterface $v): self { $this->openedAt = $v; return $this; }
-    public function getLastClickedAt(): ?\DateTimeInterface { return $this->lastClickedAt; }
-    public function setLastClickedAt(?\DateTimeInterface $v): self { $this->lastClickedAt = $v; return $this; }
-    public function getClicksCount(): int { return $this->clicksCount; }
-    public function setClicksCount(int $v): self { $this->clicksCount = $v; return $this; }
-    public function getBounceReason(): ?string { return $this->bounceReason; }
-    public function setBounceReason(?string $v): self { $this->bounceReason = $v; return $this; }
-    public function getFailureReason(): ?string { return $this->failureReason; }
-    public function setFailureReason(?string $v): self { $this->failureReason = $v; return $this; }
-    public function getAttemptCount(): int { return $this->attemptCount; }
-    public function setAttemptCount(int $v): self { $this->attemptCount = $v; return $this; }
-    public function getClaimedAt(): ?\DateTimeInterface { return $this->claimedAt; }
-    public function setClaimedAt(?\DateTimeInterface $v): self { $this->claimedAt = $v; return $this; }
-    public function isTest(): bool { return $this->isTest; }
-    public function setIsTest(bool $v): self { $this->isTest = $v; return $this; }
+    public function getId(): ?string
+    {
+        return $this->id;
+    }
+
+    public function getNewsletterId(): int
+    {
+        return $this->newsletterId;
+    }
+
+    public function setNewsletterId(int $v): self
+    {
+        $this->newsletterId = $v;
+
+        return $this;
+    }
+
+    public function getContactId(): int
+    {
+        return $this->contactId;
+    }
+
+    public function setContactId(int $v): self
+    {
+        $this->contactId = $v;
+
+        return $this;
+    }
+
+    public function getEmailAtSend(): string
+    {
+        return $this->emailAtSend;
+    }
+
+    public function setEmailAtSend(string $v): self
+    {
+        $this->emailAtSend = $v;
+
+        return $this;
+    }
+
+    public function getStatus(): string
+    {
+        return $this->status;
+    }
+
+    public function setStatus(string $v): self
+    {
+        $this->status = $v;
+
+        return $this;
+    }
+
+    public function getTrackingToken(): string
+    {
+        return $this->trackingToken;
+    }
+
+    public function setTrackingToken(string $v): self
+    {
+        $this->trackingToken = $v;
+
+        return $this;
+    }
+
+    public function getSentAt(): ?\DateTimeInterface
+    {
+        return $this->sentAt;
+    }
+
+    public function setSentAt(?\DateTimeInterface $v): self
+    {
+        $this->sentAt = $v;
+
+        return $this;
+    }
+
+    public function getOpenedAt(): ?\DateTimeInterface
+    {
+        return $this->openedAt;
+    }
+
+    public function setOpenedAt(?\DateTimeInterface $v): self
+    {
+        $this->openedAt = $v;
+
+        return $this;
+    }
+
+    public function getLastClickedAt(): ?\DateTimeInterface
+    {
+        return $this->lastClickedAt;
+    }
+
+    public function setLastClickedAt(?\DateTimeInterface $v): self
+    {
+        $this->lastClickedAt = $v;
+
+        return $this;
+    }
+
+    public function getClicksCount(): int
+    {
+        return $this->clicksCount;
+    }
+
+    public function setClicksCount(int $v): self
+    {
+        $this->clicksCount = $v;
+
+        return $this;
+    }
+
+    public function getBounceReason(): ?string
+    {
+        return $this->bounceReason;
+    }
+
+    public function setBounceReason(?string $v): self
+    {
+        $this->bounceReason = $v;
+
+        return $this;
+    }
+
+    public function getFailureReason(): ?string
+    {
+        return $this->failureReason;
+    }
+
+    public function setFailureReason(?string $v): self
+    {
+        $this->failureReason = $v;
+
+        return $this;
+    }
+
+    public function getAttemptCount(): int
+    {
+        return $this->attemptCount;
+    }
+
+    public function setAttemptCount(int $v): self
+    {
+        $this->attemptCount = $v;
+
+        return $this;
+    }
+
+    public function getClaimedAt(): ?\DateTimeInterface
+    {
+        return $this->claimedAt;
+    }
+
+    public function setClaimedAt(?\DateTimeInterface $v): self
+    {
+        $this->claimedAt = $v;
+
+        return $this;
+    }
+
+    public function isTest(): bool
+    {
+        return $this->isTest;
+    }
+
+    public function setIsTest(bool $v): self
+    {
+        $this->isTest = $v;
+
+        return $this;
+    }
 }

@@ -46,16 +46,75 @@ class NewsletterTemplate
         $this->updatedAt = new \DateTimeImmutable();
     }
 
-    public function getId(): ?int { return $this->id; }
-    public function getName(): string { return $this->name; }
-    public function setName(string $v): self { $this->name = $v; return $this; }
-    public function getTheme(): string { return $this->theme; }
-    public function setTheme(string $v): self { $this->theme = $v; return $this; }
-    public function getSubjectTemplate(): ?string { return $this->subjectTemplate; }
-    public function setSubjectTemplate(?string $v): self { $this->subjectTemplate = $v; return $this; }
-    public function getBodyMarkdown(): string { return $this->bodyMarkdown; }
-    public function setBodyMarkdown(string $v): self { $this->bodyMarkdown = $v; return $this; }
-    public function getMergeFieldsSchema(): ?array { return $this->mergeFieldsSchema; }
-    public function setMergeFieldsSchema(?array $v): self { $this->mergeFieldsSchema = $v; return $this; }
-    public function touch(): self { $this->updatedAt = new \DateTimeImmutable(); return $this; }
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function setName(string $v): self
+    {
+        $this->name = $v;
+
+        return $this;
+    }
+
+    public function getTheme(): string
+    {
+        return $this->theme;
+    }
+
+    public function setTheme(string $v): self
+    {
+        $this->theme = $v;
+
+        return $this;
+    }
+
+    public function getSubjectTemplate(): ?string
+    {
+        return $this->subjectTemplate;
+    }
+
+    public function setSubjectTemplate(?string $v): self
+    {
+        $this->subjectTemplate = $v;
+
+        return $this;
+    }
+
+    public function getBodyMarkdown(): string
+    {
+        return $this->bodyMarkdown;
+    }
+
+    public function setBodyMarkdown(string $v): self
+    {
+        $this->bodyMarkdown = $v;
+
+        return $this;
+    }
+
+    public function getMergeFieldsSchema(): ?array
+    {
+        return $this->mergeFieldsSchema;
+    }
+
+    public function setMergeFieldsSchema(?array $v): self
+    {
+        $this->mergeFieldsSchema = $v;
+
+        return $this;
+    }
+
+    public function touch(): self
+    {
+        $this->updatedAt = new \DateTimeImmutable();
+
+        return $this;
+    }
 }

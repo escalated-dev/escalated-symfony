@@ -33,12 +33,49 @@ class NewsletterListMember
         $this->addedAt = new \DateTimeImmutable();
     }
 
-    public function getId(): ?int { return $this->id; }
-    public function getListId(): int { return $this->listId; }
-    public function setListId(int $v): self { $this->listId = $v; return $this; }
-    public function getContactId(): int { return $this->contactId; }
-    public function setContactId(int $v): self { $this->contactId = $v; return $this; }
-    public function getAddedAt(): \DateTimeInterface { return $this->addedAt; }
-    public function getAddedBy(): ?string { return $this->addedBy; }
-    public function setAddedBy(?string $v): self { $this->addedBy = $v; return $this; }
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
+    public function getListId(): int
+    {
+        return $this->listId;
+    }
+
+    public function setListId(int $v): self
+    {
+        $this->listId = $v;
+
+        return $this;
+    }
+
+    public function getContactId(): int
+    {
+        return $this->contactId;
+    }
+
+    public function setContactId(int $v): self
+    {
+        $this->contactId = $v;
+
+        return $this;
+    }
+
+    public function getAddedAt(): \DateTimeInterface
+    {
+        return $this->addedAt;
+    }
+
+    public function getAddedBy(): ?string
+    {
+        return $this->addedBy;
+    }
+
+    public function setAddedBy(?string $v): self
+    {
+        $this->addedBy = $v;
+
+        return $this;
+    }
 }

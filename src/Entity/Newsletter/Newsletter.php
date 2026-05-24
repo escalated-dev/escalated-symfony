@@ -87,40 +87,219 @@ class Newsletter
         $this->updatedAt = new \DateTimeImmutable();
     }
 
-    public function getId(): ?int { return $this->id; }
-    public function getSubject(): string { return $this->subject; }
-    public function setSubject(string $v): self { $this->subject = $v; return $this; }
-    public function getFromEmail(): string { return $this->fromEmail; }
-    public function setFromEmail(string $v): self { $this->fromEmail = $v; return $this; }
-    public function getFromName(): ?string { return $this->fromName; }
-    public function setFromName(?string $v): self { $this->fromName = $v; return $this; }
-    public function getReplyTo(): ?string { return $this->replyTo; }
-    public function setReplyTo(?string $v): self { $this->replyTo = $v; return $this; }
-    public function getTargetListId(): int { return $this->targetListId; }
-    public function setTargetListId(int $v): self { $this->targetListId = $v; return $this; }
-    public function getTemplateId(): ?int { return $this->templateId; }
-    public function setTemplateId(?int $v): self { $this->templateId = $v; return $this; }
-    public function getTheme(): ?string { return $this->theme; }
-    public function setTheme(?string $v): self { $this->theme = $v; return $this; }
-    public function getBodyMarkdown(): ?string { return $this->bodyMarkdown; }
-    public function setBodyMarkdown(?string $v): self { $this->bodyMarkdown = $v; return $this; }
-    public function getStatus(): string { return $this->status; }
-    public function setStatus(string $v): self { $this->status = $v; return $this; }
-    public function getScheduledAt(): ?\DateTimeInterface { return $this->scheduledAt; }
-    public function setScheduledAt(?\DateTimeInterface $v): self { $this->scheduledAt = $v; return $this; }
-    public function getSentAt(): ?\DateTimeInterface { return $this->sentAt; }
-    public function setSentAt(?\DateTimeInterface $v): self { $this->sentAt = $v; return $this; }
-    public function getSummaryTotal(): int { return $this->summaryTotal; }
-    public function setSummaryTotal(int $v): self { $this->summaryTotal = $v; return $this; }
-    public function getSummarySent(): int { return $this->summarySent; }
-    public function incrementSummarySent(int $by = 1): self { $this->summarySent += $by; return $this; }
-    public function getSummaryOpened(): int { return $this->summaryOpened; }
-    public function incrementSummaryOpened(int $by = 1): self { $this->summaryOpened += $by; return $this; }
-    public function getSummaryClicked(): int { return $this->summaryClicked; }
-    public function incrementSummaryClicked(int $by = 1): self { $this->summaryClicked += $by; return $this; }
-    public function getSummaryBounced(): int { return $this->summaryBounced; }
-    public function incrementSummaryBounced(int $by = 1): self { $this->summaryBounced += $by; return $this; }
-    public function getSummaryComplained(): int { return $this->summaryComplained; }
-    public function incrementSummaryComplained(int $by = 1): self { $this->summaryComplained += $by; return $this; }
-    public function touch(): self { $this->updatedAt = new \DateTimeImmutable(); return $this; }
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
+    public function getSubject(): string
+    {
+        return $this->subject;
+    }
+
+    public function setSubject(string $v): self
+    {
+        $this->subject = $v;
+
+        return $this;
+    }
+
+    public function getFromEmail(): string
+    {
+        return $this->fromEmail;
+    }
+
+    public function setFromEmail(string $v): self
+    {
+        $this->fromEmail = $v;
+
+        return $this;
+    }
+
+    public function getFromName(): ?string
+    {
+        return $this->fromName;
+    }
+
+    public function setFromName(?string $v): self
+    {
+        $this->fromName = $v;
+
+        return $this;
+    }
+
+    public function getReplyTo(): ?string
+    {
+        return $this->replyTo;
+    }
+
+    public function setReplyTo(?string $v): self
+    {
+        $this->replyTo = $v;
+
+        return $this;
+    }
+
+    public function getTargetListId(): int
+    {
+        return $this->targetListId;
+    }
+
+    public function setTargetListId(int $v): self
+    {
+        $this->targetListId = $v;
+
+        return $this;
+    }
+
+    public function getTemplateId(): ?int
+    {
+        return $this->templateId;
+    }
+
+    public function setTemplateId(?int $v): self
+    {
+        $this->templateId = $v;
+
+        return $this;
+    }
+
+    public function getTheme(): ?string
+    {
+        return $this->theme;
+    }
+
+    public function setTheme(?string $v): self
+    {
+        $this->theme = $v;
+
+        return $this;
+    }
+
+    public function getBodyMarkdown(): ?string
+    {
+        return $this->bodyMarkdown;
+    }
+
+    public function setBodyMarkdown(?string $v): self
+    {
+        $this->bodyMarkdown = $v;
+
+        return $this;
+    }
+
+    public function getStatus(): string
+    {
+        return $this->status;
+    }
+
+    public function setStatus(string $v): self
+    {
+        $this->status = $v;
+
+        return $this;
+    }
+
+    public function getScheduledAt(): ?\DateTimeInterface
+    {
+        return $this->scheduledAt;
+    }
+
+    public function setScheduledAt(?\DateTimeInterface $v): self
+    {
+        $this->scheduledAt = $v;
+
+        return $this;
+    }
+
+    public function getSentAt(): ?\DateTimeInterface
+    {
+        return $this->sentAt;
+    }
+
+    public function setSentAt(?\DateTimeInterface $v): self
+    {
+        $this->sentAt = $v;
+
+        return $this;
+    }
+
+    public function getSummaryTotal(): int
+    {
+        return $this->summaryTotal;
+    }
+
+    public function setSummaryTotal(int $v): self
+    {
+        $this->summaryTotal = $v;
+
+        return $this;
+    }
+
+    public function getSummarySent(): int
+    {
+        return $this->summarySent;
+    }
+
+    public function incrementSummarySent(int $by = 1): self
+    {
+        $this->summarySent += $by;
+
+        return $this;
+    }
+
+    public function getSummaryOpened(): int
+    {
+        return $this->summaryOpened;
+    }
+
+    public function incrementSummaryOpened(int $by = 1): self
+    {
+        $this->summaryOpened += $by;
+
+        return $this;
+    }
+
+    public function getSummaryClicked(): int
+    {
+        return $this->summaryClicked;
+    }
+
+    public function incrementSummaryClicked(int $by = 1): self
+    {
+        $this->summaryClicked += $by;
+
+        return $this;
+    }
+
+    public function getSummaryBounced(): int
+    {
+        return $this->summaryBounced;
+    }
+
+    public function incrementSummaryBounced(int $by = 1): self
+    {
+        $this->summaryBounced += $by;
+
+        return $this;
+    }
+
+    public function getSummaryComplained(): int
+    {
+        return $this->summaryComplained;
+    }
+
+    public function incrementSummaryComplained(int $by = 1): self
+    {
+        $this->summaryComplained += $by;
+
+        return $this;
+    }
+
+    public function touch(): self
+    {
+        $this->updatedAt = new \DateTimeImmutable();
+
+        return $this;
+    }
 }

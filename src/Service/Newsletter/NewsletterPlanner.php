@@ -15,7 +15,8 @@ class NewsletterPlanner
         private readonly EntityManagerInterface $em,
         private readonly ContactSegmentResolver $segments,
         private readonly BounceSuppressionStore $bounces,
-    ) {}
+    ) {
+    }
 
     public function plan(Newsletter $newsletter): void
     {
@@ -29,6 +30,7 @@ class NewsletterPlanner
         if (!$list) {
             $newsletter->setSummaryTotal(0);
             $this->em->flush();
+
             return;
         }
 
@@ -36,6 +38,7 @@ class NewsletterPlanner
         if (!$contactIds) {
             $newsletter->setSummaryTotal(0);
             $this->em->flush();
+
             return;
         }
 
@@ -51,7 +54,9 @@ class NewsletterPlanner
 
         $batch = 0;
         foreach ($contacts as $c) {
-            if (!isset($sendable[strtolower($c['email'])])) continue;
+            if (!isset($sendable[strtolower($c['email'])])) {
+                continue;
+            }
             $row = (new NewsletterDelivery())
                 ->setNewsletterId($newsletter->getId())
                 ->setContactId((int) $c['id'])
@@ -61,7 +66,7 @@ class NewsletterPlanner
                 ->setAttemptCount(0)
                 ->setIsTest(false);
             $this->em->persist($row);
-            if (++$batch % 500 === 0) {
+            if (0 === ++$batch % 500) {
                 $this->em->flush();
                 $this->em->clear(NewsletterDelivery::class);
             }

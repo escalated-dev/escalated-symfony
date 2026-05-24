@@ -13,13 +13,18 @@ class NewsletterTracker
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly BounceSuppressionStore $bounces,
-    ) {}
+    ) {
+    }
 
     public function recordOpen(string $token): void
     {
         $d = $this->findByToken($token);
-        if (!$d || in_array($d->getStatus(), ['bounced', 'complained', 'failed'], true)) return;
-        if ($d->getOpenedAt() !== null) return;
+        if (!$d || in_array($d->getStatus(), ['bounced', 'complained', 'failed'], true)) {
+            return;
+        }
+        if (null !== $d->getOpenedAt()) {
+            return;
+        }
         $d->setOpenedAt(new \DateTimeImmutable());
         $this->em->flush();
         $this->incrementNewsletter($d->getNewsletterId(), 'incrementSummaryOpened');
@@ -28,22 +33,30 @@ class NewsletterTracker
     public function recordClick(string $token, string $_url): void
     {
         $d = $this->findByToken($token);
-        if (!$d || in_array($d->getStatus(), ['bounced', 'complained', 'failed'], true)) return;
-        $firstClick = $d->getClicksCount() === 0;
+        if (!$d || in_array($d->getStatus(), ['bounced', 'complained', 'failed'], true)) {
+            return;
+        }
+        $firstClick = 0 === $d->getClicksCount();
         $d->setClicksCount($d->getClicksCount() + 1)->setLastClickedAt(new \DateTimeImmutable());
-        if ($d->getOpenedAt() === null) {
+        if (null === $d->getOpenedAt()) {
             $d->setOpenedAt(new \DateTimeImmutable());
             $this->incrementNewsletter($d->getNewsletterId(), 'incrementSummaryOpened');
         }
         $this->em->flush();
-        if ($firstClick) $this->incrementNewsletter($d->getNewsletterId(), 'incrementSummaryClicked');
+        if ($firstClick) {
+            $this->incrementNewsletter($d->getNewsletterId(), 'incrementSummaryClicked');
+        }
     }
 
     public function recordBounce(string $token, string $type, ?string $reason = null): void
     {
-        if ($type !== 'hard') return;
+        if ('hard' !== $type) {
+            return;
+        }
         $d = $this->findByToken($token);
-        if (!$d || $d->getStatus() === 'bounced') return;
+        if (!$d || 'bounced' === $d->getStatus()) {
+            return;
+        }
         $d->setStatus('bounced')->setBounceReason($reason);
         $this->em->flush();
         $this->incrementNewsletter($d->getNewsletterId(), 'incrementSummaryBounced');
@@ -53,7 +66,9 @@ class NewsletterTracker
     public function recordComplaint(string $token): void
     {
         $d = $this->findByToken($token);
-        if (!$d || $d->getStatus() === 'complained') return;
+        if (!$d || 'complained' === $d->getStatus()) {
+            return;
+        }
         $d->setStatus('complained');
         $this->em->flush();
         $this->incrementNewsletter($d->getNewsletterId(), 'incrementSummaryComplained');

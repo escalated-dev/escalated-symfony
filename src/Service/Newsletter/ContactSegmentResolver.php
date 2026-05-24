@@ -11,14 +11,17 @@ use Escalated\Symfony\Entity\Newsletter\NewsletterListMember;
 
 class ContactSegmentResolver
 {
-    public function __construct(private readonly EntityManagerInterface $em) {}
+    public function __construct(private readonly EntityManagerInterface $em)
+    {
+    }
 
     /** @return array<int> */
     public function resolve(NewsletterList $list): array
     {
-        if ($list->getKind() === 'static') {
+        if ('static' === $list->getKind()) {
             return $this->staticIds($list);
         }
+
         return $this->applyFilter($list->getFilterJson() ?? ['rules' => []])
             ->select('c.id')->getQuery()->getSingleColumnResult();
     }
@@ -31,13 +34,16 @@ class ContactSegmentResolver
             ->select('c.id')
             ->where('c.marketingOptOutAt IS NULL');
 
-        if ($list->getKind() === 'static') {
+        if ('static' === $list->getKind()) {
             $ids = $this->staticIds($list);
-            if (!$ids) return [];
+            if (!$ids) {
+                return [];
+            }
             $qb->andWhere('c.id IN (:ids)')->setParameter('ids', $ids);
         } else {
             $this->appendFilter($qb, $list->getFilterJson() ?? ['rules' => []]);
         }
+
         return array_map('intval', $qb->getQuery()->getSingleColumnResult());
     }
 
@@ -45,6 +51,7 @@ class ContactSegmentResolver
     {
         $qb = $this->em->createQueryBuilder()->from(Contact::class, 'c')->select('COUNT(c.id)');
         $this->appendFilter($qb, $filter);
+
         return (int) $qb->getQuery()->getSingleScalarResult();
     }
 
@@ -67,6 +74,7 @@ class ContactSegmentResolver
     {
         $qb = $this->em->createQueryBuilder()->from(Contact::class, 'c')->select('c.id');
         $this->appendFilter($qb, $filter);
+
         return $qb;
     }
 
@@ -77,8 +85,10 @@ class ContactSegmentResolver
             $field = $rule['field'] ?? null;
             $op = $rule['op'] ?? '=';
             $value = $rule['value'] ?? null;
-            if (!$field) continue;
-            $param = 'p' . ($idx++);
+            if (!$field) {
+                continue;
+            }
+            $param = 'p'.($idx++);
             if (str_starts_with($field, 'metadata.')) {
                 // Metadata JSON contains-check; SQL backend-specific. For v1, push it down as raw.
                 $key = substr($field, strlen('metadata.'));

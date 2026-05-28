@@ -53,6 +53,9 @@ class EscalatedBundle extends AbstractBundle
         $builder->setParameter('escalated.tickets.allow_customer_close', $config['tickets']['allow_customer_close']);
         $builder->setParameter('escalated.tickets.default_priority', $config['tickets']['default_priority']);
 
+        // Custom ticket actions (host-defined buttons)
+        $builder->setParameter('escalated.ticket_actions', $config['ticket_actions'] ?? []);
+
         // Conditionally load web routes only when UI is enabled
         if ($config['ui_enabled']) {
             $container->import('../config/routes.yaml');

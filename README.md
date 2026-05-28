@@ -183,6 +183,69 @@ closed -> reopened
 reopened -> in_progress, waiting_on_customer, waiting_on_agent, escalated, resolved, closed
 ```
 
+## Custom Ticket Actions
+
+Host applications can add custom buttons to the agent ticket screen and handle
+clicks with normal Symfony events. Define static actions in config:
+
+```yaml
+# config/packages/escalated.yaml
+escalated:
+    ticket_actions:
+        - key: sync-crm
+          label: 'Sync CRM'
+          variant: primary
+          confirmation: 'Sync this ticket to the CRM?'
+          metadata: { icon: refresh-cw }
+```
+
+For dynamic visibility/labels, register a service implementing
+`Escalated\Symfony\Contract\TicketActionInterface` — it is auto-tagged and
+collected by the registry:
+
+```php
+use Escalated\Symfony\Contract\TicketActionInterface;
+use Escalated\Symfony\Entity\Ticket;
+
+class SyncCrmTicketAction implements TicketActionInterface
+{
+    public function getKey(): string { return 'sync-crm'; }
+    public function getLabel(Ticket $ticket, mixed $user): string { return 'Sync CRM'; }
+    public function isVisible(Ticket $ticket, mixed $user): bool { return true; }
+    public function isEnabled(Ticket $ticket, mixed $user): bool { return !($ticket->getMetadata()['crm_synced'] ?? false); }
+    public function getVariant(): string { return 'primary'; }
+    public function getConfirmation(Ticket $ticket, mixed $user): ?string { return 'Sync this ticket to the CRM?'; }
+    public function getMetadata(Ticket $ticket, mixed $user): array { return ['icon' => 'refresh-cw']; }
+}
+```
+
+The agent ticket show exposes visible actions as `customActions`, and the API
+detail response as `custom_actions` (each with `url` + `method`). Triggering one
+(`POST /agent/tickets/{reference}/actions/{actionKey}`) validates the action is
+visible (404) and enabled (403), then dispatches
+`Escalated\Symfony\Event\TicketCustomActionTriggeredEvent`:
+
+```php
+use Escalated\Symfony\Event\TicketCustomActionTriggeredEvent;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
+
+#[AsEventListener]
+final class CrmSyncListener
+{
+    public function __invoke(TicketCustomActionTriggeredEvent $event): void
+    {
+        if ('sync-crm' !== $event->action) {
+            return;
+        }
+        // $event->ticket, $event->userId, $event->payload, $event->metadata
+    }
+}
+```
+
+The event exposes `ticket`, `action`, `userId`, `payload`, and `metadata`.
+Escalated also records an internal note on the ticket whenever an action fires,
+for auditability.
+
 ## Translations
 
 Escalated bundles ship their UI strings from a single source of truth:

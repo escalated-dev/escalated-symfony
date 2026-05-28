@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace Escalated\Symfony\Controller\Api;
 
+use Escalated\Symfony\Entity\Ticket;
+use Escalated\Symfony\Event\TicketCustomActionTriggeredEvent;
+use Escalated\Symfony\Service\TicketActionRegistry;
 use Escalated\Symfony\Service\TicketService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,7 +22,28 @@ class TicketController extends AbstractController
     public function __construct(
         private readonly TicketService $ticketService,
         private readonly SerializerInterface $serializer,
+        private readonly TicketActionRegistry $ticketActions,
+        private readonly EventDispatcherInterface $dispatcher,
     ) {
+    }
+
+    /**
+     * Serializes the visible custom actions for a ticket, adding url + method.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function customActionsForTicket(Ticket $ticket, mixed $user): array
+    {
+        return array_map(
+            fn (array $action): array => array_merge($action, [
+                'url' => $this->generateUrl('escalated.api.tickets.custom-action', [
+                    'reference' => $ticket->getReference(),
+                    'actionKey' => $action['key'],
+                ]),
+                'method' => 'post',
+            ]),
+            $this->ticketActions->forTicket($ticket, $user),
+        );
     }
 
     #[Route('', name: 'index', methods: ['GET'])]
@@ -39,8 +64,43 @@ class TicketController extends AbstractController
             return $this->json(['error' => 'Ticket not found.'], Response::HTTP_NOT_FOUND);
         }
 
+        $data = json_decode($this->serializer->serialize($ticket, 'json', ['groups' => 'ticket:detail']), true);
+        $data['custom_actions'] = $this->customActionsForTicket($ticket, $this->getUser());
+
+        return $this->json(['data' => $data]);
+    }
+
+    #[Route('/{reference}/actions/{actionKey}', name: 'custom-action', methods: ['POST'])]
+    public function customAction(string $reference, string $actionKey, Request $request): JsonResponse
+    {
+        $ticket = $this->ticketService->find($reference);
+        if (null === $ticket) {
+            return $this->json(['error' => 'Ticket not found.'], Response::HTTP_NOT_FOUND);
+        }
+
+        $user = $this->getUser();
+        $action = $this->ticketActions->find($actionKey);
+
+        if (null === $action || !$action->isVisible($ticket, $user)) {
+            return $this->json(['error' => 'Custom action not found.'], Response::HTTP_NOT_FOUND);
+        }
+        if (!$action->isEnabled($ticket, $user)) {
+            return $this->json(['error' => 'Custom action is not enabled.'], Response::HTTP_FORBIDDEN);
+        }
+
+        $payload = json_decode($request->getContent(), true)['payload'] ?? [];
+
+        $this->dispatcher->dispatch(new TicketCustomActionTriggeredEvent(
+            $ticket,
+            $action->getKey(),
+            (int) $user->getUserIdentifier(),
+            is_array($payload) ? $payload : [],
+            $action->getMetadata($ticket, $user),
+        ));
+
         return $this->json([
-            'data' => json_decode($this->serializer->serialize($ticket, 'json', ['groups' => 'ticket:detail']), true),
+            'message' => 'Custom action dispatched.',
+            'action' => $action->getKey(),
         ]);
     }
 

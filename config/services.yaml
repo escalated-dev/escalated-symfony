@@ -4,6 +4,11 @@ services:
         autoconfigure: true
         public: false
 
+    # Auto-tag host-defined ticket action services so the registry can collect them.
+    _instanceof:
+        Escalated\Symfony\Contract\TicketActionInterface:
+            tags: ['escalated.ticket_action']
+
     # Auto-register everything under the bundle's src tree. Individual services
     # below override arguments / tags where needed; this resource catches the
     # rest (notably every class under Service/, Serializer/, Security/,
@@ -15,6 +20,8 @@ services:
             - '../src/Entity/'
             - '../src/DependencyInjection/'
             - '../src/EscalatedBundle.php'
+            # Plain config wrapper, instantiated by the registry — not a service.
+            - '../src/Support/ArrayTicketAction.php'
 
     # Repositories (override to attach the Doctrine tag)
     Escalated\Symfony\Repository\TicketRepository:
@@ -25,6 +32,12 @@ services:
 
     Escalated\Symfony\Repository\EscalatedSettingRepository:
         tags: ['doctrine.repository_service']
+
+    # Custom ticket action registry: tagged services + config-defined actions
+    Escalated\Symfony\Service\TicketActionRegistry:
+        arguments:
+            $taggedActions: !tagged_iterator escalated.ticket_action
+            $configActions: '%escalated.ticket_actions%'
 
     # SlaService needs parameter injection
     Escalated\Symfony\Service\SlaService:

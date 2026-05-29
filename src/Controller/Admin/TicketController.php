@@ -79,11 +79,11 @@ class TicketController extends AbstractController
             throw $this->createNotFoundException('Ticket not found.');
         }
 
-        $agentId = (int) $request->request->get('agent_id');
+        $agentId = $request->request->get('agent_id');
         $this->assignmentService->assign(
             $ticket,
             $agentId,
-            (int) $this->getUser()->getUserIdentifier()
+            $this->getUser()->getUserIdentifier()
         );
 
         $this->addFlash('success', 'Ticket assigned.');

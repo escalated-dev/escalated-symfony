@@ -6,6 +6,7 @@ namespace Escalated\Symfony\Entity;
 
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Escalated\Symfony\Doctrine\UserIdType;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_ticket_activities')]
@@ -37,8 +38,8 @@ class TicketActivity
     #[ORM\Column(type: Types::STRING, length: 32)]
     private string $type;
 
-    #[ORM\Column(type: Types::INTEGER, nullable: true)]
-    private ?int $causerId = null;
+    #[ORM\Column(type: UserIdType::NAME, nullable: true)]
+    private int|string|null $causerId = null;
 
     #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
     private ?string $causerClass = null;
@@ -83,12 +84,12 @@ class TicketActivity
         return $this;
     }
 
-    public function getCauserId(): ?int
+    public function getCauserId(): int|string|null
     {
         return $this->causerId;
     }
 
-    public function setCauserId(?int $causerId): self
+    public function setCauserId(int|string|null $causerId): self
     {
         $this->causerId = $causerId;
 

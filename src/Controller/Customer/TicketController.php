@@ -65,7 +65,7 @@ class TicketController extends AbstractController
 
         $user = $this->getUser();
         $data = $request->request->all();
-        $data['requester_id'] = (int) $user->getUserIdentifier();
+        $data['requester_id'] = $user->getUserIdentifier();
         $data['requester_class'] = get_class($user);
 
         $ticket = $this->ticketService->create($data);
@@ -108,7 +108,7 @@ class TicketController extends AbstractController
 
         $this->ticketService->addReply(
             $ticket,
-            (int) $this->getUser()->getUserIdentifier(),
+            $this->getUser()->getUserIdentifier(),
             $request->request->get('body', ''),
             false,
             get_class($this->getUser()),
@@ -137,7 +137,7 @@ class TicketController extends AbstractController
 
         $this->authorizeCustomer($ticket);
 
-        $this->ticketService->close($ticket, (int) $this->getUser()->getUserIdentifier());
+        $this->ticketService->close($ticket, $this->getUser()->getUserIdentifier());
 
         $this->addFlash('success', 'Ticket closed.');
 
@@ -158,7 +158,7 @@ class TicketController extends AbstractController
 
         $this->authorizeCustomer($ticket);
 
-        $this->ticketService->reopen($ticket, (int) $this->getUser()->getUserIdentifier());
+        $this->ticketService->reopen($ticket, $this->getUser()->getUserIdentifier());
 
         $this->addFlash('success', 'Ticket reopened.');
 
@@ -170,7 +170,7 @@ class TicketController extends AbstractController
     private function authorizeCustomer(Ticket $ticket): void
     {
         $user = $this->getUser();
-        $userId = (int) $user->getUserIdentifier();
+        $userId = $user->getUserIdentifier();
         $userClass = get_class($user);
 
         if ($ticket->getRequesterId() !== $userId || $ticket->getRequesterClass() !== $userClass) {

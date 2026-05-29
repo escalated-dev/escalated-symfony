@@ -56,7 +56,7 @@ class ChatController extends AbstractController
             return $this->json(['error' => 'Session is not waiting for an agent.'], Response::HTTP_CONFLICT);
         }
 
-        $agentId = (int) $this->getUser()->getUserIdentifier();
+        $agentId = $this->getUser()->getUserIdentifier();
         $this->chatSessionService->assignAgent($session, $agentId);
 
         return $this->json(['data' => ['status' => 'accepted']]);
@@ -80,7 +80,7 @@ class ChatController extends AbstractController
             );
         }
 
-        $agentId = (int) $this->getUser()->getUserIdentifier();
+        $agentId = $this->getUser()->getUserIdentifier();
         $this->chatSessionService->sendMessage(
             $session,
             $data['body'],
@@ -101,7 +101,7 @@ class ChatController extends AbstractController
             return $this->json(['error' => 'Session not found.'], Response::HTTP_NOT_FOUND);
         }
 
-        $agentId = (int) $this->getUser()->getUserIdentifier();
+        $agentId = $this->getUser()->getUserIdentifier();
         $this->chatSessionService->endSession($session, $agentId);
 
         return $this->json(['data' => ['status' => 'ended']]);

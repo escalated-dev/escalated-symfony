@@ -6,6 +6,7 @@ namespace Escalated\Symfony\Entity;
 
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Escalated\Symfony\Doctrine\UserIdType;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_agent_profiles')]
@@ -21,8 +22,8 @@ class AgentProfile
     #[ORM\Column(type: Types::INTEGER)]
     private ?int $id = null;
 
-    #[ORM\Column(type: Types::INTEGER)]
-    private int $userId;
+    #[ORM\Column(type: UserIdType::NAME)]
+    private int|string $userId;
 
     #[ORM\Column(type: Types::STRING, length: 16)]
     private string $agentType = self::TYPE_FULL;
@@ -65,12 +66,12 @@ class AgentProfile
         return $this->id;
     }
 
-    public function getUserId(): int
+    public function getUserId(): int|string
     {
         return $this->userId;
     }
 
-    public function setUserId(int $userId): self
+    public function setUserId(int|string $userId): self
     {
         $this->userId = $userId;
 

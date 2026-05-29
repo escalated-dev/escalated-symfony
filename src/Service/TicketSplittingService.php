@@ -29,7 +29,7 @@ class TicketSplittingService
      *
      * @param array{subject?: string} $overrides Optional overrides for the new ticket
      */
-    public function splitTicket(Ticket $originalTicket, Reply $reply, int $causerId, array $overrides = []): Ticket
+    public function splitTicket(Ticket $originalTicket, Reply $reply, int|string $causerId, array $overrides = []): Ticket
     {
         if ($reply->getTicket() !== $originalTicket) {
             throw new \InvalidArgumentException('The reply does not belong to the specified ticket.');
@@ -113,7 +113,7 @@ class TicketSplittingService
         return $meta['split_from'] ?? null;
     }
 
-    private function logActivity(Ticket $ticket, string $type, ?int $causerId, array $properties = []): void
+    private function logActivity(Ticket $ticket, string $type, int|string|null $causerId, array $properties = []): void
     {
         $activity = new TicketActivity();
         $activity->setTicket($ticket);

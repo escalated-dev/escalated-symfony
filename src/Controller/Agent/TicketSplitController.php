@@ -50,7 +50,7 @@ class TicketSplitController extends AbstractController
             $newTicket = $this->splittingService->splitTicket(
                 $ticket,
                 $reply,
-                (int) $this->getUser()->getUserIdentifier(),
+                $this->getUser()->getUserIdentifier(),
                 $overrides,
             );
         } catch (\InvalidArgumentException $e) {

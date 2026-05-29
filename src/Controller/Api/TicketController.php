@@ -93,7 +93,7 @@ class TicketController extends AbstractController
         $this->dispatcher->dispatch(new TicketCustomActionTriggeredEvent(
             $ticket,
             $action->getKey(),
-            (int) $user->getUserIdentifier(),
+            $user->getUserIdentifier(),
             is_array($payload) ? $payload : [],
             $action->getMetadata($ticket, $user),
         ));

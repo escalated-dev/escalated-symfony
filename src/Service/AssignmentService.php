@@ -23,7 +23,7 @@ class AssignmentService
     /**
      * Assign a ticket to an agent.
      */
-    public function assign(Ticket $ticket, int $agentId, ?int $causerId = null): Ticket
+    public function assign(Ticket $ticket, int|string $agentId, int|string|null $causerId = null): Ticket
     {
         $previousAgentId = $ticket->getAssignedTo();
         $ticket->setAssignedTo($agentId);
@@ -45,7 +45,7 @@ class AssignmentService
     /**
      * Unassign a ticket from its current agent.
      */
-    public function unassign(Ticket $ticket, ?int $causerId = null): Ticket
+    public function unassign(Ticket $ticket, int|string|null $causerId = null): Ticket
     {
         $previousAgentId = $ticket->getAssignedTo();
         $ticket->setAssignedTo(null);
@@ -61,7 +61,7 @@ class AssignmentService
     /**
      * Reassign a ticket to a different agent.
      */
-    public function reassign(Ticket $ticket, int $agentId, ?int $causerId = null): Ticket
+    public function reassign(Ticket $ticket, int|string $agentId, int|string|null $causerId = null): Ticket
     {
         return $this->assign($ticket, $agentId, $causerId);
     }
@@ -87,7 +87,7 @@ class AssignmentService
      *
      * @return array{open: int, sla_breached: int}
      */
-    public function getAgentWorkload(int $agentId): array
+    public function getAgentWorkload(int|string $agentId): array
     {
         return [
             'open' => $this->ticketRepository->countOpenByAgent($agentId),
@@ -100,7 +100,7 @@ class AssignmentService
         ];
     }
 
-    private function logActivity(Ticket $ticket, string $type, ?int $causerId = null, array $properties = []): void
+    private function logActivity(Ticket $ticket, string $type, int|string|null $causerId = null, array $properties = []): void
     {
         $activity = new TicketActivity();
         $activity->setTicket($ticket);

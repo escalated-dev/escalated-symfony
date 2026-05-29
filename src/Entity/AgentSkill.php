@@ -6,6 +6,7 @@ namespace Escalated\Symfony\Entity;
 
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Escalated\Symfony\Doctrine\UserIdType;
 use Escalated\Symfony\Repository\AgentSkillRepository;
 
 #[ORM\Entity(repositoryClass: AgentSkillRepository::class)]
@@ -19,8 +20,8 @@ class AgentSkill
     #[ORM\Column(type: Types::INTEGER)]
     private ?int $id = null;
 
-    #[ORM\Column(type: Types::INTEGER)]
-    private int $userId;
+    #[ORM\Column(type: UserIdType::NAME)]
+    private int|string $userId;
 
     #[ORM\ManyToOne(targetEntity: Skill::class, inversedBy: 'agentSkills')]
     #[ORM\JoinColumn(name: 'skill_id', nullable: false, onDelete: 'CASCADE')]
@@ -52,12 +53,12 @@ class AgentSkill
         return $this->id;
     }
 
-    public function getUserId(): int
+    public function getUserId(): int|string
     {
         return $this->userId;
     }
 
-    public function setUserId(int $userId): self
+    public function setUserId(int|string $userId): self
     {
         $this->userId = $userId;
 

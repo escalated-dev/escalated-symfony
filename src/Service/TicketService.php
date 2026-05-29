@@ -128,7 +128,7 @@ class TicketService
     /**
      * Transition a ticket to a new status.
      */
-    public function changeStatus(Ticket $ticket, string $newStatus, ?int $causerId = null): Ticket
+    public function changeStatus(Ticket $ticket, string $newStatus, int|string|null $causerId = null): Ticket
     {
         if (!$ticket->canTransitionTo($newStatus)) {
             throw new \InvalidArgumentException(sprintf('Cannot transition from "%s" to "%s".', $ticket->getStatus(), $newStatus));
@@ -165,7 +165,7 @@ class TicketService
     /**
      * Add a reply to a ticket.
      */
-    public function addReply(Ticket $ticket, int $authorId, string $body, bool $isNote = false, ?string $authorClass = null): Reply
+    public function addReply(Ticket $ticket, int|string $authorId, string $body, bool $isNote = false, ?string $authorClass = null): Reply
     {
         $reply = new Reply();
         $reply->setTicket($ticket);
@@ -246,17 +246,17 @@ class TicketService
             ->getResult();
     }
 
-    public function close(Ticket $ticket, ?int $causerId = null): Ticket
+    public function close(Ticket $ticket, int|string|null $causerId = null): Ticket
     {
         return $this->changeStatus($ticket, Ticket::STATUS_CLOSED, $causerId);
     }
 
-    public function resolve(Ticket $ticket, ?int $causerId = null): Ticket
+    public function resolve(Ticket $ticket, int|string|null $causerId = null): Ticket
     {
         return $this->changeStatus($ticket, Ticket::STATUS_RESOLVED, $causerId);
     }
 
-    public function reopen(Ticket $ticket, ?int $causerId = null): Ticket
+    public function reopen(Ticket $ticket, int|string|null $causerId = null): Ticket
     {
         return $this->changeStatus($ticket, Ticket::STATUS_REOPENED, $causerId);
     }
@@ -266,7 +266,7 @@ class TicketService
      *
      * @param int[] $tagIds
      */
-    public function addTags(Ticket $ticket, array $tagIds, ?int $causerId = null): Ticket
+    public function addTags(Ticket $ticket, array $tagIds, int|string|null $causerId = null): Ticket
     {
         foreach ($tagIds as $tagId) {
             $tag = $this->em->getReference(\Escalated\Symfony\Entity\Tag::class, $tagId);
@@ -295,7 +295,7 @@ class TicketService
      *
      * @param int[] $tagIds
      */
-    public function removeTags(Ticket $ticket, array $tagIds, ?int $causerId = null): Ticket
+    public function removeTags(Ticket $ticket, array $tagIds, int|string|null $causerId = null): Ticket
     {
         foreach ($tagIds as $tagId) {
             $tag = $this->em->find(\Escalated\Symfony\Entity\Tag::class, $tagId);
@@ -313,7 +313,7 @@ class TicketService
         return $ticket;
     }
 
-    private function logActivity(Ticket $ticket, string $type, ?int $causerId = null, array $properties = []): void
+    private function logActivity(Ticket $ticket, string $type, int|string|null $causerId = null, array $properties = []): void
     {
         $activity = new TicketActivity();
         $activity->setTicket($ticket);

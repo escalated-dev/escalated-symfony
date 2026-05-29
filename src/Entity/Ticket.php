@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Escalated\Symfony\Doctrine\UserIdType;
 use Escalated\Symfony\Repository\TicketRepository;
 use Symfony\Component\Uid\Uuid;
 
@@ -83,14 +84,14 @@ class Ticket
     #[ORM\Column(type: Types::STRING, length: 32, nullable: true)]
     private ?string $ticketType = null;
 
-    #[ORM\Column(type: Types::INTEGER, nullable: true)]
-    private ?int $requesterId = null;
+    #[ORM\Column(type: UserIdType::NAME, nullable: true)]
+    private int|string|null $requesterId = null;
 
     #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
     private ?string $requesterClass = null;
 
-    #[ORM\Column(type: Types::INTEGER, nullable: true)]
-    private ?int $assignedTo = null;
+    #[ORM\Column(type: UserIdType::NAME, nullable: true)]
+    private int|string|null $assignedTo = null;
 
     #[ORM\ManyToOne(targetEntity: Department::class, inversedBy: 'tickets')]
     #[ORM\JoinColumn(name: 'department_id', nullable: true)]
@@ -157,13 +158,13 @@ class Ticket
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $closedAt = null;
 
-    #[ORMColumn(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $snoozedUntil = null;
 
-    #[ORMColumn(type: Types::INTEGER, nullable: true)]
-    private ?int $snoozedBy = null;
+    #[ORM\Column(type: UserIdType::NAME, nullable: true)]
+    private int|string|null $snoozedBy = null;
 
-    #[ORMColumn(type: Types::STRING, length: 32, nullable: true)]
+    #[ORM\Column(type: Types::STRING, length: 32, nullable: true)]
     private ?string $statusBeforeSnooze = null;
 
     #[ORM\Column(type: Types::JSON, nullable: true)]
@@ -328,12 +329,12 @@ class Ticket
         return $this;
     }
 
-    public function getRequesterId(): ?int
+    public function getRequesterId(): int|string|null
     {
         return $this->requesterId;
     }
 
-    public function setRequesterId(?int $requesterId): self
+    public function setRequesterId(int|string|null $requesterId): self
     {
         $this->requesterId = $requesterId;
 
@@ -352,12 +353,12 @@ class Ticket
         return $this;
     }
 
-    public function getAssignedTo(): ?int
+    public function getAssignedTo(): int|string|null
     {
         return $this->assignedTo;
     }
 
-    public function setAssignedTo(?int $assignedTo): self
+    public function setAssignedTo(int|string|null $assignedTo): self
     {
         $this->assignedTo = $assignedTo;
 
@@ -653,12 +654,12 @@ class Ticket
         return $this;
     }
 
-    public function getSnoozedBy(): ?int
+    public function getSnoozedBy(): int|string|null
     {
         return $this->snoozedBy;
     }
 
-    public function setSnoozedBy(?int $snoozedBy): self
+    public function setSnoozedBy(int|string|null $snoozedBy): self
     {
         $this->snoozedBy = $snoozedBy;
 

@@ -27,7 +27,7 @@ class DashboardController extends AbstractController
         $this->denyAccessUnlessGranted('ESCALATED_AGENT');
 
         $user = $this->getUser();
-        $agentId = (int) $user->getUserIdentifier();
+        $agentId = $user->getUserIdentifier();
 
         $myTickets = $this->ticketRepository->findAssignedTo($agentId);
         $unassigned = $this->ticketRepository->findUnassigned();

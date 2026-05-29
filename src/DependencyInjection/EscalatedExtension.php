@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Escalated\Symfony\DependencyInjection;
 
+use Escalated\Symfony\Doctrine\UserIdType;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\Extension;
@@ -45,6 +46,11 @@ class EscalatedExtension extends Extension implements PrependExtensionInterface
     public function prepend(ContainerBuilder $container): void
     {
         $container->prependExtensionConfig('doctrine', [
+            'dbal' => [
+                'types' => [
+                    UserIdType::NAME => UserIdType::class,
+                ],
+            ],
             'orm' => [
                 'mappings' => [
                     'Escalated' => [

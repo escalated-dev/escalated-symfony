@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Escalated\Symfony;
 
 use Escalated\Symfony\DependencyInjection\Configuration;
+use Escalated\Symfony\Doctrine\UserIdType;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -66,6 +67,11 @@ class EscalatedBundle extends AbstractBundle
     {
         // Prepend Doctrine mapping configuration for Escalated entities
         $builder->prependExtensionConfig('doctrine', [
+            'dbal' => [
+                'types' => [
+                    UserIdType::NAME => UserIdType::class,
+                ],
+            ],
             'orm' => [
                 'mappings' => [
                     'Escalated' => [

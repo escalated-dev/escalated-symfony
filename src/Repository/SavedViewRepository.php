@@ -28,7 +28,7 @@ class SavedViewRepository extends ServiceEntityRepository
      *
      * @return SavedView[]
      */
-    public function findForUser(int $userId): array
+    public function findForUser(int|string $userId): array
     {
         return $this->createQueryBuilder('v')
             ->where('v.userId = :userId OR v.isShared = true')
@@ -58,7 +58,7 @@ class SavedViewRepository extends ServiceEntityRepository
      *
      * @return SavedView[]
      */
-    public function findOwnedBy(int $userId): array
+    public function findOwnedBy(int|string $userId): array
     {
         return $this->createQueryBuilder('v')
             ->where('v.userId = :userId')
@@ -71,7 +71,7 @@ class SavedViewRepository extends ServiceEntityRepository
     /**
      * Get the default view for a user.
      */
-    public function findDefaultForUser(int $userId): ?SavedView
+    public function findDefaultForUser(int|string $userId): ?SavedView
     {
         return $this->createQueryBuilder('v')
             ->where('v.userId = :userId')

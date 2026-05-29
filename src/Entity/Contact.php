@@ -6,6 +6,7 @@ namespace Escalated\Symfony\Entity;
 
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Escalated\Symfony\Doctrine\UserIdType;
 
 /**
  * First-class identity for guest requesters (Pattern B).
@@ -35,8 +36,8 @@ class Contact
     private ?string $name = null;
 
     /** Host-app user id once the contact creates an account. */
-    #[ORM\Column(name: 'user_id', type: Types::INTEGER, nullable: true)]
-    private ?int $userId = null;
+    #[ORM\Column(name: 'user_id', type: UserIdType::NAME, nullable: true)]
+    private int|string|null $userId = null;
 
     /** @var array<string, mixed> */
     #[ORM\Column(type: Types::JSON)]
@@ -113,12 +114,12 @@ class Contact
         return $this;
     }
 
-    public function getUserId(): ?int
+    public function getUserId(): int|string|null
     {
         return $this->userId;
     }
 
-    public function setUserId(?int $userId): self
+    public function setUserId(int|string|null $userId): self
     {
         $this->userId = $userId;
 

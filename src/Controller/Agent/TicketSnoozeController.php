@@ -44,7 +44,7 @@ class TicketSnoozeController extends AbstractController
             $this->snoozeService->snooze(
                 $ticket,
                 $until,
-                (int) $this->getUser()->getUserIdentifier(),
+                $this->getUser()->getUserIdentifier(),
             );
         } catch (\InvalidArgumentException $e) {
             $this->addFlash('error', $e->getMessage());
@@ -74,7 +74,7 @@ class TicketSnoozeController extends AbstractController
         try {
             $this->snoozeService->unsnooze(
                 $ticket,
-                (int) $this->getUser()->getUserIdentifier(),
+                $this->getUser()->getUserIdentifier(),
             );
         } catch (\InvalidArgumentException $e) {
             $this->addFlash('error', $e->getMessage());

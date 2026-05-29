@@ -20,7 +20,7 @@ final class TicketCustomActionTriggeredEvent extends Event
     public function __construct(
         public readonly Ticket $ticket,
         public readonly string $action,
-        public readonly int $userId,
+        public readonly int|string $userId,
         public readonly array $payload = [],
         public readonly array $metadata = [],
     ) {

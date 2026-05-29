@@ -101,7 +101,7 @@ class TicketController extends AbstractController
         $this->dispatcher->dispatch(new TicketCustomActionTriggeredEvent(
             $ticket,
             $action->getKey(),
-            (int) $user->getUserIdentifier(),
+            $user->getUserIdentifier(),
             $payload,
             $action->getMetadata($ticket, $user),
         ));
@@ -127,7 +127,7 @@ class TicketController extends AbstractController
 
         $this->ticketService->addReply(
             $ticket,
-            (int) $this->getUser()->getUserIdentifier(),
+            $this->getUser()->getUserIdentifier(),
             $request->request->get('body', ''),
             $isNote,
             get_class($this->getUser()),
@@ -150,11 +150,11 @@ class TicketController extends AbstractController
             throw $this->createNotFoundException('Ticket not found.');
         }
 
-        $agentId = (int) $request->request->get('agent_id');
+        $agentId = $request->request->get('agent_id');
         $this->assignmentService->assign(
             $ticket,
             $agentId,
-            (int) $this->getUser()->getUserIdentifier()
+            $this->getUser()->getUserIdentifier()
         );
 
         $this->addFlash('success', 'Ticket assigned.');
@@ -178,7 +178,7 @@ class TicketController extends AbstractController
         $this->ticketService->changeStatus(
             $ticket,
             $newStatus,
-            (int) $this->getUser()->getUserIdentifier()
+            $this->getUser()->getUserIdentifier()
         );
 
         $this->addFlash('success', 'Ticket status updated.');

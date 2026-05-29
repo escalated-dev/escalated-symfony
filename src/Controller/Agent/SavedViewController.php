@@ -29,7 +29,7 @@ class SavedViewController extends AbstractController
     {
         $this->denyAccessUnlessGranted('ESCALATED_AGENT');
 
-        $userId = (int) $this->getUser()->getUserIdentifier();
+        $userId = $this->getUser()->getUserIdentifier();
         $views = $this->viewRepository->findForUser($userId);
 
         $data = array_map(fn (SavedView $v) => [
@@ -54,7 +54,7 @@ class SavedViewController extends AbstractController
         $this->denyAccessUnlessGranted('ESCALATED_AGENT');
 
         $data = json_decode($request->getContent(), true) ?? [];
-        $userId = (int) $this->getUser()->getUserIdentifier();
+        $userId = $this->getUser()->getUserIdentifier();
 
         $view = new SavedView();
         $view->setName($data['name'] ?? 'Untitled View');
@@ -84,7 +84,7 @@ class SavedViewController extends AbstractController
             return $this->json(['error' => 'View not found.'], Response::HTTP_NOT_FOUND);
         }
 
-        $userId = (int) $this->getUser()->getUserIdentifier();
+        $userId = $this->getUser()->getUserIdentifier();
         if ($view->getUserId() !== $userId) {
             return $this->json(['error' => 'Access denied.'], Response::HTTP_FORBIDDEN);
         }
@@ -131,7 +131,7 @@ class SavedViewController extends AbstractController
             return $this->json(['error' => 'View not found.'], Response::HTTP_NOT_FOUND);
         }
 
-        $userId = (int) $this->getUser()->getUserIdentifier();
+        $userId = $this->getUser()->getUserIdentifier();
         if ($view->getUserId() !== $userId) {
             return $this->json(['error' => 'Access denied.'], Response::HTTP_FORBIDDEN);
         }
@@ -149,7 +149,7 @@ class SavedViewController extends AbstractController
 
         $data = json_decode($request->getContent(), true) ?? [];
         $order = $data['order'] ?? [];
-        $userId = (int) $this->getUser()->getUserIdentifier();
+        $userId = $this->getUser()->getUserIdentifier();
 
         foreach ($order as $position => $viewId) {
             $view = $this->viewRepository->find($viewId);
@@ -173,7 +173,7 @@ class SavedViewController extends AbstractController
             return $this->json(['error' => 'View not found.'], Response::HTTP_NOT_FOUND);
         }
 
-        $userId = (int) $this->getUser()->getUserIdentifier();
+        $userId = $this->getUser()->getUserIdentifier();
         if ($view->getUserId() !== $userId && !$view->isShared()) {
             return $this->json(['error' => 'Access denied.'], Response::HTTP_FORBIDDEN);
         }

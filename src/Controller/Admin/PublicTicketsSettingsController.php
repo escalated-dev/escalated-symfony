@@ -56,8 +56,8 @@ class PublicTicketsSettingsController extends AbstractController
         $this->settings->set('guest_policy_mode', $mode);
 
         if ('guest_user' === $mode) {
-            $userId = (int) $request->request->get('guest_policy_user_id', 0);
-            $this->settings->set('guest_policy_user_id', $userId > 0 ? (string) $userId : '');
+            $userId = trim((string) $request->request->get('guest_policy_user_id', ''));
+            $this->settings->set('guest_policy_user_id', '' !== $userId ? $userId : '');
         } else {
             $this->settings->set('guest_policy_user_id', '');
         }
@@ -81,7 +81,7 @@ class PublicTicketsSettingsController extends AbstractController
     /**
      * @return array{
      *     guest_policy_mode: string,
-     *     guest_policy_user_id: int|null,
+     *     guest_policy_user_id: int|string|null,
      *     guest_policy_signup_url_template: string,
      * }
      */
@@ -91,7 +91,7 @@ class PublicTicketsSettingsController extends AbstractController
 
         return [
             'guest_policy_mode' => $this->settings->get('guest_policy_mode', 'unassigned') ?? 'unassigned',
-            'guest_policy_user_id' => '' !== $userIdRaw && is_numeric($userIdRaw) ? (int) $userIdRaw : null,
+            'guest_policy_user_id' => '' !== $userIdRaw ? (is_numeric($userIdRaw) ? (int) $userIdRaw : $userIdRaw) : null,
             'guest_policy_signup_url_template' => $this->settings->get(
                 'guest_policy_signup_url_template',
                 ''

@@ -54,7 +54,7 @@ class EnsureAgentVoter extends Voter
         return null !== $profile;
     }
 
-    private function resolveUserPrimaryKey(UserInterface $user): ?int
+    private function resolveUserPrimaryKey(UserInterface $user): int|string|null
     {
         if (!$this->em->getMetadataFactory()->hasMetadataFor($user::class)) {
             return null;
@@ -63,6 +63,18 @@ class EnsureAgentVoter extends Voter
         $idValues = $this->em->getClassMetadata($user::class)->getIdentifierValues($user);
         $id = reset($idValues);
 
-        return is_numeric($id) ? (int) $id : null;
+        if (false === $id || null === $id) {
+            return null;
+        }
+
+        if (is_int($id)) {
+            return $id;
+        }
+
+        if (is_string($id)) {
+            return is_numeric($id) ? (int) $id : $id;
+        }
+
+        return is_numeric($id) ? (int) $id : (string) $id;
     }
 }

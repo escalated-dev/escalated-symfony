@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Escalated\Symfony\Doctrine\UserIdType;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_replies')]
@@ -24,8 +25,8 @@ class Reply
     #[ORM\JoinColumn(name: 'ticket_id', nullable: false, onDelete: 'CASCADE')]
     private Ticket $ticket;
 
-    #[ORM\Column(type: Types::INTEGER, nullable: true)]
-    private ?int $authorId = null;
+    #[ORM\Column(type: UserIdType::NAME, nullable: true)]
+    private int|string|null $authorId = null;
 
     #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
     private ?string $authorClass = null;
@@ -91,12 +92,12 @@ class Reply
         return $this;
     }
 
-    public function getAuthorId(): ?int
+    public function getAuthorId(): int|string|null
     {
         return $this->authorId;
     }
 
-    public function setAuthorId(?int $authorId): self
+    public function setAuthorId(int|string|null $authorId): self
     {
         $this->authorId = $authorId;
 

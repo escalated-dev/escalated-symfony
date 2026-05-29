@@ -25,7 +25,7 @@ class SnoozeService
      *
      * The ticket's current status is saved so it can be restored on wake.
      */
-    public function snooze(Ticket $ticket, \DateTimeImmutable $until, int $causerId): Ticket
+    public function snooze(Ticket $ticket, \DateTimeImmutable $until, int|string $causerId): Ticket
     {
         if (!$ticket->isOpen()) {
             throw new \InvalidArgumentException('Cannot snooze a resolved or closed ticket.');
@@ -52,7 +52,7 @@ class SnoozeService
     /**
      * Unsnooze a ticket, restoring its previous status.
      */
-    public function unsnooze(Ticket $ticket, ?int $causerId = null): Ticket
+    public function unsnooze(Ticket $ticket, int|string|null $causerId = null): Ticket
     {
         if (!$ticket->isSnoozed()) {
             throw new \InvalidArgumentException('Ticket is not snoozed.');
@@ -99,7 +99,7 @@ class SnoozeService
         return $woken;
     }
 
-    private function logActivity(Ticket $ticket, string $type, ?int $causerId, array $properties = []): void
+    private function logActivity(Ticket $ticket, string $type, int|string|null $causerId, array $properties = []): void
     {
         $activity = new TicketActivity();
         $activity->setTicket($ticket);

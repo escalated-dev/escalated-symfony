@@ -61,7 +61,7 @@ class TicketRepository extends ServiceEntityRepository
     /**
      * @return Ticket[]
      */
-    public function findAssignedTo(int $agentId): array
+    public function findAssignedTo(int|string $agentId): array
     {
         return $this->createQueryBuilder('t')
             ->where('t.assignedTo = :agentId')
@@ -75,7 +75,7 @@ class TicketRepository extends ServiceEntityRepository
     /**
      * @return Ticket[]
      */
-    public function findByRequester(int $requesterId, ?string $requesterClass = null): array
+    public function findByRequester(int|string $requesterId, ?string $requesterClass = null): array
     {
         $qb = $this->createQueryBuilder('t')
             ->where('t.requesterId = :requesterId')
@@ -158,7 +158,7 @@ class TicketRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    public function countOpenByAgent(int $agentId): int
+    public function countOpenByAgent(int|string $agentId): int
     {
         return (int) $this->createQueryBuilder('t')
             ->select('COUNT(t.id)')

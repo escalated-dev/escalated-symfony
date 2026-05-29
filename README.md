@@ -66,6 +66,25 @@ escalated:
             days: [1, 2, 3, 4, 5]
 ```
 
+### Host user key type (UUID / string users)
+
+Escalated stores references to your app's users (ticket requester, assignee,
+reply author, etc.). By default those columns are integers. If your `User`
+entity's primary key is a **UUID or other string**, set the
+`ESCALATED_USER_KEY_TYPE` environment variable so the Doctrine columns are
+declared as `VARCHAR(255)` instead of `INTEGER` (and `getUserIdentifier()`
+values are no longer cast to `int`):
+
+```dotenv
+# .env — one of: int (default) | bigint | uuid | string
+ESCALATED_USER_KEY_TYPE=uuid
+```
+
+It is read from the environment (not the bundle config) because the Doctrine
+type's SQL declaration is resolved outside the container. Existing integer-keyed
+installs need no change — the default (`int`) produces the same schema and reads
+ids back as `int`. Generate a Doctrine migration after changing it.
+
 ### 3. Run migrations
 
 ```bash

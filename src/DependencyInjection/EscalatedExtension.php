@@ -37,6 +37,12 @@ class EscalatedExtension extends Extension implements PrependExtensionInterface
         $container->setParameter('escalated.storage.base_url', $config['storage']['base_url']);
         $container->setParameter('escalated.tickets.allow_customer_close', $config['tickets']['allow_customer_close']);
         $container->setParameter('escalated.tickets.default_priority', $config['tickets']['default_priority']);
+        $container->setParameter('escalated.ticket_subjects.types', $config['ticket_subjects']['types'] ?? []);
+        $resolverId = $config['ticket_subjects']['resolver'] ?? null;
+        $container->setParameter('escalated.ticket_subjects.resolver', $resolverId);
+        if (\is_string($resolverId) && '' !== $resolverId) {
+            $container->setAlias('escalated.ticket_subject_resolver', $resolverId);
+        }
         $container->setParameter('escalated.kb.enabled', $config['knowledge_base']['enabled']);
         $container->setParameter('escalated.kb.public_access', $config['knowledge_base']['public_access']);
         $container->setParameter('escalated.kb.feedback_enabled', $config['knowledge_base']['feedback_enabled']);

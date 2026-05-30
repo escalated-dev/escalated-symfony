@@ -79,7 +79,14 @@ services:
         tags: ['serializer.normalizer']
 
     Escalated\Symfony\Serializer\TicketNormalizer:
+        arguments:
+            $ticketSubjectService: '@Escalated\Symfony\Service\TicketSubjectService'
         tags: ['serializer.normalizer']
+
+    Escalated\Symfony\Service\TicketSubjectService:
+        arguments:
+            $allowedTypes: '%escalated.ticket_subjects.types%'
+            $resolver: '@?escalated.ticket_subject_resolver'
 
     # Controllers
     Escalated\Symfony\Controller\Customer\TicketController:
@@ -124,6 +131,12 @@ services:
             $userClass: '%escalated.user_class%'
 
     Escalated\Symfony\Controller\Api\TicketController:
+        tags: ['controller.service_arguments']
+
+    Escalated\Symfony\Controller\Api\TicketSubjectController:
+        tags: ['controller.service_arguments']
+
+    Escalated\Symfony\Controller\Agent\TicketSubjectController:
         tags: ['controller.service_arguments']
 
     Escalated\Symfony\Controller\Api\AuthController:

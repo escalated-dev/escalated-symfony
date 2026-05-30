@@ -116,6 +116,72 @@ composer require skipthedragon/inertia-bundle
 
 Set `ui_enabled: false` if you want to use only the API and services with a custom frontend.
 
+## Ticket subjects
+
+A ticket has a **requester** (who raised it) and a **subject line** (free text). You can also attach host-app entities the ticket is *about* — a Project, Customer, asset, and so on — so agents see context and can jump into your app.
+
+Implement `Escalated\Symfony\Contract\TicketSubject` on any attachable model:
+
+```php
+use Escalated\Symfony\Contract\TicketSubject;
+
+class Project implements TicketSubject
+{
+    public function ticketSubjectTitle(): string
+    {
+        return $this->name;
+    }
+
+    public function ticketSubjectSubtitle(): ?string
+    {
+        return 'Project · '.$this->customer->getName();
+    }
+
+    public function ticketSubjectUrl(): ?string
+    {
+        return $this->urlGenerator->generate('project_show', ['id' => $this->id]);
+    }
+
+    public function ticketSubjectColor(): ?string
+    {
+        return '#2563eb';
+    }
+
+    public function ticketSubjectIcon(): ?string
+    {
+        return 'folder';
+    }
+}
+```
+
+Use `TicketSubjectService` to attach, detach, sync, or list links. `subject_id` is stored as a string so integer, UUID, or string primary keys all work.
+
+```php
+$subjectService->attach($ticket, Project::class, (string) $project->getId(), 'project');
+$subjectService->detach($ticket, $linkId);
+$subjectService->sync($ticket, [
+    ['subjectType' => Project::class, 'subjectId' => 'b', 'role' => 'primary'],
+    ['subjectType' => Customer::class, 'subjectId' => '42'],
+]);
+```
+
+Serialized tickets include `subjects[]` with `{ type, id, role, title, subtitle, url, color, icon, missing }` (fallback title `type#id` when no resolver is configured).
+
+Register allowed types and an optional resolver in config:
+
+```yaml
+escalated:
+    ticket_subjects:
+        types:
+            - App\Entity\Project
+            - App\Entity\Customer
+        resolver: App\Escalated\TicketSubjectResolver
+```
+
+Implement `TicketSubjectResolverInterface` to map stored `type`/`id` pairs to `TicketSubject` instances for presentation. The agent and API attach endpoints only accept allowlisted types; programmatic `attach()` allows any type when the allowlist is empty.
+
+Agent routes: `POST …/agent/tickets/{reference}/subjects`, `DELETE …/agent/tickets/{reference}/subjects/{linkId}`. API routes mirror under `/api/v1/tickets/…`.
+
 ## Features
 
 - **Ticket lifecycle** — Create, assign, reply, resolve, close, reopen with configurable status transitions
@@ -150,6 +216,7 @@ Set `ui_enabled: false` if you want to use only the API and services with a cust
 | `SlaPolicy` | First response and resolution time targets per priority |
 | `TicketActivity` | Audit log of all ticket changes |
 | `AgentProfile` | Agent metadata (type, capacity) |
+| `TicketSubjectLink` | Polymorphic link from a ticket to a host subject entity |
 
 ### Services
 
@@ -158,6 +225,7 @@ Set `ui_enabled: false` if you want to use only the API and services with a cust
 | `TicketService` | Create, update, transition, reply to tickets |
 | `AssignmentService` | Assign/unassign agents, check workload |
 | `SlaService` | Attach SLA policies, check for breaches |
+| `TicketSubjectService` | Attach/detach/sync host entities a ticket is about |
 
 ### Controllers
 

@@ -7,6 +7,7 @@ namespace Escalated\Symfony\Serializer;
 use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Entity\ChatSession;
 use Escalated\Symfony\Entity\Ticket;
+use Escalated\Symfony\Service\TicketSubjectService;
 use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Symfony\Component\Serializer\Normalizer\NormalizerAwareInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerAwareTrait;
@@ -39,6 +40,7 @@ class TicketNormalizer implements NormalizerInterface, NormalizerAwareInterface
 
     public function __construct(
         private readonly EntityManagerInterface $em,
+        private readonly TicketSubjectService $ticketSubjectService,
     ) {
     }
 
@@ -129,6 +131,11 @@ class TicketNormalizer implements NormalizerInterface, NormalizerAwareInterface
         // related_tickets: other tickets from the same requester (detail only)
         if ($isDetail && !array_key_exists('related_tickets', $data)) {
             $data['related_tickets'] = $this->findRelatedTickets($object);
+        }
+
+        // subjects: host-app entities this ticket is about (detail only)
+        if ($isDetail && !array_key_exists('subjects', $data)) {
+            $data['subjects'] = $this->ticketSubjectService->serializeForTicket($object);
         }
 
         // activity.created_at_human: human-readable timestamps on activities

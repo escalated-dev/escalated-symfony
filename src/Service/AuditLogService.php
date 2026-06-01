@@ -9,6 +9,19 @@ use Escalated\Symfony\Entity\AuditLog;
 
 class AuditLogService
 {
+    private const REDACTED_VALUE = '[REDACTED]';
+
+    private const SENSITIVE_KEY_FRAGMENTS = [
+        'api_key',
+        'apikey',
+        'authorization',
+        'credential',
+        'password',
+        'recovery_code',
+        'secret',
+        'token',
+    ];
+
     public function __construct(
         private readonly EntityManagerInterface $em,
     ) {
@@ -31,8 +44,8 @@ class AuditLogService
         $entry->setEntityId($entityId);
         $entry->setPerformerType($performerType);
         $entry->setPerformerId($performerId);
-        $entry->setOldValues($oldValues);
-        $entry->setNewValues($newValues);
+        $entry->setOldValues($this->redactAuditValues($oldValues));
+        $entry->setNewValues($this->redactAuditValues($newValues));
         $entry->setIpAddress($ipAddress);
         $entry->setUserAgent($userAgent);
 
@@ -56,5 +69,49 @@ class AuditLogService
             'SELECT * FROM escalated_audit_logs WHERE performer_type = ? AND performer_id = ? ORDER BY created_at DESC LIMIT ?',
             [$performerType, $performerId, $limit]
         );
+    }
+
+    private function redactAuditValues(?array $values): ?array
+    {
+        if (null === $values) {
+            return null;
+        }
+
+        $redacted = $values;
+        $this->redactArray($redacted);
+
+        return $redacted;
+    }
+
+    /**
+     * @param array<mixed> $values
+     */
+    private function redactArray(array &$values): void
+    {
+        foreach ($values as $key => &$value) {
+            if (\is_string($key) && $this->isSensitiveKey($key)) {
+                $value = self::REDACTED_VALUE;
+                continue;
+            }
+
+            if (\is_array($value)) {
+                $this->redactArray($value);
+            }
+        }
+
+        unset($value);
+    }
+
+    private function isSensitiveKey(string $key): bool
+    {
+        $normalized = str_replace('-', '_', strtolower($key));
+
+        foreach (self::SENSITIVE_KEY_FRAGMENTS as $fragment) {
+            if (str_contains($normalized, $fragment)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -25,6 +25,7 @@ class InertiaDataSubscriber implements EventSubscriberInterface
         private readonly AuthorizationCheckerInterface $authChecker,
         private readonly EntityManagerInterface $em,
         private readonly string $routePrefix,
+        private readonly bool $newslettersEnabled = false,
     ) {
     }
 
@@ -55,6 +56,9 @@ class InertiaDataSubscriber implements EventSubscriberInterface
             'prefix' => $this->routePrefix,
             'is_agent' => $this->authChecker->isGranted('ESCALATED_AGENT'),
             'is_admin' => $this->authChecker->isGranted('ESCALATED_ADMIN'),
+            'features' => [
+                'newsletters' => $this->newslettersEnabled,
+            ],
         ];
 
         if ($user instanceof UserInterface) {

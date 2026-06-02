@@ -112,10 +112,32 @@ class NewsletterTemplate
         return $this;
     }
 
+    public function getCreatedBy(): int|string|null
+    {
+        return $this->createdBy;
+    }
+
+    public function setCreatedBy(int|string|null $v): self
+    {
+        $this->createdBy = $v;
+
+        return $this;
+    }
+
     public function touch(): self
     {
         $this->updatedAt = new \DateTimeImmutable();
 
         return $this;
+    }
+
+    public function getCreatedAt(): \DateTimeInterface
+    {
+        return $this->createdAt;
+    }
+
+    public function getUpdatedAt(): \DateTimeInterface
+    {
+        return $this->updatedAt;
     }
 }

@@ -99,12 +99,12 @@ class NewsletterList
         return $this;
     }
 
-    public function getCreatedBy(): ?string
+    public function getCreatedBy(): int|string|null
     {
         return $this->createdBy;
     }
 
-    public function setCreatedBy(?string $v): self
+    public function setCreatedBy(int|string|null $v): self
     {
         $this->createdBy = $v;
 

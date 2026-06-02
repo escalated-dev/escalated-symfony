@@ -121,6 +121,11 @@ class Ticket
     #[ORM\OrderBy(['createdAt' => 'DESC'])]
     private Collection $activities;
 
+    /** @var Collection<int, TicketSubjectLink> */
+    #[ORM\OneToMany(targetEntity: TicketSubjectLink::class, mappedBy: 'ticket', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OrderBy(['position' => 'ASC'])]
+    private Collection $subjectLinks;
+
     #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
     private ?string $guestName = null;
 
@@ -194,6 +199,7 @@ class Ticket
         $this->tags = new ArrayCollection();
         $this->attachments = new ArrayCollection();
         $this->activities = new ArrayCollection();
+        $this->subjectLinks = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
     }
@@ -464,6 +470,12 @@ class Ticket
     public function getActivities(): Collection
     {
         return $this->activities;
+    }
+
+    /** @return Collection<int, TicketSubjectLink> */
+    public function getSubjectLinks(): Collection
+    {
+        return $this->subjectLinks;
     }
 
     public function addActivity(TicketActivity $activity): self

@@ -57,6 +57,14 @@ class EscalatedBundle extends AbstractBundle
         // Custom ticket actions (host-defined buttons)
         $builder->setParameter('escalated.ticket_actions', $config['ticket_actions'] ?? []);
 
+        // Ticket subjects (host entities a ticket is about)
+        $builder->setParameter('escalated.ticket_subjects.types', $config['ticket_subjects']['types'] ?? []);
+        $resolverId = $config['ticket_subjects']['resolver'] ?? null;
+        $builder->setParameter('escalated.ticket_subjects.resolver', $resolverId);
+        if (\is_string($resolverId) && '' !== $resolverId) {
+            $builder->setAlias('escalated.ticket_subject_resolver', $resolverId);
+        }
+
         // Conditionally load web routes only when UI is enabled
         if ($config['ui_enabled']) {
             $container->import('../config/routes.yaml');

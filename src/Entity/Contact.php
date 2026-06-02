@@ -43,6 +43,10 @@ class Contact
     #[ORM\Column(type: Types::JSON)]
     private array $metadata = [];
 
+    /** Set when the contact one-click unsubscribes from marketing newsletters. */
+    #[ORM\Column(name: 'marketing_opt_out_at', type: Types::DATETIME_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $marketingOptOutAt = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
 
@@ -136,6 +140,18 @@ class Contact
     public function setMetadata(array $metadata): self
     {
         $this->metadata = $metadata;
+
+        return $this;
+    }
+
+    public function getMarketingOptOutAt(): ?\DateTimeInterface
+    {
+        return $this->marketingOptOutAt;
+    }
+
+    public function setMarketingOptOutAt(?\DateTimeInterface $at): self
+    {
+        $this->marketingOptOutAt = $at;
 
         return $this;
     }

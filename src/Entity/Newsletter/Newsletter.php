@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Escalated\Symfony\Entity\Newsletter;
 
 use Doctrine\DBAL\Types\Types;
-use Escalated\Symfony\Doctrine\UserIdType;
 use Doctrine\ORM\Mapping as ORM;
+use Escalated\Symfony\Doctrine\UserIdType;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_newsletters')]

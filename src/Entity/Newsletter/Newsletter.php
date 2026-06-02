@@ -6,6 +6,7 @@ namespace Escalated\Symfony\Entity\Newsletter;
 
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Escalated\Symfony\Doctrine\UserIdType;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_newsletters')]
@@ -51,11 +52,11 @@ class Newsletter
     #[ORM\Column(name: 'sent_at', type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $sentAt = null;
 
-    #[ORM\Column(name: 'created_by', type: Types::BIGINT, nullable: true)]
-    private ?string $createdBy = null;
+    #[ORM\Column(name: 'created_by', type: UserIdType::NAME, nullable: true)]
+    private int|string|null $createdBy = null;
 
-    #[ORM\Column(name: 'sent_by', type: Types::BIGINT, nullable: true)]
-    private ?string $sentBy = null;
+    #[ORM\Column(name: 'sent_by', type: UserIdType::NAME, nullable: true)]
+    private int|string|null $sentBy = null;
 
     #[ORM\Column(name: 'summary_total', type: Types::INTEGER)]
     private int $summaryTotal = 0;

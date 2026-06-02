@@ -6,6 +6,7 @@ namespace Escalated\Symfony\Entity\Newsletter;
 
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Escalated\Symfony\Doctrine\UserIdType;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_newsletter_templates')]
@@ -31,8 +32,8 @@ class NewsletterTemplate
     #[ORM\Column(name: 'merge_fields_schema', type: Types::JSON, nullable: true)]
     private ?array $mergeFieldsSchema = null;
 
-    #[ORM\Column(name: 'created_by', type: Types::BIGINT, nullable: true)]
-    private ?string $createdBy = null;
+    #[ORM\Column(name: 'created_by', type: UserIdType::NAME, nullable: true)]
+    private int|string|null $createdBy = null;
 
     #[ORM\Column(name: 'created_at', type: Types::DATETIME_MUTABLE)]
     private \DateTimeInterface $createdAt;

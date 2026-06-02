@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Escalated\Symfony\Entity\Newsletter;
 
 use Doctrine\DBAL\Types\Types;
+use Escalated\Symfony\Doctrine\UserIdType;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
@@ -30,8 +31,8 @@ class NewsletterList
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private ?array $filterJson = null;
 
-    #[ORM\Column(name: 'created_by', type: Types::BIGINT, nullable: true)]
-    private ?string $createdBy = null;
+    #[ORM\Column(name: 'created_by', type: UserIdType::NAME, nullable: true)]
+    private int|string|null $createdBy = null;
 
     #[ORM\Column(name: 'created_at', type: Types::DATETIME_MUTABLE)]
     private \DateTimeInterface $createdAt;

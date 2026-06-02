@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Escalated\Symfony\Entity\Newsletter;
 
 use Doctrine\DBAL\Types\Types;
+use Escalated\Symfony\Doctrine\UserIdType;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
@@ -25,8 +26,8 @@ class NewsletterListMember
     #[ORM\Column(name: 'added_at', type: Types::DATETIME_MUTABLE)]
     private \DateTimeInterface $addedAt;
 
-    #[ORM\Column(name: 'added_by', type: Types::BIGINT, nullable: true)]
-    private ?string $addedBy = null;
+    #[ORM\Column(name: 'added_by', type: UserIdType::NAME, nullable: true)]
+    private int|string|null $addedBy = null;
 
     public function __construct()
     {

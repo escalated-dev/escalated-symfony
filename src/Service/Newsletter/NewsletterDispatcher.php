@@ -12,6 +12,7 @@ use Escalated\Symfony\Entity\Newsletter\NewsletterTemplate;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
 
 class NewsletterDispatcher
@@ -84,13 +85,18 @@ class NewsletterDispatcher
             $unsub = $this->renderer->unsubscribeUrl($delivery);
             $host = parse_url($_ENV['APP_URL'] ?? 'http://localhost', PHP_URL_HOST) ?: 'localhost';
 
+            // Build the From address via Mime\Address so the display name is
+            // RFC-2047 encoded and the email is validated. Interpolating the
+            // admin-supplied from-name straight into a "Name <email>" string
+            // allowed header injection (a newline in the name could inject Bcc
+            // and other headers).
             $email = (new Email())
-                ->from($newsletter->getFromName() ? "{$newsletter->getFromName()} <{$newsletter->getFromEmail()}>" : $newsletter->getFromEmail())
+                ->from(new Address($newsletter->getFromEmail(), $newsletter->getFromName() ?? ''))
                 ->to($delivery->getEmailAtSend())
                 ->subject($newsletter->getSubject())
                 ->html($html);
             if ($newsletter->getReplyTo()) {
-                $email->replyTo($newsletter->getReplyTo());
+                $email->replyTo(new Address($newsletter->getReplyTo()));
             }
             $email->getHeaders()->addTextHeader('List-Unsubscribe', "<{$unsub}>");
             $email->getHeaders()->addTextHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click');

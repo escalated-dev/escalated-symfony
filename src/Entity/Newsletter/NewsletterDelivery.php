@@ -57,6 +57,9 @@ class NewsletterDelivery
     #[ORM\Column(name: 'claimed_at', type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $claimedAt = null;
 
+    #[ORM\Column(name: 'next_attempt_at', type: Types::DATETIME_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $nextAttemptAt = null;
+
     #[ORM\Column(name: 'is_test', type: Types::BOOLEAN)]
     private bool $isTest = false;
 
@@ -225,6 +228,18 @@ class NewsletterDelivery
     public function setClaimedAt(?\DateTimeInterface $v): self
     {
         $this->claimedAt = $v;
+
+        return $this;
+    }
+
+    public function getNextAttemptAt(): ?\DateTimeInterface
+    {
+        return $this->nextAttemptAt;
+    }
+
+    public function setNextAttemptAt(?\DateTimeInterface $v): self
+    {
+        $this->nextAttemptAt = $v;
 
         return $this;
     }

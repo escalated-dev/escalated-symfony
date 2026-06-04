@@ -6,6 +6,7 @@ namespace Escalated\Symfony\EventSubscriber;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Entity\AgentProfile;
+use Escalated\Symfony\Security\NewsletterPermissions;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\ControllerEvent;
@@ -25,6 +26,7 @@ class InertiaDataSubscriber implements EventSubscriberInterface
         private readonly AuthorizationCheckerInterface $authChecker,
         private readonly EntityManagerInterface $em,
         private readonly string $routePrefix,
+        private readonly bool $newslettersEnabled = false,
     ) {
     }
 
@@ -55,6 +57,10 @@ class InertiaDataSubscriber implements EventSubscriberInterface
             'prefix' => $this->routePrefix,
             'is_agent' => $this->authChecker->isGranted('ESCALATED_AGENT'),
             'is_admin' => $this->authChecker->isGranted('ESCALATED_ADMIN'),
+            'permissions' => $this->grantedPermissions(),
+            'features' => [
+                'newsletters' => $this->newslettersEnabled,
+            ],
         ];
 
         if ($user instanceof UserInterface) {
@@ -69,5 +75,24 @@ class InertiaDataSubscriber implements EventSubscriberInterface
 
         // Store shared data in the request attributes for Inertia renderers to pick up
         $request->attributes->set('_escalated_shared', $data);
+    }
+
+    /**
+     * Permission slugs the current user is granted. Symfony has no slug-based
+     * permission table — these are resolved through NewsletterPermissionVoter —
+     * so we expose the newsletter slugs the frontend gates on.
+     *
+     * @return list<string>
+     */
+    private function grantedPermissions(): array
+    {
+        $granted = [];
+        foreach ([NewsletterPermissions::MANAGE, NewsletterPermissions::SEND] as $slug) {
+            if ($this->authChecker->isGranted($slug)) {
+                $granted[] = $slug;
+            }
+        }
+
+        return $granted;
     }
 }

@@ -11,6 +11,30 @@ use Escalated\Symfony\Entity\Newsletter\NewsletterListMember;
 
 class ContactSegmentResolver
 {
+    /**
+     * Filter fields the dynamic-list builder may target, mapped to the Doctrine
+     * entity property used in DQL. Anything not listed here is rejected, so the
+     * `field` value from a saved filter can never be interpolated verbatim.
+     */
+    private const ALLOWED_FIELDS = [
+        'id' => 'id',
+        'email' => 'email',
+        'name' => 'name',
+        'user_id' => 'userId',
+        'created_at' => 'createdAt',
+        'updated_at' => 'updatedAt',
+        'marketing_opt_out_at' => 'marketingOptOutAt',
+    ];
+
+    /** Operator allowlist → canonical DQL operator (anything else is rejected). */
+    private const ALLOWED_OPS = [
+        '=' => '=', '==' => '=',
+        '!=' => '!=', '<>' => '!=',
+        '<' => '<', '<=' => '<=',
+        '>' => '>', '>=' => '>=',
+        'like' => 'LIKE', 'LIKE' => 'LIKE',
+    ];
+
     public function __construct(private readonly EntityManagerInterface $em)
     {
     }
@@ -83,19 +107,36 @@ class ContactSegmentResolver
         $idx = 0;
         foreach ($filter['rules'] ?? [] as $rule) {
             $field = $rule['field'] ?? null;
-            $op = $rule['op'] ?? '=';
+            $op = self::ALLOWED_OPS[$rule['op'] ?? '='] ?? null;
             $value = $rule['value'] ?? null;
-            if (!$field) {
+            // Skip rules with no field or a disallowed operator — never interpolate
+            // an unvalidated operator into DQL.
+            if (!$field || null === $op) {
+                continue;
+            }
+
+            if (str_starts_with($field, 'metadata.')) {
+                // Metadata JSON contains-check; SQL backend-specific. The key is part
+                // of the JSON path string (not bindable), so restrict it to a safe
+                // character set to block injection.
+                $key = substr($field, strlen('metadata.'));
+                if (!preg_match('/^[A-Za-z0-9_]+$/', $key)) {
+                    continue;
+                }
+                $param = 'p'.($idx++);
+                $qb->andWhere(sprintf("JSON_EXTRACT(c.metadata, '$.%s') %s :%s", $key, $op, $param))
+                    ->setParameter($param, $value);
+                continue;
+            }
+
+            // Map the requested field to a known Doctrine property; reject unknowns.
+            $property = self::ALLOWED_FIELDS[$field] ?? null;
+            if (null === $property) {
                 continue;
             }
             $param = 'p'.($idx++);
-            if (str_starts_with($field, 'metadata.')) {
-                // Metadata JSON contains-check; SQL backend-specific. For v1, push it down as raw.
-                $key = substr($field, strlen('metadata.'));
-                $qb->andWhere("JSON_EXTRACT(c.metadata, '$.{$key}') = :{$param}")->setParameter($param, $value);
-                continue;
-            }
-            $qb->andWhere("c.{$field} {$op} :{$param}")->setParameter($param, $value);
+            $qb->andWhere(sprintf('c.%s %s :%s', $property, $op, $param))
+                ->setParameter($param, $value);
         }
     }
 }

@@ -40,6 +40,7 @@ class EscalatedBundle extends AbstractBundle
         $builder->setParameter('escalated.user_class', $config['user_class']);
         $builder->setParameter('escalated.route_prefix', $config['route_prefix']);
         $builder->setParameter('escalated.ui_enabled', $config['ui_enabled']);
+        $builder->setParameter('escalated.enable_newsletters', $config['enable_newsletters']);
         $builder->setParameter('escalated.table_prefix', $config['table_prefix']);
 
         // Storage config
@@ -53,6 +54,8 @@ class EscalatedBundle extends AbstractBundle
         // Ticket config
         $builder->setParameter('escalated.tickets.allow_customer_close', $config['tickets']['allow_customer_close']);
         $builder->setParameter('escalated.tickets.default_priority', $config['tickets']['default_priority']);
+
+        $this->setNewsletterParameters($builder, $config['newsletters']);
 
         // Custom ticket actions (host-defined buttons)
         $builder->setParameter('escalated.ticket_actions', $config['ticket_actions'] ?? []);
@@ -68,6 +71,9 @@ class EscalatedBundle extends AbstractBundle
         // Conditionally load web routes only when UI is enabled
         if ($config['ui_enabled']) {
             $container->import('../config/routes.yaml');
+            if ($config['enable_newsletters']) {
+                $container->import('../config/newsletter_routes.yaml');
+            }
         }
     }
 
@@ -108,6 +114,24 @@ class EscalatedBundle extends AbstractBundle
                     ],
                 ],
             ]);
+        }
+
+        if ($builder->hasExtension('twig')) {
+            $builder->prependExtensionConfig('twig', [
+                'paths' => [
+                    __DIR__.'/../templates/newsletter_themes' => 'EscalatedNewsletter',
+                ],
+            ]);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $newsletters
+     */
+    private function setNewsletterParameters(ContainerBuilder $builder, array $newsletters): void
+    {
+        foreach ($newsletters as $key => $value) {
+            $builder->setParameter('escalated.newsletters.'.$key, $value);
         }
     }
 

@@ -17,6 +17,9 @@ use Symfony\Component\Mime\Email;
 
 class NewsletterDispatcher
 {
+    /** Retry delays in minutes, indexed by (attemptCount - 1). */
+    private const BACKOFF_MINUTES = [1, 5, 30];
+
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly MailerInterface $mailer,
@@ -41,8 +44,10 @@ class NewsletterDispatcher
         $conn->beginTransaction();
         try {
             $ids = array_map('intval', $conn->fetchFirstColumn(
-                'SELECT id FROM escalated_newsletter_deliveries WHERE status = :s ORDER BY id ASC LIMIT '.$this->batchSize,
-                ['s' => 'pending'],
+                'SELECT id FROM escalated_newsletter_deliveries'
+                .' WHERE status = :s AND (next_attempt_at IS NULL OR next_attempt_at <= :now)'
+                .' ORDER BY id ASC LIMIT '.$this->batchSize,
+                ['s' => 'pending', 'now' => (new \DateTimeImmutable())->format('Y-m-d H:i:s')],
             ));
             if ($ids) {
                 $conn->executeStatement(
@@ -112,9 +117,14 @@ class NewsletterDispatcher
             $this->logger->warning("Newsletter delivery {$delivery->getId()} failed: ".$e->getMessage());
             $attempts = $delivery->getAttemptCount() + 1;
             if ($attempts >= 3) {
-                $delivery->setStatus('failed')->setFailureReason($e->getMessage())->setAttemptCount($attempts)->setClaimedAt(null);
+                $delivery->setStatus('failed')->setFailureReason($e->getMessage())
+                    ->setAttemptCount($attempts)->setClaimedAt(null)->setNextAttemptAt(null);
             } else {
-                $delivery->setStatus('pending')->setAttemptCount($attempts)->setClaimedAt(null);
+                // Exponential-ish backoff: retry 1 / 5 / 30 minutes out, matching the
+                // other backends. next_attempt_at gates re-pickup in dispatchBatch().
+                $backoffMinutes = self::BACKOFF_MINUTES[$attempts - 1] ?? 30;
+                $delivery->setStatus('pending')->setAttemptCount($attempts)->setClaimedAt(null)
+                    ->setNextAttemptAt((new \DateTimeImmutable())->modify("+{$backoffMinutes} minutes"));
             }
             $this->em->flush();
         }

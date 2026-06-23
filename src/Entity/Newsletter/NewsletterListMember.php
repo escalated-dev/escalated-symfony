@@ -68,12 +68,12 @@ class NewsletterListMember
         return $this->addedAt;
     }
 
-    public function getAddedBy(): ?string
+    public function getAddedBy(): int|string|null
     {
         return $this->addedBy;
     }
 
-    public function setAddedBy(?string $v): self
+    public function setAddedBy(int|string|null $v): self
     {
         $this->addedBy = $v;
 

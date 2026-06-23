@@ -225,6 +225,30 @@ class Newsletter
         return $this;
     }
 
+    public function getCreatedBy(): int|string|null
+    {
+        return $this->createdBy;
+    }
+
+    public function setCreatedBy(int|string|null $v): self
+    {
+        $this->createdBy = $v;
+
+        return $this;
+    }
+
+    public function getSentBy(): int|string|null
+    {
+        return $this->sentBy;
+    }
+
+    public function setSentBy(int|string|null $v): self
+    {
+        $this->sentBy = $v;
+
+        return $this;
+    }
+
     public function getSummaryTotal(): int
     {
         return $this->summaryTotal;
@@ -302,5 +326,15 @@ class Newsletter
         $this->updatedAt = new \DateTimeImmutable();
 
         return $this;
+    }
+
+    public function getCreatedAt(): \DateTimeInterface
+    {
+        return $this->createdAt;
+    }
+
+    public function getUpdatedAt(): \DateTimeInterface
+    {
+        return $this->updatedAt;
     }
 }

@@ -46,6 +46,24 @@ services:
             $businessHoursOnly: '%escalated.sla.business_hours_only%'
             $businessHours: '%escalated.sla.business_hours%'
 
+    Escalated\Symfony\Service\Newsletter\NewsletterDispatcher:
+        arguments:
+            $enabled: '%escalated.enable_newsletters%'
+            $batchSize: '%escalated.newsletters.batch_size%'
+            $claimTimeoutMinutes: '%escalated.newsletters.claim_timeout_minutes%'
+            $autoPauseBounceRate: '%escalated.newsletters.auto_pause_bounce_rate%'
+            $autoPauseThreshold: '%escalated.newsletters.auto_pause_threshold%'
+
+    Escalated\Symfony\Service\Newsletter\NewsletterRenderer:
+        arguments:
+            $baseUrl: '%escalated.newsletters.base_url%'
+            $defaultTheme: '%escalated.newsletters.default_theme%'
+            $trackingEnabled: '%escalated.newsletters.tracking_enabled%'
+            $brand:
+                accent: '%escalated.newsletters.brand_accent%'
+                logo_url: '%escalated.newsletters.brand_logo_url%'
+                physical_address: '%escalated.newsletters.brand_physical_address%'
+
     # UI Rendering
     Escalated\Symfony\Rendering\UiRendererInterface:
         class: Escalated\Symfony\Rendering\InertiaUiRenderer
@@ -59,8 +77,16 @@ services:
     Escalated\Symfony\Security\EnsureAdminVoter:
         tags: ['security.voter']
 
+    Escalated\Symfony\Security\NewsletterPermissionVoter:
+        tags: ['security.voter']
+
     # Commands
     Escalated\Symfony\Command\WakeSnoozedTicketsCommand:
+        tags: ['console.command']
+
+    Escalated\Symfony\Command\DispatchNewslettersCommand:
+        arguments:
+            $enabled: '%escalated.enable_newsletters%'
         tags: ['console.command']
 
     # Event Subscribers
@@ -70,6 +96,7 @@ services:
     Escalated\Symfony\EventSubscriber\InertiaDataSubscriber:
         arguments:
             $routePrefix: '%escalated.route_prefix%'
+            $newslettersEnabled: '%escalated.enable_newsletters%'
         tags: ['kernel.event_subscriber']
 
     # Serializer Normalizers
@@ -124,6 +151,50 @@ services:
         tags: ['controller.service_arguments']
 
     Escalated\Symfony\Controller\Admin\SkillController:
+        tags: ['controller.service_arguments']
+
+    Escalated\Symfony\Controller\Newsletter\Admin\NewsletterController:
+        arguments:
+            $defaultFrom: '%escalated.newsletters.default_from%'
+            $defaultReplyTo: '%escalated.newsletters.default_reply_to%'
+            $defaultTheme: '%escalated.newsletters.default_theme%'
+        tags: ['controller.service_arguments']
+
+    Escalated\Symfony\Controller\Newsletter\Admin\NewsletterListController:
+        tags: ['controller.service_arguments']
+
+    Escalated\Symfony\Controller\Newsletter\Admin\NewsletterTemplateController:
+        tags: ['controller.service_arguments']
+
+    Escalated\Symfony\Controller\Newsletter\Admin\NewsletterSettingsController:
+        arguments:
+            $defaults:
+                default_from: '%escalated.newsletters.default_from%'
+                default_reply_to: '%escalated.newsletters.default_reply_to%'
+                default_theme: '%escalated.newsletters.default_theme%'
+                rate_limit_per_minute: '%escalated.newsletters.rate_limit_per_minute%'
+                batch_size: '%escalated.newsletters.batch_size%'
+                tracking_enabled: '%escalated.newsletters.tracking_enabled%'
+        tags: ['controller.service_arguments']
+
+    Escalated\Symfony\Controller\Newsletter\Public\NewsletterTrackingController:
+        arguments:
+            $enabled: '%escalated.enable_newsletters%'
+        tags: ['controller.service_arguments']
+
+    Escalated\Symfony\Controller\Newsletter\Public\NewsletterUnsubscribeController:
+        arguments:
+            $enabled: '%escalated.enable_newsletters%'
+        tags: ['controller.service_arguments']
+
+    Escalated\Symfony\Controller\Newsletter\Public\NewsletterViewInBrowserController:
+        arguments:
+            $enabled: '%escalated.enable_newsletters%'
+        tags: ['controller.service_arguments']
+
+    Escalated\Symfony\Controller\Newsletter\Webhook\NewsletterEspWebhookController:
+        arguments:
+            $enabled: '%escalated.enable_newsletters%'
         tags: ['controller.service_arguments']
 
     Escalated\Symfony\Service\SkillService:

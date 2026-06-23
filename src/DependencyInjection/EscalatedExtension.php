@@ -30,7 +30,11 @@ class EscalatedExtension extends Extension implements PrependExtensionInterface
         $container->setParameter('escalated.user_class', $config['user_class']);
         $container->setParameter('escalated.route_prefix', $config['route_prefix']);
         $container->setParameter('escalated.ui_enabled', $config['ui_enabled']);
+        $container->setParameter('escalated.enable_newsletters', $config['enable_newsletters']);
         $container->setParameter('escalated.table_prefix', $config['table_prefix']);
+        foreach ($config['newsletters'] as $key => $value) {
+            $container->setParameter('escalated.newsletters.'.$key, $value);
+        }
         $container->setParameter('escalated.sla.enabled', $config['sla']['enabled']);
         $container->setParameter('escalated.sla.business_hours_only', $config['sla']['business_hours_only']);
         $container->setParameter('escalated.sla.business_hours', $config['sla']['business_hours']);

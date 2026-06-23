@@ -1,0 +1,14 @@
+escalated_newsletter_admin:
+    resource: '../src/Controller/Newsletter/Admin/'
+    type: attribute
+    prefix: '%escalated.route_prefix%'
+
+escalated_newsletter_public:
+    resource: '../src/Controller/Newsletter/Public/'
+    type: attribute
+    prefix: '%escalated.route_prefix%'
+
+escalated_newsletter_webhooks:
+    resource: '../src/Controller/Newsletter/Webhook/'
+    type: attribute
+    prefix: '%escalated.route_prefix%'

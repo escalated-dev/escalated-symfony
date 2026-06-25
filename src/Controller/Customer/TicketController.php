@@ -7,6 +7,7 @@ namespace Escalated\Symfony\Controller\Customer;
 use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Rendering\UiRendererInterface;
 use Escalated\Symfony\Repository\DepartmentRepository;
+use Escalated\Symfony\Service\SatisfactionRatingService;
 use Escalated\Symfony\Service\TicketService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,6 +21,7 @@ class TicketController extends AbstractController
         private readonly TicketService $ticketService,
         private readonly UiRendererInterface $renderer,
         private readonly DepartmentRepository $departmentRepository,
+        private readonly SatisfactionRatingService $satisfactionRatings,
         private readonly bool $allowCustomerClose,
     ) {
     }
@@ -161,6 +163,44 @@ class TicketController extends AbstractController
         $this->ticketService->reopen($ticket, $this->getUser()->getUserIdentifier());
 
         $this->addFlash('success', 'Ticket reopened.');
+
+        return $this->redirectToRoute('escalated.customer.tickets.show', [
+            'reference' => $ticket->getReference(),
+        ]);
+    }
+
+    #[Route('/{reference}/rate', name: 'rate', methods: ['POST'])]
+    public function rate(string $reference, Request $request): Response
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
+        $ticket = $this->ticketService->find($reference);
+        if (null === $ticket) {
+            throw $this->createNotFoundException('Ticket not found.');
+        }
+
+        $this->authorizeCustomer($ticket);
+
+        $user = $this->getUser();
+        $comment = $request->request->get('comment');
+
+        try {
+            $this->satisfactionRatings->rate(
+                $ticket,
+                $request->request->getInt('rating'),
+                null === $comment ? null : (string) $comment,
+                $user::class,
+                $user->getUserIdentifier(),
+            );
+        } catch (\InvalidArgumentException $e) {
+            $this->addFlash('error', $e->getMessage());
+
+            return $this->redirectToRoute('escalated.customer.tickets.show', [
+                'reference' => $ticket->getReference(),
+            ]);
+        }
+
+        $this->addFlash('success', 'Thanks for your feedback.');
 
         return $this->redirectToRoute('escalated.customer.tickets.show', [
             'reference' => $ticket->getReference(),

@@ -89,6 +89,42 @@ class KnowledgeBaseService
     }
 
     /**
+     * Find a published article by slug (public KB lookup).
+     */
+    public function findPublishedBySlug(string $slug): ?Article
+    {
+        return $this->em->getRepository(Article::class)
+            ->findOneBy(['slug' => $slug, 'status' => Article::STATUS_PUBLISHED]);
+    }
+
+    /**
+     * Published articles in the same category as the given one (excluding it).
+     *
+     * @return Article[]
+     */
+    public function relatedArticles(Article $article, int $limit = 5): array
+    {
+        $category = $article->getCategory();
+        if (null === $category) {
+            return [];
+        }
+
+        /** @var Article[] $result */
+        $result = $this->em->createQueryBuilder()
+            ->select('a')
+            ->from(Article::class, 'a')
+            ->where('a.status = :status')->setParameter('status', Article::STATUS_PUBLISHED)
+            ->andWhere('IDENTITY(a.category) = :category')->setParameter('category', $category->getId())
+            ->andWhere('a.id != :id')->setParameter('id', $article->getId())
+            ->orderBy('a.publishedAt', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+
+        return $result;
+    }
+
+    /**
      * Persist the running view count for an article.
      */
     public function recordView(Article $article): void

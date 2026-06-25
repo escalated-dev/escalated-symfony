@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Escalated\Symfony\Tests\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\EntityRepository;
 use Escalated\Symfony\Entity\Article;
 use Escalated\Symfony\Service\KnowledgeBaseService;
 use PHPUnit\Framework\TestCase;
@@ -14,6 +15,32 @@ final class KnowledgeBaseServiceTest extends TestCase
     private function service(): KnowledgeBaseService
     {
         return new KnowledgeBaseService($this->createMock(EntityManagerInterface::class));
+    }
+
+    public function testFindPublishedBySlugFiltersOnPublishedStatus(): void
+    {
+        $article = (new Article())->setSlug('getting-started')->setStatus(Article::STATUS_PUBLISHED);
+
+        $repo = $this->createMock(EntityRepository::class);
+        $repo->expects(self::once())
+            ->method('findOneBy')
+            ->with(['slug' => 'getting-started', 'status' => Article::STATUS_PUBLISHED])
+            ->willReturn($article);
+
+        $em = $this->createMock(EntityManagerInterface::class);
+        $em->method('getRepository')->with(Article::class)->willReturn($repo);
+
+        $service = new KnowledgeBaseService($em);
+
+        self::assertSame($article, $service->findPublishedBySlug('getting-started'));
+    }
+
+    public function testRelatedArticlesEmptyWhenNoCategory(): void
+    {
+        $service = $this->service();
+        $article = (new Article())->setStatus(Article::STATUS_PUBLISHED);
+
+        self::assertSame([], $service->relatedArticles($article));
     }
 
     public function testSlugify(): void

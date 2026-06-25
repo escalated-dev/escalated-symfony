@@ -6,6 +6,7 @@ namespace Escalated\Symfony\Controller\Api;
 
 use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Event\TicketCustomActionTriggeredEvent;
+use Escalated\Symfony\Service\SatisfactionRatingService;
 use Escalated\Symfony\Service\TicketActionRegistry;
 use Escalated\Symfony\Service\TicketService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -24,6 +25,7 @@ class TicketController extends AbstractController
         private readonly SerializerInterface $serializer,
         private readonly TicketActionRegistry $ticketActions,
         private readonly EventDispatcherInterface $dispatcher,
+        private readonly SatisfactionRatingService $satisfactionRatings,
     ) {
     }
 
@@ -134,6 +136,40 @@ class TicketController extends AbstractController
         return $this->json([
             'data' => json_decode($this->serializer->serialize($ticket, 'json', ['groups' => 'ticket:detail']), true),
         ]);
+    }
+
+    #[Route('/{reference}/rating', name: 'rating', methods: ['POST'])]
+    public function rate(string $reference, Request $request): JsonResponse
+    {
+        $ticket = $this->ticketService->find($reference);
+        if (null === $ticket) {
+            return $this->json(['error' => 'Ticket not found.'], Response::HTTP_NOT_FOUND);
+        }
+
+        $data = json_decode($request->getContent(), true) ?? [];
+        $user = $this->getUser();
+        $comment = $data['comment'] ?? null;
+
+        try {
+            $rating = $this->satisfactionRatings->rate(
+                $ticket,
+                (int) ($data['rating'] ?? 0),
+                null === $comment ? null : (string) $comment,
+                null !== $user ? $user::class : null,
+                null !== $user ? $user->getUserIdentifier() : null,
+            );
+        } catch (\InvalidArgumentException $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        return $this->json([
+            'data' => [
+                'id' => $rating->getId(),
+                'rating' => $rating->getRating(),
+                'comment' => $rating->getComment(),
+                'created_at' => $rating->getCreatedAt()->format(\DateTimeInterface::ATOM),
+            ],
+        ], Response::HTTP_CREATED);
     }
 
     #[Route('/{reference}/status', name: 'status', methods: ['POST'])]

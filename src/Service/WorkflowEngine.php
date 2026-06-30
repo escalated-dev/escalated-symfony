@@ -7,6 +7,7 @@ namespace Escalated\Symfony\Service;
 use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Entity\Reply;
 use Escalated\Symfony\Entity\Ticket;
+use Escalated\Symfony\Entity\TicketFollower;
 
 class WorkflowEngine
 {
@@ -200,6 +201,7 @@ class WorkflowEngine
                 'change_priority' => $ticket->setPriority($action['value']) && $this->em->flush(),
                 'add_note' => $this->addNote($ticket, $this->interpolate((string) ($action['value'] ?? ''), $ticket)),
                 'set_type' => $ticket->setTicketType($action['value']) && $this->em->flush(),
+                'add_follower' => $this->addFollower($ticket, (string) ($action['value'] ?? '')),
                 default => null,
             };
 
@@ -216,6 +218,24 @@ class WorkflowEngine
         $reply->setBody($body);
         $reply->setIsInternalNote(true);
         $this->em->persist($reply);
+        $this->em->flush();
+    }
+
+    private function addFollower(Ticket $ticket, string $userId): void
+    {
+        if ('' === $userId || '0' === $userId) {
+            return;
+        }
+
+        $repo = $this->em->getRepository(TicketFollower::class);
+        if (null !== $repo->findOneBy(['ticketId' => $ticket->getId(), 'userId' => $userId])) {
+            return;
+        }
+
+        $follower = new TicketFollower();
+        $follower->setTicketId((int) $ticket->getId());
+        $follower->setUserId($userId);
+        $this->em->persist($follower);
         $this->em->flush();
     }
 

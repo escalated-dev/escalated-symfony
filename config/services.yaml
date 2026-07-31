@@ -64,6 +64,10 @@ services:
                 logo_url: '%escalated.newsletters.brand_logo_url%'
                 physical_address: '%escalated.newsletters.brand_physical_address%'
 
+    # Outbound webhook HTTP transport (native curl; symfony/http-client is not a dependency)
+    Escalated\Symfony\Http\WebhookHttpClientInterface:
+        class: Escalated\Symfony\Http\CurlWebhookHttpClient
+
     # UI Rendering
     Escalated\Symfony\Rendering\UiRendererInterface:
         class: Escalated\Symfony\Rendering\InertiaUiRenderer

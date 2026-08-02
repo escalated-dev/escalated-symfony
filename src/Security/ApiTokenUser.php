@@ -39,4 +39,12 @@ final class ApiTokenUser implements UserInterface
     {
         return $this->identifier;
     }
+
+    /**
+     * Required by UserInterface on Symfony 6.4 / 7.0-7.2 (deprecated and removed
+     * from the interface in 7.3). API tokens carry no credentials to erase.
+     */
+    public function eraseCredentials(): void
+    {
+    }
 }

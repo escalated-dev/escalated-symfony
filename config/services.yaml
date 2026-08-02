@@ -22,6 +22,8 @@ services:
             - '../src/EscalatedBundle.php'
             # Plain config wrapper, instantiated by the registry — not a service.
             - '../src/Support/ArrayTicketAction.php'
+            # Plain security identity built by ApiTokenAuthenticator — not a service.
+            - '../src/Security/ApiTokenUser.php'
 
     # Repositories (override to attach the Doctrine tag)
     Escalated\Symfony\Repository\TicketRepository:
@@ -97,6 +99,13 @@ services:
     Escalated\Symfony\Security\KnowledgeBaseGuard:
         tags:
             - { name: kernel.event_listener, event: kernel.request, priority: 10 }
+
+    # Resolve API bearer tokens on /api routes. Runs after routing (priority 32)
+    # so the matched route name is available, and before the KB guard (10) reads
+    # the token storage so a valid token satisfies its auth requirement.
+    Escalated\Symfony\Security\ApiTokenAuthenticator:
+        tags:
+            - { name: kernel.event_listener, event: kernel.request, priority: 20 }
     Escalated\Symfony\EventSubscriber\InertiaDataSubscriber:
         arguments:
             $routePrefix: '%escalated.route_prefix%'

@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace Escalated\Symfony\Tests;
 
 use PHPUnit\Framework\TestCase;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 
 /**
  * Every page name this bundle renders resolves to a component in
@@ -72,7 +70,7 @@ final class PageNameParityTest extends TestCase
         $found = [];
         $root = dirname(__DIR__).'/src';
 
-        $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS));
+        $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS));
 
         foreach ($files as $file) {
             if ('php' !== $file->getExtension()) {
@@ -94,8 +92,8 @@ final class PageNameParityTest extends TestCase
     }
 
     /**
-     * @param list<string>                 $missing
-     * @param array<string, list<string>>  $rendered
+     * @param list<string>                $missing
+     * @param array<string, list<string>> $rendered
      */
     private function explain(array $missing, array $rendered): string
     {

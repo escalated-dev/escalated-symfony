@@ -3,6 +3,15 @@ services:
         autowire: true
         autoconfigure: true
         public: false
+        bind:
+            # Every service in this bundle that injects an EntityManagerInterface
+            # gets Escalated's manager, not the host's default one. Bound by type
+            # so the sixty-two call sites need no change -- and so a new service
+            # cannot accidentally reach the primary database by autowiring the
+            # default manager. `escalated.entity_manager` is aliased in
+            # EscalatedBundle from the `entity_manager` config option, and points
+            # at the default manager when that is unset.
+            Doctrine\ORM\EntityManagerInterface: '@escalated.entity_manager'
 
     # Auto-tag host-defined ticket action services so the registry can collect them.
     _instanceof:

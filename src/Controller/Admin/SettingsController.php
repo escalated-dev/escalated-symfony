@@ -22,7 +22,7 @@ class SettingsController extends AbstractController
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
 
-        return $this->renderer->render('Escalated/Admin/Settings/Index', [
+        return $this->renderer->render('Escalated/Admin/Settings', [
             // Settings are loaded from the bundle configuration.
             // In a full implementation, runtime settings could be stored in a
             // dedicated escalated_settings table.

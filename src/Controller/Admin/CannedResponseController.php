@@ -38,14 +38,19 @@ class CannedResponseController extends AbstractController
         ]);
     }
 
+    /**
+     * The frontend has no separate form page: Admin/CannedResponses/Index
+     * creates and edits inline. Rendering a name it does not ship is not an
+     * error in Inertia -- it resolves to nothing and the panel comes up blank
+     * on a 200 -- so both of these routes take you to the list, where the form
+     * actually is.
+     */
     #[Route('/new', name: 'create', methods: ['GET'])]
     public function create(): Response
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
 
-        return $this->renderer->render('Escalated/Admin/CannedResponses/Form', [
-            'response' => null,
-        ]);
+        return $this->redirectToRoute('escalated.admin.canned_responses.index');
     }
 
     #[Route('', name: 'store', methods: ['POST'])]
@@ -73,9 +78,7 @@ class CannedResponseController extends AbstractController
             throw $this->createNotFoundException('Canned response not found.');
         }
 
-        return $this->renderer->render('Escalated/Admin/CannedResponses/Form', [
-            'response' => $this->serialize($response),
-        ]);
+        return $this->redirectToRoute('escalated.admin.canned_responses.index');
     }
 
     #[Route('/{id}', name: 'update', methods: ['PATCH', 'PUT'])]

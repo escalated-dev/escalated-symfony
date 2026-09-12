@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Four screens rendered blank.** The bundle asked for page names that
+  `@escalated-dev/escalated` does not ship:
+
+  | rendered | the frontend ships |
+  |---|---|
+  | `Escalated/Admin/Settings/Index` | `Escalated/Admin/Settings` |
+  | `Escalated/Agent/Tickets/Index` | `Escalated/Agent/TicketIndex` |
+  | `Escalated/Agent/Tickets/Show` | `Escalated/Agent/TicketShow` |
+  | `Escalated/Admin/CannedResponses/Form` | *(no such page — the list edits inline)* |
+
+  Inertia resolves a page name with nothing behind it to nothing, so each
+  returned 200 and rendered an empty panel.
+
+  The canned-response `/new` and `/{id}/edit` routes now redirect to the list,
+  which is where the form actually is: the frontend creates and edits inline and
+  has no separate form page, as the Laravel package already reflected.
+
+### Added
+- **`tests/PageNameParityTest.php`**, asserting every page name this bundle
+  renders resolves to a component. The comparison runs against the manifest the
+  frontend publishes, vendored at `tests/Fixtures/escalated-pages.json` — no
+  single repo's tests can see this on their own, because a controller test
+  asserts a status and the frontend never hears the name.
+
 ## [0.2.0] - 2026-09-12
 
 ### Added

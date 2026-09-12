@@ -54,7 +54,7 @@ class TicketController extends AbstractController
 
         $tickets = $this->ticketService->list($request->query->all());
 
-        return $this->renderer->render('Escalated/Agent/Tickets/Index', [
+        return $this->renderer->render('Escalated/Agent/TicketIndex', [
             'tickets' => $tickets,
             'filters' => $request->query->all(),
         ]);
@@ -70,7 +70,7 @@ class TicketController extends AbstractController
             throw $this->createNotFoundException('Ticket not found.');
         }
 
-        return $this->renderer->render('Escalated/Agent/Tickets/Show', [
+        return $this->renderer->render('Escalated/Agent/TicketShow', [
             'ticket' => $ticket,
             'customActions' => $this->customActionsForTicket($ticket, $this->getUser()),
         ]);

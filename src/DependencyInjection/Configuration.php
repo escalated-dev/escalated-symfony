@@ -36,6 +36,17 @@ class Configuration implements ConfigurationInterface
                     ->defaultValue('escalated_')
                     ->info('Prefix for all Escalated database tables.')
                 ->end()
+                ->scalarNode('entity_manager')
+                    ->defaultNull()
+                    ->info(
+                        'Doctrine entity manager Escalated\'s own entities live on, as named in '
+                        .'doctrine.orm.entity_managers. Null uses the default manager, which is the '
+                        .'historical behaviour. Set it when the support tables belong on a separate '
+                        .'connection -- a schema shared with a legacy system, a reporting store, or '
+                        .'simply out of the primary database. Your user entity is not moved: it '
+                        .'belongs to the host and stays on whichever manager maps it.'
+                    )
+                ->end()
                 ->arrayNode('newsletters')
                     ->addDefaultsIfNotSet()
                     ->children()

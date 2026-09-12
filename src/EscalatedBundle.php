@@ -42,6 +42,7 @@ class EscalatedBundle extends AbstractBundle
         $builder->setParameter('escalated.ui_enabled', $config['ui_enabled']);
         $builder->setParameter('escalated.enable_newsletters', $config['enable_newsletters']);
         $builder->setParameter('escalated.table_prefix', $config['table_prefix']);
+        $this->aliasEntityManager($builder, $config['entity_manager'] ?? null);
 
         // Storage config
         $builder->setParameter('escalated.storage.base_url', $config['storage']['base_url'] ?? '');
@@ -156,5 +157,30 @@ class EscalatedBundle extends AbstractBundle
         }
 
         return null;
+    }
+
+    /**
+     * Point `escalated.entity_manager` at the manager Escalated's entities live on.
+     *
+     * Sixty-two services in this bundle autowire EntityManagerInterface, which
+     * resolves the DEFAULT manager. That is the right default for a host whose
+     * data all lives together, and exactly wrong for one that has put the
+     * support tables on their own connection -- every one of those services
+     * would keep writing to the primary database regardless of configuration.
+     *
+     * services.yaml binds the type to this alias, so all sixty-two follow the
+     * host's choice without a single signature changing.
+     *
+     * Repositories are unaffected: ServiceEntityRepository resolves through
+     * ManagerRegistry::getManagerForClass(), which already routes by the
+     * entity-to-manager mapping the host declares in doctrine.orm.
+     */
+    private function aliasEntityManager(ContainerBuilder $builder, ?string $entityManager): void
+    {
+        $target = null === $entityManager || '' === $entityManager
+            ? 'doctrine.orm.entity_manager'
+            : sprintf('doctrine.orm.%s_entity_manager', $entityManager);
+
+        $builder->setAlias('escalated.entity_manager', $target);
     }
 }

@@ -12,6 +12,10 @@ services:
             # EscalatedBundle from the `entity_manager` config option, and points
             # at the default manager when that is unset.
             Doctrine\ORM\EntityManagerInterface: '@escalated.entity_manager'
+            # The inbound email shared secret, used by InboundEmailController
+            # (webhook authentication), InboundRouter and ThreadingHeadersService
+            # (signed Reply-To addresses). Empty disables the inbound webhook.
+            string $inboundSecret: '%escalated.inbound_secret%'
 
     # Auto-tag host-defined ticket action services so the registry can collect them.
     _instanceof:

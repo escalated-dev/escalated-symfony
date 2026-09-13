@@ -37,7 +37,7 @@ Customers: `frank` / `grace` @acme.example, `henry` @globex.example — `passwor
 
 ## Scope + known limits
 
-- **No Inertia UI in this demo.** `escalated.yaml` sets `ui_enabled: false`; the bundle's routes stay wired up but agent/admin responses are JSON, not HTML. The Vue UI requires `rompetomp/inertia-bundle` + a Vite pipeline — treated as a follow-up. The `/demo` picker page is plain Twig and is the landing you get to see the demo working at all.
+- **No Inertia UI in this demo.** `escalated.yaml` keeps `ui_enabled: true` so the agent/admin routes are registered, but with no Inertia bundle installed `InertiaUiRenderer` answers with JSON, not HTML. (`ui_enabled: false` would drop those routes and leave only the API.) The Vue UI requires `rompetomp/inertia-bundle` + a Vite pipeline — treated as a follow-up. The `/demo` picker page is plain Twig and is the landing you get to see the demo working at all.
 - **`php -S` dev server** only. No FrankenPHP, no php-fpm + nginx.
 - **Ephemeral data** — every restart reseeds. Don't rely on data persisting.
 - **`APP_ENV=demo`** hard-required by `DemoController` to expose `/demo/*` routes. In any other env those routes 404.

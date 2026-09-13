@@ -1,28 +1,19 @@
-# Escalated Bundle Routes
-# These routes are auto-loaded when ui_enabled is true.
-# API routes are always available regardless of ui_enabled.
+# Escalated bundle routes.
+#
+# Import this file from the host application, e.g. config/routes/escalated.yaml:
+#
+#     escalated:
+#         resource: '@EscalatedBundle/config/routes.yaml'
+#
+# The `escalated` route loader (Escalated\Symfony\Routing\EscalatedRouteLoader)
+# reads the bundle configuration to decide what to register:
+#
+#   - the JSON API (/api/v1/...), always;
+#   - the customer, agent, admin and widget UI, when `ui_enabled` is true;
+#   - the newsletter routes, when `ui_enabled` and `enable_newsletters` are both true.
+#
+# Every route is mounted under `route_prefix` (default /support).
 
-escalated_customer:
-    resource: '../src/Controller/Customer/'
-    type: attribute
-    prefix: '%escalated.route_prefix%'
-
-escalated_agent:
-    resource: '../src/Controller/Agent/'
-    type: attribute
-    prefix: '%escalated.route_prefix%'
-
-escalated_admin:
-    resource: '../src/Controller/Admin/'
-    type: attribute
-    prefix: '%escalated.route_prefix%'
-
-escalated_api:
-    resource: '../src/Controller/Api/'
-    type: attribute
-    prefix: '%escalated.route_prefix%'
-
-escalated_widget:
-    resource: '../src/Controller/Widget/'
-    type: attribute
-    prefix: '%escalated.route_prefix%'
+escalated:
+    resource: .
+    type: escalated

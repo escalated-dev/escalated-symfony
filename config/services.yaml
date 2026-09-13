@@ -34,6 +34,16 @@ services:
             # Plain security identity built by ApiTokenAuthenticator — not a service.
             - '../src/Security/ApiTokenUser.php'
 
+    # Route loader behind @EscalatedBundle/config/routes.yaml. Applies ui_enabled,
+    # enable_newsletters and route_prefix when the host's router loads it.
+    Escalated\Symfony\Routing\EscalatedRouteLoader:
+        arguments:
+            $routePrefix: '%escalated.route_prefix%'
+            $uiEnabled: '%escalated.ui_enabled%'
+            $newslettersEnabled: '%escalated.enable_newsletters%'
+            $env: '%kernel.environment%'
+        tags: ['routing.loader']
+
     # Repositories (override to attach the Doctrine tag)
     Escalated\Symfony\Repository\TicketRepository:
         tags: ['doctrine.repository_service']

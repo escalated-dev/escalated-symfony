@@ -66,6 +66,22 @@ escalated:
             days: [1, 2, 3, 4, 5]
 ```
 
+### Import the routes
+
+Create `config/routes/escalated.yaml`:
+
+```yaml
+escalated:
+    resource: '@EscalatedBundle/config/routes.yaml'
+```
+
+The bundle cannot register routes from its container extension, so this import
+is required. The file hands off to the bundle's `escalated` route loader, which
+applies your configuration when the router loads it: the JSON API is always
+registered; the customer, agent, admin and widget UI only when `ui_enabled` is
+true; the newsletter routes only when `enable_newsletters` is true as well.
+Every route is mounted under `route_prefix`.
+
 ### Host user key type (UUID / string users)
 
 Escalated stores references to your app's users (ticket requester, assignee,

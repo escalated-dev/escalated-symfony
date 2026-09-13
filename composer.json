@@ -22,7 +22,11 @@
         "egulias/email-validator": "^4.0",
         "friendsofphp/php-cs-fixer": "^3.94",
         "phpunit/phpunit": "^10.5|^11.0",
-        "symfony/phpunit-bridge": "^6.4|^7.0|^8.0.8"
+        "symfony/mailer": "^6.4|^7.0",
+        "symfony/phpunit-bridge": "^6.4|^7.0|^8.0.8",
+        "symfony/serializer": "^6.4|^7.0",
+        "symfony/twig-bundle": "^6.4|^7.0",
+        "symfony/yaml": "^6.4|^7.0"
     },
     "suggest": {
         "rompetomp/inertia-bundle": "Required for built-in Inertia.js UI (^2.0)",

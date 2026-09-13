@@ -1,7 +1,7 @@
 escalated:
     user_class: App\Entity\User
     route_prefix: /support
-    ui_enabled: false   # demo ships without Inertia bundle; the API is still wired up
+    ui_enabled: true    # no Inertia bundle here, so UI routes answer with JSON (InertiaUiRenderer fallback)
     table_prefix: escalated_
     tickets:
         allow_customer_close: true

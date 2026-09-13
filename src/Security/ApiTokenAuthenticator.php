@@ -13,29 +13,41 @@ use Symfony\Component\Security\Core\Authentication\Token\PreAuthenticatedToken;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 /**
- * Resolves an `Authorization: Bearer <token>` header on the bundle's `/api`
- * routes to an authenticated identity, mirroring the AuthenticateApiToken
- * middleware in escalated-laravel.
+ * Requires an authenticated principal on the bundle's `/api` routes and
+ * resolves an `Authorization: Bearer <token>` header to one, mirroring the
+ * AuthenticateApiToken middleware in escalated-laravel.
  *
- * Implemented as a kernel.request listener (the same shape as
- * KnowledgeBaseGuard) so it integrates with the host firewall's token storage
- * without requiring the host to register a custom firewall authenticator:
+ * Implemented as a kernel.request listener so it works behind the host's own
+ * firewall without the host registering a custom authenticator. It must run
+ * AFTER the firewall (priority 8): the firewall's context listener resets the
+ * token storage to the session's token, which would discard a token set
+ * earlier, and the session user is only known once the firewall has run.
  *
  *  - Only acts on routes whose name starts with the api prefix.
- *  - No bearer header  -> no-op (session / existing auth still applies).
+ *  - Public API routes (the knowledge base) -> no bearer is required; the
+ *                         KnowledgeBaseGuard decides.
+ *  - No bearer header  -> 401 "Unauthenticated." unless the firewall already
+ *                         authenticated a user (a signed-in session).
  *  - Unknown / revoked -> 401 "Invalid token."
  *  - Expired           -> 401 "Token has expired."
  *  - Valid             -> places a PreAuthenticatedToken (roles derived from
- *                         the token's abilities) on the token storage and
- *                         records throttled usage.
+ *                         the token's abilities) on the token storage for this
+ *                         request only, and records throttled usage.
+ *
+ * Authorization (agent / admin access) is the controllers' job, through the
+ * ESCALATED_AGENT and ESCALATED_ADMIN voters.
  */
 class ApiTokenAuthenticator
 {
+    /**
+     * @param list<string> $publicRoutePrefixes api routes that need no credentials
+     */
     public function __construct(
         private readonly ApiTokenService $service,
         private readonly TokenStorageInterface $tokenStorage,
         private readonly string $apiRoutePrefix = 'escalated.api.',
         private readonly string $firewallName = 'main',
+        private readonly array $publicRoutePrefixes = ['escalated.api.kb.'],
     ) {
     }
 
@@ -53,7 +65,10 @@ class ApiTokenAuthenticator
 
         $plainText = $this->extractToken($request);
         if (null === $plainText) {
-            // Leave session-authenticated / public API access untouched.
+            if (!$this->isPublicRoute($routeName) && !$this->hasAuthenticatedUser()) {
+                $event->setResponse(new JsonResponse(['message' => 'Unauthenticated.'], Response::HTTP_UNAUTHORIZED));
+            }
+
             return;
         }
 
@@ -75,6 +90,11 @@ class ApiTokenAuthenticator
 
         $this->tokenStorage->setToken(new PreAuthenticatedToken($user, $this->firewallName, $roles));
 
+        // A bearer token authenticates one request. Without this, a stateful
+        // host firewall writes the token into the session on the way out, and
+        // the session keeps working after the token is revoked.
+        $request->attributes->remove('_security_firewall_run');
+
         $this->service->touchLastUsed($apiToken, $request->getClientIp());
         $request->attributes->set('escalated_api_token', $apiToken);
     }
@@ -82,6 +102,22 @@ class ApiTokenAuthenticator
     public function getApiRoutePrefix(): string
     {
         return $this->apiRoutePrefix;
+    }
+
+    private function isPublicRoute(string $routeName): bool
+    {
+        foreach ($this->publicRoutePrefixes as $prefix) {
+            if (str_starts_with($routeName, $prefix)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function hasAuthenticatedUser(): bool
+    {
+        return null !== $this->tokenStorage->getToken()?->getUser();
     }
 
     private function extractToken(Request $request): ?string

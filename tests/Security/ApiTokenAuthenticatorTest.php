@@ -66,15 +66,56 @@ class ApiTokenAuthenticatorTest extends TestCase
         $this->assertNull($event->getResponse());
     }
 
-    public function testIgnoresApiRouteWithoutBearer(): void
+    public function testRejectsApiRouteWithoutBearerOrSessionUser(): void
     {
         $this->service->expects($this->never())->method('findByPlainText');
         $this->tokenStorage->expects($this->never())->method('setToken');
+        $this->tokenStorage->method('getToken')->willReturn(null);
+
+        $event = $this->createEvent('escalated.api.tickets.index');
+        $this->authenticator()->onKernelRequest($event);
+
+        $this->assertNotNull($event->getResponse());
+        $this->assertSame(401, $event->getResponse()->getStatusCode());
+        $this->assertSame('{"message":"Unauthenticated."}', (string) $event->getResponse()->getContent());
+    }
+
+    public function testLetsASessionUserThroughWithoutBearer(): void
+    {
+        $this->service->expects($this->never())->method('findByPlainText');
+        $this->tokenStorage->expects($this->never())->method('setToken');
+
+        $sessionToken = $this->createMock(TokenInterface::class);
+        $sessionToken->method('getUser')->willReturn(new ApiTokenUser('7'));
+        $this->tokenStorage->method('getToken')->willReturn($sessionToken);
 
         $event = $this->createEvent('escalated.api.auth.me');
         $this->authenticator()->onKernelRequest($event);
 
         $this->assertNull($event->getResponse());
+    }
+
+    public function testLeavesPublicKnowledgeBaseRoutesToTheKnowledgeBaseGuard(): void
+    {
+        $this->service->expects($this->never())->method('findByPlainText');
+        $this->tokenStorage->expects($this->never())->method('getToken');
+
+        $event = $this->createEvent('escalated.api.kb.articles');
+        $this->authenticator()->onKernelRequest($event);
+
+        $this->assertNull($event->getResponse());
+    }
+
+    public function testABearerTokenIsNotPersistedToTheFirewallSession(): void
+    {
+        $this->service->method('findByPlainText')->willReturn($this->token(['agent']));
+
+        $event = $this->createEvent('escalated.api.tickets.index', 'Bearer plain');
+        $event->getRequest()->attributes->set('_security_firewall_run', '_security_main');
+        $this->authenticator()->onKernelRequest($event);
+
+        $this->assertNull($event->getResponse());
+        $this->assertFalse($event->getRequest()->attributes->has('_security_firewall_run'));
     }
 
     public function testValidTokenAuthenticatesRequest(): void

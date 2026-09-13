@@ -16,6 +16,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `ui_enabled` is true, the newsletter routes only when `enable_newsletters` is
   also true, all under `route_prefix`. Hosts must import that file (README,
   "Import the routes"); hosts that already import it need no change.
+- **The JSON API answered requests with no credentials.** Without an
+  `Authorization` header the token listener stepped aside and no ticket endpoint
+  checked the caller: the ticket list returned every ticket, and create, update,
+  status, rating and subject changes went through anonymously. Every `/api/v1`
+  route except the knowledge base now requires a bearer token or a signed-in
+  session (`401` otherwise), and the ticket endpoints require agent access
+  (`403`). Rating is also open to the ticket's requester.
+- **Valid API tokens never authenticated.** The token listener ran before the
+  host firewall, which reset the token storage from the session and discarded
+  the token. It now runs after the firewall, and a bearer token is no longer
+  written into the session.
 - **Four screens rendered blank.** The bundle asked for page names that
   `@escalated-dev/escalated` does not ship:
 

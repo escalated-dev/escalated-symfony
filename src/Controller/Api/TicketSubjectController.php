@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Escalated\Symfony\Controller\Api;
 
+use Escalated\Symfony\Security\EnsureAgentVoter;
 use Escalated\Symfony\Service\TicketService;
 use Escalated\Symfony\Service\TicketSubjectService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -24,6 +25,8 @@ class TicketSubjectController extends AbstractController
     #[Route('/{reference}/subjects', name: 'subjects.attach', methods: ['POST'])]
     public function attach(string $reference, Request $request): JsonResponse
     {
+        $this->denyAccessUnlessGranted(EnsureAgentVoter::ATTRIBUTE);
+
         $ticket = $this->ticketService->find($reference);
         if (null === $ticket) {
             return $this->json(['error' => 'Ticket not found.'], Response::HTTP_NOT_FOUND);
@@ -65,6 +68,8 @@ class TicketSubjectController extends AbstractController
     #[Route('/{reference}/subjects/{linkId}', name: 'subjects.detach', requirements: ['linkId' => '\d+'], methods: ['DELETE'])]
     public function detach(string $reference, int $linkId): JsonResponse
     {
+        $this->denyAccessUnlessGranted(EnsureAgentVoter::ATTRIBUTE);
+
         $ticket = $this->ticketService->find($reference);
         if (null === $ticket) {
             return $this->json(['error' => 'Ticket not found.'], Response::HTTP_NOT_FOUND);

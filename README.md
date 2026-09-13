@@ -256,10 +256,22 @@ The admin area includes a runtime settings page at `/admin/settings/public-ticke
 
 ### Security
 
-Two Symfony voters control access:
+Symfony voters control access:
 
-- `ESCALATED_AGENT` -- Granted when the user has an `AgentProfile` record
+- `ESCALATED_AGENT` -- Granted when the user has an `AgentProfile` record. An API token user also needs the `agent`, `admin` or `*` ability, and the token's owner must still have an `AgentProfile`.
 - `ESCALATED_ADMIN` -- Granted when the user has the `ROLE_ESCALATED_ADMIN` role
+- `ESCALATED_TICKET_REQUESTER` -- Granted on a `Ticket` when the user is its requester
+
+#### JSON API authentication
+
+Every `/api/v1` route except the knowledge base requires an authenticated principal. Requests without one get `401 {"message": "Unauthenticated."}`. Two kinds of principal are accepted:
+
+- **A bearer token:** `Authorization: Bearer <token>`, created from the admin API-token screen. It authenticates only the request that carries it and is never written into the session.
+- **A signed-in session:** the user your firewall already authenticated.
+
+The ticket endpoints (list, show, create, update, status, custom actions, subjects) then require `ESCALATED_AGENT` (`403` otherwise). Rating a ticket is allowed for agents and for the ticket's requester. The knowledge-base endpoints follow the knowledge-base settings: public by default.
+
+Both listeners run after the host firewall, so the API works behind a stateful `main` firewall with no extra security configuration.
 
 ### UI Rendering
 

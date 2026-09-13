@@ -7,6 +7,7 @@ namespace Escalated\Symfony\Tests\Kernel;
 use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
 use Doctrine\Bundle\MigrationsBundle\DoctrineMigrationsBundle;
 use Escalated\Symfony\EscalatedBundle;
+use Escalated\Symfony\Tests\Kernel\Fixtures\Entity\TestUser;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
 use Symfony\Bundle\SecurityBundle\SecurityBundle;
@@ -110,16 +111,31 @@ final class EscalatedTestKernel extends Kernel
             'php_errors' => ['log' => true],
             'serializer' => ['enabled' => true],
             'mailer' => ['dsn' => 'null://null'],
+            'session' => ['storage_factory_id' => 'session.storage.factory.mock_file'],
         ]);
 
+        // A stateful, lazy firewall over the whole application with a Doctrine
+        // user provider -- the shape of a typical host's `main` firewall, and
+        // the one Escalated's API has to work behind.
         $container->extension('security', [
-            'providers' => ['in_memory' => ['memory' => null]],
-            'firewalls' => ['main' => ['lazy' => true]],
+            'providers' => [
+                'test_users' => ['entity' => ['class' => TestUser::class, 'property' => 'email']],
+            ],
+            'firewalls' => ['main' => ['lazy' => true, 'provider' => 'test_users']],
         ]);
 
         $orm = [
             'naming_strategy' => 'doctrine.orm.naming_strategy.underscore_number_aware',
             'report_fields_where_declared' => true,
+            'mappings' => [
+                'TestApp' => [
+                    'type' => 'attribute',
+                    'is_bundle' => false,
+                    'dir' => __DIR__.'/Fixtures/Entity',
+                    'prefix' => 'Escalated\Symfony\Tests\Kernel\Fixtures\Entity',
+                    'alias' => 'TestApp',
+                ],
+            ],
         ];
         if (\PHP_VERSION_ID >= 80400) {
             $orm['enable_native_lazy_objects'] = true;

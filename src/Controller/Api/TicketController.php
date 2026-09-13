@@ -6,6 +6,8 @@ namespace Escalated\Symfony\Controller\Api;
 
 use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Event\TicketCustomActionTriggeredEvent;
+use Escalated\Symfony\Security\EnsureAgentVoter;
+use Escalated\Symfony\Security\TicketRequesterVoter;
 use Escalated\Symfony\Service\SatisfactionRatingService;
 use Escalated\Symfony\Service\TicketActionRegistry;
 use Escalated\Symfony\Service\TicketService;
@@ -51,6 +53,8 @@ class TicketController extends AbstractController
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
+        $this->denyAccessUnlessGranted(EnsureAgentVoter::ATTRIBUTE);
+
         $tickets = $this->ticketService->list($request->query->all());
 
         return $this->json([
@@ -61,6 +65,8 @@ class TicketController extends AbstractController
     #[Route('/{reference}', name: 'show', methods: ['GET'])]
     public function show(string $reference): JsonResponse
     {
+        $this->denyAccessUnlessGranted(EnsureAgentVoter::ATTRIBUTE);
+
         $ticket = $this->ticketService->find($reference);
         if (null === $ticket) {
             return $this->json(['error' => 'Ticket not found.'], Response::HTTP_NOT_FOUND);
@@ -75,6 +81,8 @@ class TicketController extends AbstractController
     #[Route('/{reference}/actions/{actionKey}', name: 'custom-action', methods: ['POST'])]
     public function customAction(string $reference, string $actionKey, Request $request): JsonResponse
     {
+        $this->denyAccessUnlessGranted(EnsureAgentVoter::ATTRIBUTE);
+
         $ticket = $this->ticketService->find($reference);
         if (null === $ticket) {
             return $this->json(['error' => 'Ticket not found.'], Response::HTTP_NOT_FOUND);
@@ -109,6 +117,8 @@ class TicketController extends AbstractController
     #[Route('', name: 'store', methods: ['POST'])]
     public function store(Request $request): JsonResponse
     {
+        $this->denyAccessUnlessGranted(EnsureAgentVoter::ATTRIBUTE);
+
         $data = json_decode($request->getContent(), true) ?? [];
 
         try {
@@ -125,6 +135,8 @@ class TicketController extends AbstractController
     #[Route('/{reference}', name: 'update', methods: ['PATCH'])]
     public function update(string $reference, Request $request): JsonResponse
     {
+        $this->denyAccessUnlessGranted(EnsureAgentVoter::ATTRIBUTE);
+
         $ticket = $this->ticketService->find($reference);
         if (null === $ticket) {
             return $this->json(['error' => 'Ticket not found.'], Response::HTTP_NOT_FOUND);
@@ -144,6 +156,12 @@ class TicketController extends AbstractController
         $ticket = $this->ticketService->find($reference);
         if (null === $ticket) {
             return $this->json(['error' => 'Ticket not found.'], Response::HTTP_NOT_FOUND);
+        }
+
+        // Agents, or the customer who raised the ticket (Laravel's mobile API
+        // rates as the requester only).
+        if (!$this->isGranted(EnsureAgentVoter::ATTRIBUTE) && !$this->isGranted(TicketRequesterVoter::ATTRIBUTE, $ticket)) {
+            throw $this->createAccessDeniedException();
         }
 
         $data = json_decode($request->getContent(), true) ?? [];
@@ -175,6 +193,8 @@ class TicketController extends AbstractController
     #[Route('/{reference}/status', name: 'status', methods: ['POST'])]
     public function changeStatus(string $reference, Request $request): JsonResponse
     {
+        $this->denyAccessUnlessGranted(EnsureAgentVoter::ATTRIBUTE);
+
         $ticket = $this->ticketService->find($reference);
         if (null === $ticket) {
             return $this->json(['error' => 'Ticket not found.'], Response::HTTP_NOT_FOUND);

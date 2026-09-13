@@ -276,7 +276,6 @@ class WebhookController extends AbstractController
             'reply.created',
             'note.created',
             'sla.breached',
-            'sla.warning',
             'ticket.tag_added',
             'ticket.tag_removed',
         ];

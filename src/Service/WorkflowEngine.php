@@ -23,10 +23,23 @@ class WorkflowEngine
         'add_follower', 'send_notification',
     ];
 
+    /**
+     * The events a workflow can be triggered by. Only events this backend
+     * actually dispatches belong here: a workflow saved against anything else
+     * never runs.
+     */
     public const TRIGGER_EVENTS = [
         'ticket.created', 'ticket.updated', 'ticket.status_changed', 'ticket.assigned',
         'ticket.priority_changed', 'ticket.tagged', 'ticket.department_changed',
-        'reply.created', 'reply.agent_reply', 'sla.warning', 'sla.breached', 'ticket.reopened',
+        'ticket.reopened', 'reply.created', 'sla.breached',
+    ];
+
+    /**
+     * Earlier trigger names still honoured on stored workflows, by the event
+     * that replaced them. Replies used to be dispatched as `ticket.replied`.
+     */
+    private const LEGACY_TRIGGER_NAMES = [
+        'reply.created' => ['ticket.replied'],
     ];
 
     public function __construct(
@@ -36,10 +49,13 @@ class WorkflowEngine
 
     public function processEvent(string $eventName, Ticket $ticket): void
     {
+        $triggers = [$eventName, ...(self::LEGACY_TRIGGER_NAMES[$eventName] ?? [])];
+        $placeholders = implode(', ', array_fill(0, \count($triggers), '?'));
+
         $workflows = $this->em->getConnection()->fetchAllAssociative(
-            'SELECT * FROM escalated_workflows WHERE trigger_event = ? AND is_active = ? ORDER BY position ASC',
-            [$eventName, true],
-            [Types::STRING, Types::BOOLEAN],
+            'SELECT * FROM escalated_workflows WHERE trigger_event IN ('.$placeholders.') AND is_active = ? ORDER BY position ASC',
+            [...$triggers, true],
+            [...array_fill(0, \count($triggers), Types::STRING), Types::BOOLEAN],
         );
         foreach ($workflows as $workflow) {
             $this->processWorkflow($workflow, $ticket, $eventName);

@@ -55,6 +55,14 @@ class AssignmentService
             'previous_agent_id' => $previousAgentId,
         ]);
 
+        if (null !== $previousAgentId) {
+            $this->dispatcher->dispatch(new TicketWorkflowEvent(
+                'ticket.unassigned',
+                $ticket,
+                ['previous_agent_id' => $previousAgentId, 'causer_id' => $causerId],
+            ));
+        }
+
         return $ticket;
     }
 

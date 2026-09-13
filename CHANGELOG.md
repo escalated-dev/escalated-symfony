@@ -8,6 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **SLA breaches and delayed workflow actions never ran.**
+  `SlaService::checkBreaches()` and `WorkflowEngine::processDelayedActions()` had
+  no caller. Two new console commands run them, `escalated:check-sla-breaches`
+  and `escalated:process-delayed-actions`; schedule both every minute (see the
+  README).
+- **Workflows saved against several triggers never ran.**
+  - Replies were dispatched as `ticket.replied`, while the trigger list and the
+    workflow contract call the event `reply.created`. Replies now dispatch
+    `reply.created`, and workflows saved as `ticket.replied` still run.
+  - `ticket.reopened` and `ticket.department_changed` are now dispatched: on
+    reopen, and when an escalation rule moves a ticket.
+  - `reply.agent_reply` and `sla.warning` had no code path and are no longer
+    offered.
+- **The webhook admin offered events nothing sent.** `ticket.unassigned`,
+  `note.created`, `ticket.department_changed` and `ticket.tag_removed` are now
+  emitted. `sla.warning` is no longer offered.
 - **On PostgreSQL, workflows never ran and new tickets were lost.**
   `WorkflowEngine` and `EmailChannelService` compared boolean columns to integer
   literals in raw SQL (`is_active = 1`, `executed = 0`, `SET executed = 1`,

@@ -116,6 +116,7 @@ final class WebhookSubscriber implements EventSubscriberInterface
                 yield ['ticket.assigned', $payload];
                 break;
 
+            case 'reply.created':
             case 'ticket.replied':
                 $payload = $base;
                 $payload['reply'] = [
@@ -128,6 +129,28 @@ final class WebhookSubscriber implements EventSubscriberInterface
                 yield ['reply.created', $payload];
                 break;
 
+            case 'note.created':
+                $payload = $base;
+                $payload['reply'] = [
+                    'id' => $context['reply_id'] ?? null,
+                    'is_internal_note' => true,
+                ];
+                if (\array_key_exists('author_id', $context)) {
+                    $payload['agent_id'] = $context['author_id'];
+                }
+                yield ['note.created', $payload];
+                break;
+            case 'ticket.unassigned':
+                $payload = $base;
+                $payload['previous_agent_id'] = $context['previous_agent_id'] ?? null;
+                yield ['ticket.unassigned', $payload];
+                break;
+            case 'ticket.department_changed':
+                $payload = $base;
+                $payload['old_department_id'] = $context['old_department_id'] ?? null;
+                $payload['new_department_id'] = $context['new_department_id'] ?? null;
+                yield ['ticket.department_changed', $payload];
+                break;
             case 'ticket.tagged':
                 $name = 'removed' === ($context['action'] ?? 'added') ? 'ticket.tag_removed' : 'ticket.tag_added';
                 foreach ($context['tag_ids'] ?? [] as $tagId) {

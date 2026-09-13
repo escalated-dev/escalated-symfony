@@ -8,8 +8,10 @@ use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Entity\Department;
 use Escalated\Symfony\Entity\EscalationRule;
 use Escalated\Symfony\Entity\Ticket;
+use Escalated\Symfony\Event\TicketWorkflowEvent;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
  * EscalationService — admin time-based escalation rules engine.
@@ -27,6 +29,7 @@ class EscalationService
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly LoggerInterface $logger = new NullLogger(),
+        private readonly ?EventDispatcherInterface $dispatcher = null,
     ) {
     }
 
@@ -148,8 +151,17 @@ class EscalationService
                     case 'change_department':
                         $department = $this->em->getRepository(Department::class)->find((int) $value);
                         if (null !== $department) {
+                            $oldDepartmentId = $ticket->getDepartment()?->getId();
                             $ticket->setDepartment($department);
                             $this->em->flush();
+
+                            if ($oldDepartmentId !== $department->getId()) {
+                                $this->dispatcher?->dispatch(new TicketWorkflowEvent(
+                                    'ticket.department_changed',
+                                    $ticket,
+                                    ['old_department_id' => $oldDepartmentId, 'new_department_id' => $department->getId()],
+                                ));
+                            }
                         }
                         break;
                         // Unknown action types skipped silently for forward-compat.

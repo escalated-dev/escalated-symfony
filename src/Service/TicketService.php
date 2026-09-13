@@ -159,6 +159,14 @@ class TicketService
             ['old_status' => $oldStatus, 'new_status' => $newStatus, 'causer_id' => $causerId],
         ));
 
+        if (Ticket::STATUS_REOPENED === $newStatus) {
+            $this->dispatcher->dispatch(new TicketWorkflowEvent(
+                'ticket.reopened',
+                $ticket,
+                ['old_status' => $oldStatus, 'causer_id' => $causerId],
+            ));
+        }
+
         return $ticket;
     }
 
@@ -182,15 +190,15 @@ class TicketService
         $activityType = $isNote ? TicketActivity::TYPE_NOTE_ADDED : TicketActivity::TYPE_REPLIED;
         $this->logActivity($ticket, $activityType, $authorId);
 
-        // Internal notes don't trigger public workflows (e.g. reply
-        // autoresponders should not fire on private agent notes).
-        if (!$isNote) {
-            $this->dispatcher->dispatch(new TicketWorkflowEvent(
-                'ticket.replied',
-                $ticket,
-                ['reply_id' => $reply->getId(), 'author_id' => $authorId],
-            ));
-        }
+        // A public reply is `reply.created`, the workflow admin contract's name
+        // (workflows saved as the earlier `ticket.replied` still match). An
+        // internal note is `note.created`, so reply workflows such as
+        // autoresponders never fire on private agent notes.
+        $this->dispatcher->dispatch(new TicketWorkflowEvent(
+            $isNote ? 'note.created' : 'reply.created',
+            $ticket,
+            ['reply_id' => $reply->getId(), 'author_id' => $authorId],
+        ));
 
         return $reply;
     }
@@ -297,10 +305,12 @@ class TicketService
      */
     public function removeTags(Ticket $ticket, array $tagIds, int|string|null $causerId = null): Ticket
     {
+        $removed = [];
         foreach ($tagIds as $tagId) {
             $tag = $this->em->find(\Escalated\Symfony\Entity\Tag::class, $tagId);
             if (null !== $tag) {
                 $ticket->removeTag($tag);
+                $removed[] = $tagId;
 
                 $this->logActivity($ticket, TicketActivity::TYPE_TAG_REMOVED, $causerId, [
                     'tag_id' => $tagId,
@@ -309,6 +319,14 @@ class TicketService
         }
 
         $this->em->flush();
+
+        if ([] !== $removed) {
+            $this->dispatcher->dispatch(new TicketWorkflowEvent(
+                'ticket.tagged',
+                $ticket,
+                ['tag_ids' => $removed, 'causer_id' => $causerId, 'action' => 'removed'],
+            ));
+        }
 
         return $ticket;
     }

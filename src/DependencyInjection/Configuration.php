@@ -55,6 +55,19 @@ class Configuration implements ConfigurationInterface
                         .'belongs to the host and stays on whichever manager maps it.'
                     )
                 ->end()
+                ->arrayNode('webhooks')
+                    ->addDefaultsIfNotSet()
+                    ->children()
+                        ->booleanNode('allow_private_networks')
+                            ->defaultFalse()
+                            ->info(
+                                'Allow outbound webhooks to private, loopback and link-local addresses. Off by '
+                                .'default: a webhook URL is a request the server makes, and its response is shown '
+                                .'in the delivery log. Only http and https are ever allowed.'
+                            )
+                        ->end()
+                    ->end()
+                ->end()
                 ->arrayNode('newsletters')
                     ->addDefaultsIfNotSet()
                     ->children()

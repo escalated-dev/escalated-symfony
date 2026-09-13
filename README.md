@@ -105,6 +105,16 @@ The adapter can also be sent as an `X-Escalated-Adapter` header.
 - The same secret signs the Reply-To address on outbound mail, so a reply is matched back to its ticket.
 - To support another provider, implement `Escalated\Symfony\Mail\Inbound\InboundEmailParser`. Autoconfigured services implementing it are registered automatically.
 
+### Outbound webhooks
+
+Webhook URLs must use `http` or `https` and point to a public address. This is checked when a webhook is saved and again on every delivery. Private, loopback, link-local and reserved addresses are refused, deliveries never follow redirects, and each request connects to the address that passed the check. To deliver to receivers on your own network on purpose:
+
+```yaml
+escalated:
+    webhooks:
+        allow_private_networks: true
+```
+
 ### Schedule the background commands
 
 Several features run from console commands rather than on a request. Run them from cron, Symfony Scheduler or your platform's job runner:

@@ -93,6 +93,11 @@ services:
     Escalated\Symfony\Http\WebhookHttpClientInterface:
         class: Escalated\Symfony\Http\CurlWebhookHttpClient
 
+    # Refuses webhook URLs on private or reserved networks, on save and on delivery.
+    Escalated\Symfony\Http\WebhookUrlGuard:
+        arguments:
+            $allowPrivateNetworks: '%escalated.webhooks.allow_private_networks%'
+
     # UI Rendering
     Escalated\Symfony\Rendering\UiRendererInterface:
         class: Escalated\Symfony\Rendering\InertiaUiRenderer

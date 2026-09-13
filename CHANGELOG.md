@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- **Webhooks could target the server's own network.** A webhook URL only had
+  to be syntactically valid. An admin, or anyone holding an admin session, could
+  point it at a local service, a private address or the cloud metadata endpoint,
+  including over non-HTTP schemes curl supports. The server then sent a request
+  there on every ticket event and stored the response in the delivery log.
+  - URLs must now use `http`/`https` and resolve to public addresses. This is
+    checked on save and on every delivery.
+  - Deliveries connect only to the address that passed the check and never
+    follow redirects.
+  - `escalated.webhooks.allow_private_networks` re-enables internal receivers
+    deliberately.
+
 ### Fixed
 - **Required packages were not declared.** The bundle uses these packages at
   runtime but did not require them:

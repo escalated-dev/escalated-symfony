@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **On PostgreSQL, workflows never ran and new tickets were lost.**
+  `WorkflowEngine` and `EmailChannelService` compared boolean columns to integer
+  literals in raw SQL (`is_active = 1`, `executed = 0`, `SET executed = 1`,
+  `SET is_default = 0`), which PostgreSQL rejects. The trigger subscriber
+  swallowed the error, so no workflow ran and delayed actions were never picked
+  up. `ticket.created` runs inside the flush that inserts the ticket, where the
+  failed statement aborted the transaction, so the ticket itself was rolled back.
+  Changing the default email channel also failed. The statements now bind
+  booleans with their DBAL types, and CI runs every kernel test on PostgreSQL.
 - **Inbound email could not be received.**
   - No routing file imported the webhook controller.
   - Nothing tagged the Postmark, Mailgun and SES parsers, so every adapter was "unknown".

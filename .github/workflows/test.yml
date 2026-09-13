@@ -67,12 +67,8 @@ jobs:
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
 
-      # Migrations and schema validation only for now: WorkflowEngine still
-      # compares boolean columns to integers in raw SQL, which PostgreSQL
-      # rejects (and inside a flush that aborts the transaction), so the HTTP
-      # and workflow kernel tests cannot pass here yet.
-      - name: Run migration tests
-        run: vendor/bin/phpunit tests/Kernel/Migrations
+      - name: Run kernel tests
+        run: vendor/bin/phpunit tests/Kernel
 
   kernel-mysql:
     name: Kernel tests (MySQL)

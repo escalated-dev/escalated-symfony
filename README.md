@@ -82,6 +82,29 @@ registered; the customer, agent, admin and widget UI only when `ui_enabled` is
 true; the newsletter routes only when `enable_newsletters` is true as well.
 Every route is mounted under `route_prefix`.
 
+### Inbound email (optional)
+
+Replies and new tickets can arrive by email through your mail provider's inbound webhook. Set a shared secret:
+
+```yaml
+# config/packages/escalated.yaml
+escalated:
+    inbound_secret: '%env(ESCALATED_INBOUND_SECRET)%'
+```
+
+Then point the provider at:
+
+```
+POST {route_prefix}/escalated/webhook/email/inbound?adapter=postmark|mailgun|ses
+X-Escalated-Inbound-Secret: <the secret>
+```
+
+The adapter can also be sent as an `X-Escalated-Adapter` header.
+
+- With no secret configured, the webhook refuses every request.
+- The same secret signs the Reply-To address on outbound mail, so a reply is matched back to its ticket.
+- To support another provider, implement `Escalated\Symfony\Mail\Inbound\InboundEmailParser`. Autoconfigured services implementing it are registered automatically.
+
 ### Host user key type (UUID / string users)
 
 Escalated stores references to your app's users (ticket requester, assignee,

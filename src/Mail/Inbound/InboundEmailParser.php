@@ -4,16 +4,19 @@ declare(strict_types=1);
 
 namespace Escalated\Symfony\Mail\Inbound;
 
+use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
+
 /**
  * Transport-specific parser that normalizes a provider's webhook
  * payload into an {@see InboundMessage}. Implementations register as
- * Symfony services tagged with `escalated.inbound_parser` and the
- * controller (in a follow-up PR) picks the matching parser by
- * {@see name()}.
+ * Symfony services tagged with `escalated.inbound_parser` (the attribute
+ * below tags every autoconfigured implementation) and
+ * InboundEmailController picks the matching parser by {@see name()}.
  *
- * Add a new provider by implementing this interface; the DI tag will
- * wire it up automatically.
+ * Add a new provider by implementing this interface in an autoconfigured
+ * service; it is tagged and offered to the controller automatically.
  */
+#[AutoconfigureTag('escalated.inbound_parser')]
 interface InboundEmailParser
 {
     /**

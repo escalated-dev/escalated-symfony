@@ -16,7 +16,7 @@ use Symfony\Component\Routing\RouteCollection;
  * `@EscalatedBundle/config/routes.yaml`, which points here, and this loader
  * decides what that import contains:
  *
- *  - the JSON API, always;
+ *  - the JSON API and the inbound email webhook, always;
  *  - the customer, agent, admin and widget UI, when `ui_enabled` is true;
  *  - the newsletter admin, public and webhook routes, when `ui_enabled` and
  *    `enable_newsletters` are both true.
@@ -27,11 +27,14 @@ final class EscalatedRouteLoader extends Loader
 {
     public const TYPE = 'escalated';
 
-    private const API_DIRECTORIES = ['Api'];
+    /**
+     * Controller directories (trailing slash) and files, relative to src/Controller.
+     */
+    private const ALWAYS = ['Api/', 'InboundEmailController.php'];
 
-    private const UI_DIRECTORIES = ['Customer', 'Agent', 'Admin', 'Widget'];
+    private const UI = ['Customer/', 'Agent/', 'Admin/', 'Widget/'];
 
-    private const NEWSLETTER_DIRECTORIES = ['Newsletter/Admin', 'Newsletter/Public', 'Newsletter/Webhook'];
+    private const NEWSLETTER = ['Newsletter/Admin/', 'Newsletter/Public/', 'Newsletter/Webhook/'];
 
     public function __construct(
         private readonly string $routePrefix,
@@ -51,8 +54,8 @@ final class EscalatedRouteLoader extends Loader
     {
         $routes = new RouteCollection();
 
-        foreach ($this->controllerDirectories() as $directory) {
-            $imported = $this->import(\dirname(__DIR__).'/Controller/'.$directory.'/', 'attribute');
+        foreach ($this->controllerResources() as $controllerResource) {
+            $imported = $this->import(\dirname(__DIR__).'/Controller/'.$controllerResource, 'attribute');
             if ($imported instanceof RouteCollection) {
                 $routes->addCollection($imported);
             }
@@ -75,18 +78,18 @@ final class EscalatedRouteLoader extends Loader
     /**
      * @return list<string>
      */
-    private function controllerDirectories(): array
+    private function controllerResources(): array
     {
-        $directories = self::API_DIRECTORIES;
+        $resources = self::ALWAYS;
 
         if ($this->uiEnabled) {
-            $directories = [...$directories, ...self::UI_DIRECTORIES];
+            $resources = [...$resources, ...self::UI];
 
             if ($this->newslettersEnabled) {
-                $directories = [...$directories, ...self::NEWSLETTER_DIRECTORIES];
+                $resources = [...$resources, ...self::NEWSLETTER];
             }
         }
 
-        return $directories;
+        return $resources;
     }
 }

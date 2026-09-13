@@ -39,6 +39,7 @@ class EscalatedBundle extends AbstractBundle
         // Store resolved config as parameters so services can access them
         $builder->setParameter('escalated.user_class', $config['user_class']);
         $builder->setParameter('escalated.route_prefix', $config['route_prefix']);
+        $builder->setParameter('escalated.inbound_secret', (string) ($config['inbound_secret'] ?? ''));
         $builder->setParameter('escalated.ui_enabled', $config['ui_enabled']);
         $builder->setParameter('escalated.enable_newsletters', $config['enable_newsletters']);
         $builder->setParameter('escalated.table_prefix', $config['table_prefix']);

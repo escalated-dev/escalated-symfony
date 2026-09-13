@@ -211,8 +211,11 @@ class Ticket
     public function onPrePersist(): void
     {
         if ('' === $this->reference) {
-            // Temporary reference; should be updated after flush with generateReference()
-            $this->reference = 'TEMP-'.Uuid::v4()->toRfc4122();
+            // Temporary reference; TicketService replaces it with generateReference()
+            // once the id exists. It must fit the 32-character column: a hyphenated
+            // UUID (36) plus the prefix did not, and MySQL and PostgreSQL rejected
+            // the insert. Base58 keeps the UUID's uniqueness in 22 characters.
+            $this->reference = 'TEMP-'.Uuid::v4()->toBase58();
         }
     }
 

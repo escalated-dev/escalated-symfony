@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Inbound email could not be received.**
+  - No routing file imported the webhook controller.
+  - Nothing tagged the Postmark, Mailgun and SES parsers, so every adapter was "unknown".
+  - Nothing supplied the shared secret, so the controller refused every request.
+
+  The webhook is now registered under `route_prefix`, even with the UI disabled.
+  The parsers are tagged through their interface. A new `inbound_secret` option
+  feeds the webhook check and Reply-To signing; leaving it empty keeps the
+  webhook disabled.
 - **The default configuration broke the container build.** With `ui_enabled: true`
   the bundle imported `config/routes.yaml` through the service-container loader,
   which failed with `There is no extension able to load the configuration for

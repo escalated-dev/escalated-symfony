@@ -24,6 +24,14 @@ class Configuration implements ConfigurationInterface
                     ->defaultValue('/support')
                     ->info('URL prefix for all Escalated routes.')
                 ->end()
+                ->scalarNode('inbound_secret')
+                    ->defaultValue('')
+                    ->info(
+                        'Shared secret for inbound email. Providers must send it in the X-Escalated-Inbound-Secret '
+                        .'header to the inbound webhook, and it signs the Reply-To address on outbound mail so '
+                        .'replies thread back to their ticket. Empty keeps the inbound webhook disabled.'
+                    )
+                ->end()
                 ->booleanNode('ui_enabled')
                     ->defaultTrue()
                     ->info('Enable/disable the built-in Inertia UI. When disabled, only API routes and services are available.')

@@ -105,6 +105,9 @@ services:
     Escalated\Symfony\Security\NewsletterPermissionVoter:
         tags: ['security.voter']
 
+    Escalated\Symfony\Security\TicketRequesterVoter:
+        tags: ['security.voter']
+
     # Commands
     Escalated\Symfony\Command\WakeSnoozedTicketsCommand:
         tags: ['console.command']
@@ -115,16 +118,21 @@ services:
         tags: ['console.command']
 
     # Event Subscribers
+    # Both security listeners run after routing (32), so the route name is known,
+    # and after the host firewall (8): the firewall resets the token storage to
+    # the session's token, so a token set before it is lost, and the session user
+    # is unknown until it has run.
+    #
+    # The KB guard (6) runs after the API authenticator (7) so a valid bearer
+    # token satisfies its authentication requirement.
     Escalated\Symfony\Security\KnowledgeBaseGuard:
         tags:
-            - { name: kernel.event_listener, event: kernel.request, priority: 10 }
+            - { name: kernel.event_listener, event: kernel.request, priority: 6 }
 
-    # Resolve API bearer tokens on /api routes. Runs after routing (priority 32)
-    # so the matched route name is available, and before the KB guard (10) reads
-    # the token storage so a valid token satisfies its auth requirement.
+    # Requires an authenticated principal on /api routes and resolves bearer tokens.
     Escalated\Symfony\Security\ApiTokenAuthenticator:
         tags:
-            - { name: kernel.event_listener, event: kernel.request, priority: 20 }
+            - { name: kernel.event_listener, event: kernel.request, priority: 7 }
     Escalated\Symfony\EventSubscriber\InertiaDataSubscriber:
         arguments:
             $routePrefix: '%escalated.route_prefix%'

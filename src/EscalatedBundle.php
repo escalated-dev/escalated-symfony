@@ -69,13 +69,10 @@ class EscalatedBundle extends AbstractBundle
             $builder->setAlias('escalated.ticket_subject_resolver', $resolverId);
         }
 
-        // Conditionally load web routes only when UI is enabled
-        if ($config['ui_enabled']) {
-            $container->import('../config/routes.yaml');
-            if ($config['enable_newsletters']) {
-                $container->import('../config/newsletter_routes.yaml');
-            }
-        }
+        // Routes are not registered here. The container loader cannot read a
+        // routing file; the host imports @EscalatedBundle/config/routes.yaml
+        // and Routing\EscalatedRouteLoader applies ui_enabled and
+        // enable_newsletters when the router loads it.
     }
 
     public function prependExtension(ContainerConfigurator $container, ContainerBuilder $builder): void

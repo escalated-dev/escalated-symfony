@@ -34,13 +34,13 @@ class Reply
     #[ORM\Column(type: Types::TEXT)]
     private string $body = '';
 
-    #[ORM\Column(type: Types::BOOLEAN)]
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
     private bool $isInternalNote = false;
 
-    #[ORM\Column(type: Types::BOOLEAN)]
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
     private bool $isPinned = false;
 
-    #[ORM\Column(type: Types::STRING, length: 16)]
+    #[ORM\Column(type: Types::STRING, length: 16, options: ['default' => 'reply'])]
     private string $type = 'reply';
 
     #[ORM\Column(type: Types::JSON, nullable: true)]

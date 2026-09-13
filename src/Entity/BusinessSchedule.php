@@ -22,16 +22,16 @@ class BusinessSchedule
     #[ORM\Column(type: Types::STRING, length: 255)]
     private string $name = '';
 
-    #[ORM\Column(type: Types::STRING, length: 64)]
+    #[ORM\Column(type: Types::STRING, length: 64, options: ['default' => 'UTC'])]
     private string $timezone = 'UTC';
 
     #[ORM\Column(type: Types::JSON)]
     private array $hours = [];
 
-    #[ORM\Column(type: Types::BOOLEAN)]
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
     private bool $isDefault = false;
 
-    #[ORM\Column(type: Types::BOOLEAN)]
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
     private bool $isActive = true;
 
     /** @var Collection<int, Holiday> */

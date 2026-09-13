@@ -2,18 +2,12 @@
 
 declare(strict_types=1);
 
-namespace DoctrineMigrations;
+namespace Escalated\Symfony\Migrations;
 
 use Doctrine\DBAL\Schema\Schema;
-use Doctrine\Migrations\AbstractMigration;
+use Escalated\Symfony\Doctrine\Migration\BundleMigration;
 
-/**
- * API tokens — hashed, per-user bearer credentials for programmatic access to
- * the REST API. Only the SHA-256 hash of a token is stored; the plaintext is
- * shown once at creation. Mirrors the escalated_api_tokens table in
- * escalated-laravel (abilities, last_used_at, expires_at).
- */
-final class Version20260802000001 extends AbstractMigration
+final class Version20260802000001 extends BundleMigration
 {
     public function getDescription(): string
     {
@@ -22,25 +16,28 @@ final class Version20260802000001 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        $this->addSql('CREATE TABLE escalated_api_tokens (
-            id INT AUTO_INCREMENT NOT NULL,
-            user_id VARCHAR(255) NOT NULL,
-            name VARCHAR(255) NOT NULL,
-            token VARCHAR(64) NOT NULL,
-            abilities JSON DEFAULT NULL COMMENT \'(DC2Type:json)\',
-            last_used_at DATETIME DEFAULT NULL COMMENT \'(DC2Type:datetime_immutable)\',
-            last_used_ip VARCHAR(45) DEFAULT NULL,
-            expires_at DATETIME DEFAULT NULL COMMENT \'(DC2Type:datetime_immutable)\',
-            created_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\',
-            updated_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\',
-            UNIQUE INDEX uniq_escalated_api_token (token),
-            INDEX idx_api_token_user (user_id),
-            PRIMARY KEY(id)
-        ) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
+        if ($this->executedUnderLegacyName()) {
+            return;
+        }
+
+        $tokens = $schema->createTable('escalated_api_tokens');
+        $tokens->addColumn('id', 'integer', ['autoincrement' => true]);
+        $tokens->addColumn('user_id', 'string', ['length' => 255]);
+        $tokens->addColumn('name', 'string', ['length' => 255]);
+        $tokens->addColumn('token', 'string', ['length' => 64]);
+        $tokens->addColumn('abilities', 'json', ['notnull' => false]);
+        $tokens->addColumn('last_used_at', 'datetime_immutable', ['notnull' => false]);
+        $tokens->addColumn('last_used_ip', 'string', ['length' => 45, 'notnull' => false]);
+        $tokens->addColumn('expires_at', 'datetime_immutable', ['notnull' => false]);
+        $tokens->addColumn('created_at', 'datetime_immutable');
+        $tokens->addColumn('updated_at', 'datetime_immutable');
+        $tokens->setPrimaryKey(['id']);
+        $tokens->addUniqueIndex(['token'], 'uniq_escalated_api_token');
+        $tokens->addIndex(['user_id'], 'idx_api_token_user');
     }
 
     public function down(Schema $schema): void
     {
-        $this->addSql('DROP TABLE escalated_api_tokens');
+        $schema->dropTable('escalated_api_tokens');
     }
 }

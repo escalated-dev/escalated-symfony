@@ -28,7 +28,7 @@ class ChatSession
     #[ORM\JoinColumn(name: 'ticket_id', nullable: false, onDelete: 'CASCADE')]
     private Ticket $ticket;
 
-    #[ORM\Column(type: Types::STRING, length: 32)]
+    #[ORM\Column(type: Types::STRING, length: 32, options: ['default' => 'waiting'])]
     private string $status = self::STATUS_WAITING;
 
     #[ORM\Column(type: Types::INTEGER, nullable: true)]

@@ -9,6 +9,8 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_workflows')]
+#[ORM\Index(columns: ['trigger_event'], name: 'idx_workflow_trigger')]
+#[ORM\Index(columns: ['is_active'], name: 'idx_workflow_active')]
 #[ORM\HasLifecycleCallbacks]
 class Workflow
 {
@@ -32,13 +34,13 @@ class Workflow
     #[ORM\Column(type: Types::JSON)]
     private array $actions = [];
 
-    #[ORM\Column(type: Types::INTEGER)]
+    #[ORM\Column(type: Types::INTEGER, options: ['default' => 0])]
     private int $position = 0;
 
-    #[ORM\Column(type: Types::BOOLEAN)]
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
     private bool $isActive = true;
 
-    #[ORM\Column(type: Types::BOOLEAN)]
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
     private bool $stopOnMatch = false;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]

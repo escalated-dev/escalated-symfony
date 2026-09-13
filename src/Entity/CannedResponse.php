@@ -20,6 +20,7 @@ use Doctrine\ORM\Mapping as ORM;
  */
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_canned_responses')]
+#[ORM\Index(columns: ['created_by'], name: 'idx_canned_response_creator')]
 #[ORM\HasLifecycleCallbacks]
 class CannedResponse
 {

@@ -10,6 +10,10 @@ use Escalated\Symfony\Doctrine\UserIdType;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_newsletters')]
+#[ORM\Index(columns: ['status'], name: 'idx_n_status')]
+#[ORM\Index(columns: ['scheduled_at'], name: 'idx_n_scheduled_at')]
+#[ORM\Index(columns: ['status', 'scheduled_at'], name: 'idx_n_status_sched')]
+#[ORM\Index(columns: ['created_by'], name: 'idx_n_created_by')]
 class Newsletter
 {
     public const STATUSES = ['draft', 'scheduled', 'sending', 'sent', 'paused', 'failed'];
@@ -43,7 +47,7 @@ class Newsletter
     #[ORM\Column(name: 'body_markdown', type: Types::TEXT, nullable: true)]
     private ?string $bodyMarkdown = null;
 
-    #[ORM\Column(length: 16)]
+    #[ORM\Column(length: 16, options: ['default' => 'draft'])]
     private string $status = 'draft';
 
     #[ORM\Column(name: 'scheduled_at', type: Types::DATETIME_MUTABLE, nullable: true)]
@@ -58,22 +62,22 @@ class Newsletter
     #[ORM\Column(name: 'sent_by', type: UserIdType::NAME, nullable: true)]
     private int|string|null $sentBy = null;
 
-    #[ORM\Column(name: 'summary_total', type: Types::INTEGER)]
+    #[ORM\Column(name: 'summary_total', type: Types::INTEGER, options: ['default' => 0])]
     private int $summaryTotal = 0;
 
-    #[ORM\Column(name: 'summary_sent', type: Types::INTEGER)]
+    #[ORM\Column(name: 'summary_sent', type: Types::INTEGER, options: ['default' => 0])]
     private int $summarySent = 0;
 
-    #[ORM\Column(name: 'summary_opened', type: Types::INTEGER)]
+    #[ORM\Column(name: 'summary_opened', type: Types::INTEGER, options: ['default' => 0])]
     private int $summaryOpened = 0;
 
-    #[ORM\Column(name: 'summary_clicked', type: Types::INTEGER)]
+    #[ORM\Column(name: 'summary_clicked', type: Types::INTEGER, options: ['default' => 0])]
     private int $summaryClicked = 0;
 
-    #[ORM\Column(name: 'summary_bounced', type: Types::INTEGER)]
+    #[ORM\Column(name: 'summary_bounced', type: Types::INTEGER, options: ['default' => 0])]
     private int $summaryBounced = 0;
 
-    #[ORM\Column(name: 'summary_complained', type: Types::INTEGER)]
+    #[ORM\Column(name: 'summary_complained', type: Types::INTEGER, options: ['default' => 0])]
     private int $summaryComplained = 0;
 
     #[ORM\Column(name: 'created_at', type: Types::DATETIME_MUTABLE)]

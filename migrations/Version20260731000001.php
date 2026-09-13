@@ -2,18 +2,12 @@
 
 declare(strict_types=1);
 
-namespace DoctrineMigrations;
+namespace Escalated\Symfony\Migrations;
 
 use Doctrine\DBAL\Schema\Schema;
-use Doctrine\Migrations\AbstractMigration;
+use Escalated\Symfony\Doctrine\Migration\BundleMigration;
 
-/**
- * Outbound webhooks — admin-registered HTTP endpoints that receive a signed
- * POST for every subscribed domain event, plus a per-attempt delivery log.
- * Mirrors the escalated_webhooks / escalated_webhook_deliveries tables in
- * escalated-laravel / escalated-rails / escalated-django.
- */
-final class Version20260731000001 extends AbstractMigration
+final class Version20260731000001 extends BundleMigration
 {
     public function getDescription(): string
     {
@@ -22,37 +16,39 @@ final class Version20260731000001 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        $this->addSql('CREATE TABLE escalated_webhooks (
-            id INT AUTO_INCREMENT NOT NULL,
-            url VARCHAR(500) NOT NULL,
-            events JSON NOT NULL COMMENT \'(DC2Type:json)\',
-            secret VARCHAR(255) DEFAULT NULL,
-            active TINYINT(1) NOT NULL,
-            created_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\',
-            updated_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\',
-            PRIMARY KEY(id)
-        ) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
+        if ($this->executedUnderLegacyName()) {
+            return;
+        }
 
-        $this->addSql('CREATE TABLE escalated_webhook_deliveries (
-            id INT AUTO_INCREMENT NOT NULL,
-            webhook_id INT NOT NULL,
-            event VARCHAR(255) NOT NULL,
-            payload JSON DEFAULT NULL COMMENT \'(DC2Type:json)\',
-            response_code SMALLINT DEFAULT NULL,
-            response_body LONGTEXT DEFAULT NULL,
-            attempts SMALLINT NOT NULL,
-            delivered_at DATETIME DEFAULT NULL COMMENT \'(DC2Type:datetime_immutable)\',
-            created_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\',
-            updated_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\',
-            INDEX idx_webhook_delivery_webhook_event (webhook_id, event),
-            PRIMARY KEY(id),
-            CONSTRAINT FK_webhook_delivery_webhook FOREIGN KEY (webhook_id) REFERENCES escalated_webhooks (id) ON DELETE CASCADE
-        ) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
+        $webhooks = $schema->createTable('escalated_webhooks');
+        $webhooks->addColumn('id', 'integer', ['autoincrement' => true]);
+        $webhooks->addColumn('url', 'string', ['length' => 500]);
+        $webhooks->addColumn('events', 'json');
+        $webhooks->addColumn('secret', 'string', ['length' => 255, 'notnull' => false]);
+        $webhooks->addColumn('active', 'boolean');
+        $webhooks->addColumn('created_at', 'datetime_immutable');
+        $webhooks->addColumn('updated_at', 'datetime_immutable');
+        $webhooks->setPrimaryKey(['id']);
+
+        $deliveries = $schema->createTable('escalated_webhook_deliveries');
+        $deliveries->addColumn('id', 'integer', ['autoincrement' => true]);
+        $deliveries->addColumn('webhook_id', 'integer');
+        $deliveries->addColumn('event', 'string', ['length' => 255]);
+        $deliveries->addColumn('payload', 'json', ['notnull' => false]);
+        $deliveries->addColumn('response_code', 'smallint', ['notnull' => false]);
+        $deliveries->addColumn('response_body', 'text', ['notnull' => false]);
+        $deliveries->addColumn('attempts', 'smallint');
+        $deliveries->addColumn('delivered_at', 'datetime_immutable', ['notnull' => false]);
+        $deliveries->addColumn('created_at', 'datetime_immutable');
+        $deliveries->addColumn('updated_at', 'datetime_immutable');
+        $deliveries->setPrimaryKey(['id']);
+        $deliveries->addIndex(['webhook_id', 'event'], 'idx_webhook_delivery_webhook_event');
+        $deliveries->addForeignKeyConstraint('escalated_webhooks', ['webhook_id'], ['id'], ['onDelete' => 'CASCADE'], 'FK_webhook_delivery_webhook');
     }
 
     public function down(Schema $schema): void
     {
-        $this->addSql('DROP TABLE escalated_webhook_deliveries');
-        $this->addSql('DROP TABLE escalated_webhooks');
+        $schema->dropTable('escalated_webhook_deliveries');
+        $schema->dropTable('escalated_webhooks');
     }
 }

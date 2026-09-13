@@ -10,6 +10,8 @@ use Escalated\Symfony\Doctrine\UserIdType;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_newsletter_list_members')]
+#[ORM\UniqueConstraint(name: 'uniq_nl_list_contact', columns: ['list_id', 'contact_id'])]
+#[ORM\Index(columns: ['contact_id'], name: 'idx_nlm_contact')]
 class NewsletterListMember
 {
     #[ORM\Id]
@@ -23,7 +25,7 @@ class NewsletterListMember
     #[ORM\Column(name: 'contact_id', type: Types::INTEGER)]
     private int $contactId;
 
-    #[ORM\Column(name: 'added_at', type: Types::DATETIME_MUTABLE)]
+    #[ORM\Column(name: 'added_at', type: Types::DATETIME_MUTABLE, options: ['default' => 'CURRENT_TIMESTAMP'])]
     private \DateTimeInterface $addedAt;
 
     #[ORM\Column(name: 'added_by', type: UserIdType::NAME, nullable: true)]

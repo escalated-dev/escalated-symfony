@@ -22,7 +22,7 @@ class CustomFieldValue
     #[ORM\JoinColumn(name: 'custom_field_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
     private CustomField $customField;
 
-    #[ORM\Column(type: Types::STRING, length: 50)]
+    #[ORM\Column(type: Types::STRING, length: 50, options: ['default' => 'ticket'])]
     private string $entityType = 'ticket';
 
     #[ORM\Column(type: Types::INTEGER)]

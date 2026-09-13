@@ -39,11 +39,11 @@ class Attachment
     private int $size = 0;
 
     /** @var string The storage disk (e.g. "local", "s3") */
-    #[ORM\Column(type: Types::STRING, length: 32)]
+    #[ORM\Column(type: Types::STRING, length: 32, options: ['default' => 'local'])]
     private string $disk = 'local';
 
     /** @var string The relative path within the storage disk */
-    #[ORM\Column(type: Types::STRING, length: 512)]
+    #[ORM\Column(type: Types::STRING, length: 512, options: ['default' => ''])]
     private string $path = '';
 
     /**

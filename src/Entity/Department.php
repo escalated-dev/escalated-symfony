@@ -29,7 +29,7 @@ class Department
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
 
-    #[ORM\Column(type: Types::BOOLEAN)]
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
     private bool $isActive = true;
 
     /** @var Collection<int, Ticket> */

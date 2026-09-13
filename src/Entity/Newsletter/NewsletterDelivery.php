@@ -9,6 +9,11 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_newsletter_deliveries')]
+#[ORM\UniqueConstraint(name: 'uniq_nd_token', columns: ['tracking_token'])]
+#[ORM\Index(columns: ['newsletter_id', 'status'], name: 'idx_nd_nl_status')]
+#[ORM\Index(columns: ['contact_id'], name: 'idx_nd_contact')]
+#[ORM\Index(columns: ['status', 'claimed_at'], name: 'idx_nd_status_claimed')]
+#[ORM\Index(columns: ['status', 'next_attempt_at'], name: 'idx_escalated_nl_deliveries_claim')]
 class NewsletterDelivery
 {
     public const STATUSES = ['pending', 'queued', 'sent', 'bounced', 'complained', 'suppressed', 'failed'];
@@ -27,10 +32,10 @@ class NewsletterDelivery
     #[ORM\Column(name: 'email_at_send', length: 320)]
     private string $emailAtSend = '';
 
-    #[ORM\Column(length: 16)]
+    #[ORM\Column(length: 16, options: ['default' => 'pending'])]
     private string $status = 'pending';
 
-    #[ORM\Column(name: 'tracking_token', length: 40, unique: true)]
+    #[ORM\Column(name: 'tracking_token', length: 40)]
     private string $trackingToken = '';
 
     #[ORM\Column(name: 'sent_at', type: Types::DATETIME_MUTABLE, nullable: true)]
@@ -42,7 +47,7 @@ class NewsletterDelivery
     #[ORM\Column(name: 'last_clicked_at', type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $lastClickedAt = null;
 
-    #[ORM\Column(name: 'clicks_count', type: Types::INTEGER)]
+    #[ORM\Column(name: 'clicks_count', type: Types::INTEGER, options: ['default' => 0])]
     private int $clicksCount = 0;
 
     #[ORM\Column(name: 'bounce_reason', type: Types::TEXT, nullable: true)]
@@ -51,7 +56,7 @@ class NewsletterDelivery
     #[ORM\Column(name: 'failure_reason', type: Types::TEXT, nullable: true)]
     private ?string $failureReason = null;
 
-    #[ORM\Column(name: 'attempt_count', type: Types::SMALLINT)]
+    #[ORM\Column(name: 'attempt_count', type: Types::SMALLINT, options: ['default' => 0])]
     private int $attemptCount = 0;
 
     #[ORM\Column(name: 'claimed_at', type: Types::DATETIME_MUTABLE, nullable: true)]
@@ -60,7 +65,7 @@ class NewsletterDelivery
     #[ORM\Column(name: 'next_attempt_at', type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $nextAttemptAt = null;
 
-    #[ORM\Column(name: 'is_test', type: Types::BOOLEAN)]
+    #[ORM\Column(name: 'is_test', type: Types::BOOLEAN, options: ['default' => false])]
     private bool $isTest = false;
 
     #[ORM\Column(name: 'created_at', type: Types::DATETIME_MUTABLE)]

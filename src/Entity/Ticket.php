@@ -14,6 +14,9 @@ use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity(repositoryClass: TicketRepository::class)]
 #[ORM\Table(name: 'escalated_tickets')]
+#[ORM\Index(columns: ['snoozed_until'], name: 'idx_ticket_snoozed_until')]
+#[ORM\Index(columns: ['channel'], name: 'idx_ticket_channel')]
+#[ORM\Index(columns: ['contact_id'], name: 'idx_ticket_contact')]
 #[ORM\Index(columns: ['status'], name: 'idx_ticket_status')]
 #[ORM\Index(columns: ['priority'], name: 'idx_ticket_priority')]
 #[ORM\Index(columns: ['assigned_to'], name: 'idx_ticket_assigned')]
@@ -75,10 +78,10 @@ class Ticket
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
 
-    #[ORM\Column(type: Types::STRING, length: 32)]
+    #[ORM\Column(type: Types::STRING, length: 32, options: ['default' => 'open'])]
     private string $status = self::STATUS_OPEN;
 
-    #[ORM\Column(type: Types::STRING, length: 16)]
+    #[ORM\Column(type: Types::STRING, length: 16, options: ['default' => 'medium'])]
     private string $priority = self::PRIORITY_MEDIUM;
 
     #[ORM\Column(type: Types::STRING, length: 32, nullable: true)]
@@ -94,11 +97,11 @@ class Ticket
     private int|string|null $assignedTo = null;
 
     #[ORM\ManyToOne(targetEntity: Department::class, inversedBy: 'tickets')]
-    #[ORM\JoinColumn(name: 'department_id', nullable: true)]
+    #[ORM\JoinColumn(name: 'department_id', nullable: true, onDelete: 'SET NULL')]
     private ?Department $department = null;
 
     #[ORM\ManyToOne(targetEntity: SlaPolicy::class)]
-    #[ORM\JoinColumn(name: 'sla_policy_id', nullable: true)]
+    #[ORM\JoinColumn(name: 'sla_policy_id', nullable: true, onDelete: 'SET NULL')]
     private ?SlaPolicy $slaPolicy = null;
 
     /** @var Collection<int, Reply> */
@@ -151,10 +154,10 @@ class Ticket
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $resolutionDueAt = null;
 
-    #[ORM\Column(type: Types::BOOLEAN)]
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
     private bool $slaFirstResponseBreached = false;
 
-    #[ORM\Column(type: Types::BOOLEAN)]
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
     private bool $slaResolutionBreached = false;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]

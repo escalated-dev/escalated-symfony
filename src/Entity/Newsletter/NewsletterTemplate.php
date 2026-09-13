@@ -10,6 +10,8 @@ use Escalated\Symfony\Doctrine\UserIdType;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_newsletter_templates')]
+#[ORM\Index(columns: ['theme'], name: 'idx_nlt_theme')]
+#[ORM\Index(columns: ['created_by'], name: 'idx_nlt_created_by')]
 class NewsletterTemplate
 {
     #[ORM\Id]
@@ -20,7 +22,7 @@ class NewsletterTemplate
     #[ORM\Column(length: 255)]
     private string $name = '';
 
-    #[ORM\Column(length: 64)]
+    #[ORM\Column(length: 64, options: ['default' => 'default'])]
     private string $theme = 'default';
 
     #[ORM\Column(name: 'subject_template', length: 998, nullable: true)]

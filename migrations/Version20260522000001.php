@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace DoctrineMigrations;
+namespace Escalated\Symfony\Migrations;
 
 use Doctrine\DBAL\Schema\Schema;
-use Doctrine\Migrations\AbstractMigration;
+use Escalated\Symfony\Doctrine\Migration\BundleMigration;
 
-final class Version20260522000001 extends AbstractMigration
+final class Version20260522000001 extends BundleMigration
 {
     public function getDescription(): string
     {
@@ -16,118 +16,117 @@ final class Version20260522000001 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        $this->addSql('CREATE TABLE escalated_newsletter_lists (
-            id INT AUTO_INCREMENT NOT NULL,
-            name VARCHAR(255) NOT NULL,
-            description LONGTEXT DEFAULT NULL,
-            kind VARCHAR(16) NOT NULL,
-            filter_json JSON DEFAULT NULL,
-            created_by INT DEFAULT NULL,
-            created_at DATETIME NOT NULL,
-            updated_at DATETIME NOT NULL,
-            INDEX idx_nl_kind (kind),
-            INDEX idx_nl_created_by (created_by),
-            PRIMARY KEY (id)
-        )');
+        if ($this->executedUnderLegacyName()) {
+            return;
+        }
 
-        $this->addSql('CREATE TABLE escalated_newsletter_list_members (
-            id INT AUTO_INCREMENT NOT NULL,
-            list_id INT NOT NULL,
-            contact_id INT NOT NULL,
-            added_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            added_by INT DEFAULT NULL,
-            UNIQUE INDEX uniq_nl_list_contact (list_id, contact_id),
-            INDEX idx_nlm_contact (contact_id),
-            PRIMARY KEY (id),
-            CONSTRAINT fk_nlm_list FOREIGN KEY (list_id) REFERENCES escalated_newsletter_lists (id) ON DELETE CASCADE,
-            CONSTRAINT fk_nlm_contact FOREIGN KEY (contact_id) REFERENCES escalated_contacts (id) ON DELETE CASCADE
-        )');
+        $lists = $schema->createTable('escalated_newsletter_lists');
+        $lists->addColumn('id', 'integer', ['autoincrement' => true]);
+        $lists->addColumn('name', 'string', ['length' => 255]);
+        $lists->addColumn('description', 'text', ['notnull' => false]);
+        $lists->addColumn('kind', 'string', ['length' => 16]);
+        $lists->addColumn('filter_json', 'json', ['notnull' => false]);
+        $lists->addColumn('created_by', 'integer', ['notnull' => false]);
+        $lists->addColumn('created_at', 'datetime');
+        $lists->addColumn('updated_at', 'datetime');
+        $lists->setPrimaryKey(['id']);
+        $lists->addIndex(['kind'], 'idx_nl_kind');
+        $lists->addIndex(['created_by'], 'idx_nl_created_by');
 
-        $this->addSql('CREATE TABLE escalated_newsletter_templates (
-            id INT AUTO_INCREMENT NOT NULL,
-            name VARCHAR(255) NOT NULL,
-            theme VARCHAR(64) NOT NULL DEFAULT \'default\',
-            subject_template VARCHAR(998) DEFAULT NULL,
-            body_markdown LONGTEXT NOT NULL,
-            merge_fields_schema JSON DEFAULT NULL,
-            created_by INT DEFAULT NULL,
-            created_at DATETIME NOT NULL,
-            updated_at DATETIME NOT NULL,
-            INDEX idx_nlt_theme (theme),
-            INDEX idx_nlt_created_by (created_by),
-            PRIMARY KEY (id)
-        )');
+        $members = $schema->createTable('escalated_newsletter_list_members');
+        $members->addColumn('id', 'integer', ['autoincrement' => true]);
+        $members->addColumn('list_id', 'integer');
+        $members->addColumn('contact_id', 'integer');
+        $members->addColumn('added_at', 'datetime', ['default' => 'CURRENT_TIMESTAMP']);
+        $members->addColumn('added_by', 'integer', ['notnull' => false]);
+        $members->setPrimaryKey(['id']);
+        $members->addUniqueIndex(['list_id', 'contact_id'], 'uniq_nl_list_contact');
+        $members->addIndex(['contact_id'], 'idx_nlm_contact');
+        $members->addForeignKeyConstraint('escalated_newsletter_lists', ['list_id'], ['id'], ['onDelete' => 'CASCADE'], 'fk_nlm_list');
+        $members->addForeignKeyConstraint('escalated_contacts', ['contact_id'], ['id'], ['onDelete' => 'CASCADE'], 'fk_nlm_contact');
 
-        $this->addSql('CREATE TABLE escalated_newsletters (
-            id INT AUTO_INCREMENT NOT NULL,
-            subject VARCHAR(998) NOT NULL,
-            from_email VARCHAR(320) NOT NULL,
-            from_name VARCHAR(255) DEFAULT NULL,
-            reply_to VARCHAR(320) DEFAULT NULL,
-            target_list_id INT NOT NULL,
-            template_id INT DEFAULT NULL,
-            theme VARCHAR(64) DEFAULT NULL,
-            body_markdown LONGTEXT DEFAULT NULL,
-            status VARCHAR(16) NOT NULL DEFAULT \'draft\',
-            scheduled_at DATETIME DEFAULT NULL,
-            sent_at DATETIME DEFAULT NULL,
-            created_by INT DEFAULT NULL,
-            sent_by INT DEFAULT NULL,
-            summary_total INT NOT NULL DEFAULT 0,
-            summary_sent INT NOT NULL DEFAULT 0,
-            summary_opened INT NOT NULL DEFAULT 0,
-            summary_clicked INT NOT NULL DEFAULT 0,
-            summary_bounced INT NOT NULL DEFAULT 0,
-            summary_complained INT NOT NULL DEFAULT 0,
-            created_at DATETIME NOT NULL,
-            updated_at DATETIME NOT NULL,
-            INDEX idx_n_status (status),
-            INDEX idx_n_scheduled_at (scheduled_at),
-            INDEX idx_n_status_sched (status, scheduled_at),
-            INDEX idx_n_created_by (created_by),
-            PRIMARY KEY (id),
-            CONSTRAINT fk_n_list FOREIGN KEY (target_list_id) REFERENCES escalated_newsletter_lists (id),
-            CONSTRAINT fk_n_template FOREIGN KEY (template_id) REFERENCES escalated_newsletter_templates (id) ON DELETE SET NULL
-        )');
+        $templates = $schema->createTable('escalated_newsletter_templates');
+        $templates->addColumn('id', 'integer', ['autoincrement' => true]);
+        $templates->addColumn('name', 'string', ['length' => 255]);
+        $templates->addColumn('theme', 'string', ['length' => 64, 'default' => 'default']);
+        $templates->addColumn('subject_template', 'string', ['length' => 998, 'notnull' => false]);
+        $templates->addColumn('body_markdown', 'text');
+        $templates->addColumn('merge_fields_schema', 'json', ['notnull' => false]);
+        $templates->addColumn('created_by', 'integer', ['notnull' => false]);
+        $templates->addColumn('created_at', 'datetime');
+        $templates->addColumn('updated_at', 'datetime');
+        $templates->setPrimaryKey(['id']);
+        $templates->addIndex(['theme'], 'idx_nlt_theme');
+        $templates->addIndex(['created_by'], 'idx_nlt_created_by');
 
-        $this->addSql('CREATE TABLE escalated_newsletter_deliveries (
-            id BIGINT AUTO_INCREMENT NOT NULL,
-            newsletter_id INT NOT NULL,
-            contact_id INT NOT NULL,
-            email_at_send VARCHAR(320) NOT NULL,
-            status VARCHAR(16) NOT NULL DEFAULT \'pending\',
-            tracking_token VARCHAR(40) NOT NULL,
-            sent_at DATETIME DEFAULT NULL,
-            opened_at DATETIME DEFAULT NULL,
-            last_clicked_at DATETIME DEFAULT NULL,
-            clicks_count INT NOT NULL DEFAULT 0,
-            bounce_reason LONGTEXT DEFAULT NULL,
-            failure_reason LONGTEXT DEFAULT NULL,
-            attempt_count SMALLINT NOT NULL DEFAULT 0,
-            claimed_at DATETIME DEFAULT NULL,
-            is_test TINYINT(1) NOT NULL DEFAULT 0,
-            created_at DATETIME NOT NULL,
-            UNIQUE INDEX uniq_nd_token (tracking_token),
-            INDEX idx_nd_nl_status (newsletter_id, status),
-            INDEX idx_nd_contact (contact_id),
-            INDEX idx_nd_status_claimed (status, claimed_at),
-            PRIMARY KEY (id),
-            CONSTRAINT fk_nd_newsletter FOREIGN KEY (newsletter_id) REFERENCES escalated_newsletters (id) ON DELETE CASCADE,
-            CONSTRAINT fk_nd_contact FOREIGN KEY (contact_id) REFERENCES escalated_contacts (id) ON DELETE CASCADE
-        )');
+        $newsletters = $schema->createTable('escalated_newsletters');
+        $newsletters->addColumn('id', 'integer', ['autoincrement' => true]);
+        $newsletters->addColumn('subject', 'string', ['length' => 998]);
+        $newsletters->addColumn('from_email', 'string', ['length' => 320]);
+        $newsletters->addColumn('from_name', 'string', ['length' => 255, 'notnull' => false]);
+        $newsletters->addColumn('reply_to', 'string', ['length' => 320, 'notnull' => false]);
+        $newsletters->addColumn('target_list_id', 'integer');
+        $newsletters->addColumn('template_id', 'integer', ['notnull' => false]);
+        $newsletters->addColumn('theme', 'string', ['length' => 64, 'notnull' => false]);
+        $newsletters->addColumn('body_markdown', 'text', ['notnull' => false]);
+        $newsletters->addColumn('status', 'string', ['length' => 16, 'default' => 'draft']);
+        $newsletters->addColumn('scheduled_at', 'datetime', ['notnull' => false]);
+        $newsletters->addColumn('sent_at', 'datetime', ['notnull' => false]);
+        $newsletters->addColumn('created_by', 'integer', ['notnull' => false]);
+        $newsletters->addColumn('sent_by', 'integer', ['notnull' => false]);
+        foreach (['summary_total', 'summary_sent', 'summary_opened', 'summary_clicked', 'summary_bounced', 'summary_complained'] as $counter) {
+            $newsletters->addColumn($counter, 'integer', ['default' => 0]);
+        }
+        $newsletters->addColumn('created_at', 'datetime');
+        $newsletters->addColumn('updated_at', 'datetime');
+        $newsletters->setPrimaryKey(['id']);
+        $newsletters->addIndex(['status'], 'idx_n_status');
+        $newsletters->addIndex(['scheduled_at'], 'idx_n_scheduled_at');
+        $newsletters->addIndex(['status', 'scheduled_at'], 'idx_n_status_sched');
+        $newsletters->addIndex(['created_by'], 'idx_n_created_by');
+        $newsletters->addForeignKeyConstraint('escalated_newsletter_lists', ['target_list_id'], ['id'], [], 'fk_n_list');
+        $newsletters->addForeignKeyConstraint('escalated_newsletter_templates', ['template_id'], ['id'], ['onDelete' => 'SET NULL'], 'fk_n_template');
 
-        $this->addSql('ALTER TABLE escalated_contacts ADD COLUMN marketing_opt_out_at DATETIME DEFAULT NULL');
-        $this->addSql('CREATE INDEX idx_contact_opt_out ON escalated_contacts (marketing_opt_out_at)');
+        $deliveries = $schema->createTable('escalated_newsletter_deliveries');
+        $deliveries->addColumn('id', 'bigint', ['autoincrement' => true]);
+        $deliveries->addColumn('newsletter_id', 'integer');
+        $deliveries->addColumn('contact_id', 'integer');
+        $deliveries->addColumn('email_at_send', 'string', ['length' => 320]);
+        $deliveries->addColumn('status', 'string', ['length' => 16, 'default' => 'pending']);
+        $deliveries->addColumn('tracking_token', 'string', ['length' => 40]);
+        $deliveries->addColumn('sent_at', 'datetime', ['notnull' => false]);
+        $deliveries->addColumn('opened_at', 'datetime', ['notnull' => false]);
+        $deliveries->addColumn('last_clicked_at', 'datetime', ['notnull' => false]);
+        $deliveries->addColumn('clicks_count', 'integer', ['default' => 0]);
+        $deliveries->addColumn('bounce_reason', 'text', ['notnull' => false]);
+        $deliveries->addColumn('failure_reason', 'text', ['notnull' => false]);
+        $deliveries->addColumn('attempt_count', 'smallint', ['default' => 0]);
+        $deliveries->addColumn('claimed_at', 'datetime', ['notnull' => false]);
+        $deliveries->addColumn('is_test', 'boolean', ['default' => false]);
+        $deliveries->addColumn('created_at', 'datetime');
+        $deliveries->setPrimaryKey(['id']);
+        $deliveries->addUniqueIndex(['tracking_token'], 'uniq_nd_token');
+        $deliveries->addIndex(['newsletter_id', 'status'], 'idx_nd_nl_status');
+        $deliveries->addIndex(['contact_id'], 'idx_nd_contact');
+        $deliveries->addIndex(['status', 'claimed_at'], 'idx_nd_status_claimed');
+        $deliveries->addForeignKeyConstraint('escalated_newsletters', ['newsletter_id'], ['id'], ['onDelete' => 'CASCADE'], 'fk_nd_newsletter');
+        $deliveries->addForeignKeyConstraint('escalated_contacts', ['contact_id'], ['id'], ['onDelete' => 'CASCADE'], 'fk_nd_contact');
+
+        $contacts = $schema->getTable('escalated_contacts');
+        $contacts->addColumn('marketing_opt_out_at', 'datetime', ['notnull' => false]);
+        $contacts->addIndex(['marketing_opt_out_at'], 'idx_contact_opt_out');
     }
 
     public function down(Schema $schema): void
     {
-        $this->addSql('DROP INDEX idx_contact_opt_out ON escalated_contacts');
-        $this->addSql('ALTER TABLE escalated_contacts DROP COLUMN marketing_opt_out_at');
-        $this->addSql('DROP TABLE escalated_newsletter_deliveries');
-        $this->addSql('DROP TABLE escalated_newsletters');
-        $this->addSql('DROP TABLE escalated_newsletter_templates');
-        $this->addSql('DROP TABLE escalated_newsletter_list_members');
-        $this->addSql('DROP TABLE escalated_newsletter_lists');
+        $contacts = $schema->getTable('escalated_contacts');
+        $contacts->dropIndex('idx_contact_opt_out');
+        $contacts->dropColumn('marketing_opt_out_at');
+
+        $schema->dropTable('escalated_newsletter_deliveries');
+        $schema->dropTable('escalated_newsletters');
+        $schema->dropTable('escalated_newsletter_templates');
+        $schema->dropTable('escalated_newsletter_list_members');
+        $schema->dropTable('escalated_newsletter_lists');
     }
 }

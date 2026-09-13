@@ -33,12 +33,15 @@ final class EscalatedTestKernel extends Kernel
     /**
      * @param array<string, mixed> $escalatedConfig the `escalated:` configuration block
      * @param array<string, mixed> $extensionConfig extra extension configs, keyed by extension name
+     * @param bool                 $withHostUser    map the fixture host user entity and use it as the
+     *                                              firewall's user provider
      */
     public function __construct(
         string $environment,
         bool $debug,
         private readonly array $escalatedConfig = [],
         private readonly array $extensionConfig = [],
+        private readonly bool $withHostUser = true,
     ) {
         parent::__construct($environment, $debug);
     }
@@ -92,11 +95,27 @@ final class EscalatedTestKernel extends Kernel
         return sys_get_temp_dir().'/escalated-symfony-tests/'.substr(hash('xxh128', __DIR__), 0, 8);
     }
 
+    /**
+     * SQLite in memory unless ESCALATED_TEST_DATABASE_URL names another
+     * database (CI runs the kernel tests against PostgreSQL and MySQL too).
+     */
+    public static function databaseUrl(): string
+    {
+        $url = $_SERVER['ESCALATED_TEST_DATABASE_URL'] ?? $_ENV['ESCALATED_TEST_DATABASE_URL'] ?? getenv('ESCALATED_TEST_DATABASE_URL');
+
+        return \is_string($url) && '' !== $url ? $url : 'sqlite:///:memory:';
+    }
+
     private function varDir(): string
     {
         // One compiled container per configuration, or a test that disables
         // the UI would silently reuse the container another test compiled.
-        $hash = substr(hash('xxh128', serialize([$this->escalatedConfig, $this->extensionConfig])), 0, 16);
+        $hash = substr(hash('xxh128', serialize([
+            $this->escalatedConfig,
+            $this->extensionConfig,
+            $this->withHostUser,
+            self::databaseUrl(),
+        ])), 0, 16);
 
         return self::cacheRoot().'/'.$hash;
     }
@@ -117,17 +136,24 @@ final class EscalatedTestKernel extends Kernel
         // A stateful, lazy firewall over the whole application with a Doctrine
         // user provider -- the shape of a typical host's `main` firewall, and
         // the one Escalated's API has to work behind.
-        $container->extension('security', [
-            'providers' => [
-                'test_users' => ['entity' => ['class' => TestUser::class, 'property' => 'email']],
-            ],
-            'firewalls' => ['main' => ['lazy' => true, 'provider' => 'test_users']],
-        ]);
+        $container->extension('security', $this->withHostUser
+            ? [
+                'providers' => [
+                    'test_users' => ['entity' => ['class' => TestUser::class, 'property' => 'email']],
+                ],
+                'firewalls' => ['main' => ['lazy' => true, 'provider' => 'test_users']],
+            ]
+            : [
+                'providers' => ['in_memory' => ['memory' => null]],
+                'firewalls' => ['main' => ['lazy' => true, 'provider' => 'in_memory']],
+            ]);
 
         $orm = [
             'naming_strategy' => 'doctrine.orm.naming_strategy.underscore_number_aware',
             'report_fields_where_declared' => true,
-            'mappings' => [
+        ];
+        if ($this->withHostUser) {
+            $orm['mappings'] = [
                 'TestApp' => [
                     'type' => 'attribute',
                     'is_bundle' => false,
@@ -135,14 +161,14 @@ final class EscalatedTestKernel extends Kernel
                     'prefix' => 'Escalated\Symfony\Tests\Kernel\Fixtures\Entity',
                     'alias' => 'TestApp',
                 ],
-            ],
-        ];
+            ];
+        }
         if (\PHP_VERSION_ID >= 80400) {
             $orm['enable_native_lazy_objects'] = true;
         }
 
         $container->extension('doctrine', [
-            'dbal' => ['url' => 'sqlite:///:memory:'],
+            'dbal' => ['url' => self::databaseUrl()],
             'orm' => $orm,
         ]);
 

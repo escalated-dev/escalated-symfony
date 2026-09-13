@@ -11,6 +11,8 @@ use Escalated\Symfony\Repository\AgentSkillRepository;
 
 #[ORM\Entity(repositoryClass: AgentSkillRepository::class)]
 #[ORM\Table(name: 'escalated_agent_skills')]
+#[ORM\Index(columns: ['skill_id'], name: 'IDX_agent_skills_skill')]
+#[ORM\Index(columns: ['user_id'], name: 'IDX_agent_skills_user')]
 #[ORM\UniqueConstraint(name: 'UNIQ_agent_skills_user_skill', columns: ['user_id', 'skill_id'])]
 #[ORM\HasLifecycleCallbacks]
 class AgentSkill
@@ -27,7 +29,7 @@ class AgentSkill
     #[ORM\JoinColumn(name: 'skill_id', nullable: false, onDelete: 'CASCADE')]
     private ?Skill $skill = null;
 
-    #[ORM\Column(type: Types::SMALLINT)]
+    #[ORM\Column(type: Types::SMALLINT, options: ['default' => 3])]
     private int $proficiency = 3;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]

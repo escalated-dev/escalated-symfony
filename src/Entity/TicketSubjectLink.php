@@ -12,6 +12,7 @@ use Doctrine\ORM\Mapping as ORM;
  */
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_ticket_subjects')]
+#[ORM\Index(columns: ['ticket_id'], name: 'IDX_escalated_ticket_subjects_ticket')]
 #[ORM\UniqueConstraint(name: 'escalated_ticket_subject_unique', columns: ['ticket_id', 'subject_type', 'subject_id'])]
 #[ORM\Index(columns: ['subject_type', 'subject_id'], name: 'idx_ticket_subject_polymorphic')]
 #[ORM\HasLifecycleCallbacks]

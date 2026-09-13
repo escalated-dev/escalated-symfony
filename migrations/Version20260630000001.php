@@ -2,16 +2,12 @@
 
 declare(strict_types=1);
 
-namespace DoctrineMigrations;
+namespace Escalated\Symfony\Migrations;
 
 use Doctrine\DBAL\Schema\Schema;
-use Doctrine\Migrations\AbstractMigration;
+use Escalated\Symfony\Doctrine\Migration\BundleMigration;
 
-/**
- * Ticket followers — host users who follow a ticket and are a notification
- * target alongside the assignee and requester. See issue #67.
- */
-final class Version20260630000001 extends AbstractMigration
+final class Version20260630000001 extends BundleMigration
 {
     public function getDescription(): string
     {
@@ -20,19 +16,24 @@ final class Version20260630000001 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        $this->addSql('CREATE TABLE escalated_ticket_followers (
-            id INT AUTO_INCREMENT NOT NULL,
-            ticket_id INT NOT NULL,
-            user_id VARCHAR(255) NOT NULL,
-            created_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\',
-            UNIQUE INDEX UNIQ_ticket_followers_ticket_user (ticket_id, user_id),
-            INDEX idx_ticket_follower_user (user_id),
-            PRIMARY KEY(id)
-        ) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
+        if ($this->executedUnderLegacyName()) {
+            return;
+        }
+
+        $followers = $schema->createTable('escalated_ticket_followers');
+        $followers->addColumn('id', 'integer', ['autoincrement' => true]);
+        $followers->addColumn('ticket_id', 'integer');
+        // The host user's key, declared like every other user reference in
+        // these migrations (and like the entity's default user-id type).
+        $followers->addColumn('user_id', 'integer');
+        $followers->addColumn('created_at', 'datetime_immutable');
+        $followers->setPrimaryKey(['id']);
+        $followers->addUniqueIndex(['ticket_id', 'user_id'], 'UNIQ_ticket_followers_ticket_user');
+        $followers->addIndex(['user_id'], 'idx_ticket_follower_user');
     }
 
     public function down(Schema $schema): void
     {
-        $this->addSql('DROP TABLE escalated_ticket_followers');
+        $schema->dropTable('escalated_ticket_followers');
     }
 }

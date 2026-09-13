@@ -9,6 +9,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_delayed_actions')]
+#[ORM\Index(columns: ['executed', 'execute_at'], name: 'idx_delayed_pending')]
 class DelayedAction
 {
     #[ORM\Id]
@@ -28,7 +29,7 @@ class DelayedAction
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $executeAt;
 
-    #[ORM\Column(type: Types::BOOLEAN)]
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
     private bool $executed = false;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]

@@ -97,6 +97,18 @@ class EscalatedBundle extends AbstractBundle
             ],
         ]);
 
+        // Register the bundle's migrations. Every migration lives in one namespace
+        // so Doctrine discovers all of them and orders them by version; without
+        // this a host had to map the directory itself, and could only ever map
+        // one of the two namespaces earlier releases used.
+        if ($builder->hasExtension('doctrine_migrations')) {
+            $builder->prependExtensionConfig('doctrine_migrations', [
+                'migrations_paths' => [
+                    'Escalated\Symfony\Migrations' => \dirname(__DIR__).'/migrations',
+                ],
+            ]);
+        }
+
         // Register the central escalated-dev/locale translations as a lower-priority
         // path so the plugin-local translations/ directory (and the app's own
         // translations/) can override individual keys. Symfony's translator

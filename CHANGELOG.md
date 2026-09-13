@@ -27,6 +27,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   host firewall, which reset the token storage from the session and discarded
   the token. It now runs after the firewall, and a bearer token is no longer
   written into the session.
+- **Migrations could not build the schema.**
+  - Only one of the shipped migrations was discoverable: one used
+    `Escalated\Symfony\Migrations` and the rest `DoctrineMigrations`, and a
+    migrations path maps a single namespace.
+  - Most of them were raw MySQL (`AUTO_INCREMENT`, inline `COMMENT`, `ENGINE`),
+    which SQLite and PostgreSQL reject.
+
+  All migrations now live in `Escalated\Symfony\Migrations`, the bundle
+  registers them itself, and they use Doctrine's schema API. An install that ran
+  them as `DoctrineMigrations\Version…` records the new names without running
+  anything again (see the README's upgrade notes).
+- **Three features had no tables.** `escalated_automations`, `escalated_macros`
+  and `escalated_saved_views` were mapped but never migrated; a new migration
+  creates them where they are missing.
+- **Workflow runs could not be logged.** `WorkflowEngine` inserted a `status`
+  column the `WorkflowLog` entity does not have. The engine now writes
+  `conditions_matched`, `started_at` and `completed_at`, and two migrations move
+  existing rows over and add the log table's foreign keys.
+- **The entities and the migrated schema disagreed.** Names, defaults and
+  constraints differed, so `doctrine:schema:validate` failed on every install.
+  - Entities now declare the index names, column defaults and delete rules the
+    migrations create.
+  - Chat routing rules get their department foreign key, and chat sessions are
+    unique per ticket.
+  - A schema listener keeps the newsletter tables' foreign keys, which cascade
+    deletes, in Doctrine's view of the schema.
+  - `doctrine:schema:validate` now passes after migrating an empty SQLite,
+    PostgreSQL or MySQL database, and CI checks all three.
 - **Four screens rendered blank.** The bundle asked for page names that
   `@escalated-dev/escalated` does not ship:
 

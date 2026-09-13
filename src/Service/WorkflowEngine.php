@@ -37,8 +37,9 @@ class WorkflowEngine
     public function processEvent(string $eventName, Ticket $ticket): void
     {
         $workflows = $this->em->getConnection()->fetchAllAssociative(
-            'SELECT * FROM escalated_workflows WHERE trigger_event = ? AND is_active = 1 ORDER BY position ASC',
-            [$eventName]
+            'SELECT * FROM escalated_workflows WHERE trigger_event = ? AND is_active = ? ORDER BY position ASC',
+            [$eventName, true],
+            [Types::STRING, Types::BOOLEAN],
         );
         foreach ($workflows as $workflow) {
             $this->processWorkflow($workflow, $ticket, $eventName);
@@ -97,9 +98,12 @@ class WorkflowEngine
 
     public function processDelayedActions(): void
     {
+        // Booleans are bound with their DBAL type: PostgreSQL rejects comparing a
+        // boolean column to an integer literal.
         $pending = $this->em->getConnection()->fetchAllAssociative(
-            'SELECT * FROM escalated_delayed_actions WHERE executed = 0 AND execute_at <= ?',
-            [(new \DateTime())->format('Y-m-d H:i:s')]
+            'SELECT * FROM escalated_delayed_actions WHERE executed = ? AND execute_at <= ?',
+            [false, new \DateTimeImmutable()],
+            [Types::BOOLEAN, Types::DATETIME_IMMUTABLE],
         );
         foreach ($pending as $delayed) {
             try {
@@ -110,8 +114,9 @@ class WorkflowEngine
                 $actionData = \is_string($delayed['action_data']) ? json_decode($delayed['action_data'], true) : $delayed['action_data'];
                 $this->executeSingleAction($actionData, $ticket, (int) $delayed['workflow_id']);
                 $this->em->getConnection()->executeStatement(
-                    'UPDATE escalated_delayed_actions SET executed = 1 WHERE id = ?',
-                    [$delayed['id']]
+                    'UPDATE escalated_delayed_actions SET executed = ? WHERE id = ?',
+                    [true, $delayed['id']],
+                    [Types::BOOLEAN, Types::INTEGER],
                 );
             } catch (\Throwable $e) {
                 // Log and continue

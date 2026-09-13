@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Escalated\Symfony\Service;
 
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Entity\EmailChannel;
 
@@ -48,8 +49,11 @@ class EmailChannelService
 
     public function setDefault(EmailChannel $channel): void
     {
+        // Bound as a boolean: PostgreSQL rejects an integer for a boolean column.
         $this->em->getConnection()->executeStatement(
-            'UPDATE escalated_email_channels SET is_default = 0'
+            'UPDATE escalated_email_channels SET is_default = ?',
+            [false],
+            [Types::BOOLEAN],
         );
         $channel->setIsDefault(true);
         $this->em->flush();

@@ -12,6 +12,7 @@ use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
 use Symfony\Bundle\SecurityBundle\SecurityBundle;
 use Symfony\Bundle\TwigBundle\TwigBundle;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpKernel\Kernel;
 use Symfony\Component\Routing\Loader\Configurator\RoutingConfigurator;
 
@@ -66,13 +67,37 @@ final class EscalatedTestKernel extends Kernel
         return $this->varDir().'/log';
     }
 
+    public function boot(): void
+    {
+        // A non-debug kernel never checks its compiled container for freshness,
+        // so a container compiled by an earlier PHPUnit run would hide every
+        // change to config/services.yaml or the bundle extension since -- a
+        // wiring test would pass against wiring that no longer exists. Start
+        // each PHPUnit process from an empty cache.
+        if (!self::$cacheCleared) {
+            (new Filesystem())->remove(self::cacheRoot());
+            self::$cacheCleared = true;
+        }
+
+        parent::boot();
+    }
+
+    private static bool $cacheCleared = false;
+
+    private static function cacheRoot(): string
+    {
+        // Keyed by checkout, so two clones or worktrees never share or wipe
+        // each other's compiled containers.
+        return sys_get_temp_dir().'/escalated-symfony-tests/'.substr(hash('xxh128', __DIR__), 0, 8);
+    }
+
     private function varDir(): string
     {
         // One compiled container per configuration, or a test that disables
         // the UI would silently reuse the container another test compiled.
         $hash = substr(hash('xxh128', serialize([$this->escalatedConfig, $this->extensionConfig])), 0, 16);
 
-        return sys_get_temp_dir().'/escalated-symfony-tests/'.$hash;
+        return self::cacheRoot().'/'.$hash;
     }
 
     private function configureContainer(ContainerConfigurator $container): void

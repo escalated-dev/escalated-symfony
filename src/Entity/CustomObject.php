@@ -11,6 +11,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_custom_objects')]
+#[ORM\UniqueConstraint(name: 'uniq_custom_object_slug', columns: ['slug'])]
 #[ORM\HasLifecycleCallbacks]
 class CustomObject
 {
@@ -22,7 +23,7 @@ class CustomObject
     #[ORM\Column(type: Types::STRING, length: 255)]
     private string $name = '';
 
-    #[ORM\Column(type: Types::STRING, length: 255, unique: true)]
+    #[ORM\Column(type: Types::STRING, length: 255)]
     private string $slug = '';
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
@@ -31,7 +32,7 @@ class CustomObject
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private ?array $fieldDefinitions = null;
 
-    #[ORM\Column(type: Types::BOOLEAN)]
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
     private bool $isActive = true;
 
     /** @var Collection<int, CustomObjectRecord> */

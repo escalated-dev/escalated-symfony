@@ -16,6 +16,7 @@ use Escalated\Symfony\Repository\TicketFollowerRepository;
  */
 #[ORM\Entity(repositoryClass: TicketFollowerRepository::class)]
 #[ORM\Table(name: 'escalated_ticket_followers')]
+#[ORM\Index(columns: ['user_id'], name: 'idx_ticket_follower_user')]
 #[ORM\UniqueConstraint(name: 'UNIQ_ticket_followers_ticket_user', columns: ['ticket_id', 'user_id'])]
 class TicketFollower
 {

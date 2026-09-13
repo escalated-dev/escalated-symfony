@@ -24,23 +24,23 @@ class ChatRoutingRule
     #[ORM\Column(type: Types::STRING, length: 255)]
     private string $name = '';
 
-    #[ORM\Column(type: Types::STRING, length: 32)]
+    #[ORM\Column(type: Types::STRING, length: 32, options: ['default' => 'round_robin'])]
     private string $strategy = self::STRATEGY_ROUND_ROBIN;
 
     #[ORM\ManyToOne(targetEntity: Department::class)]
-    #[ORM\JoinColumn(name: 'department_id', nullable: true)]
+    #[ORM\JoinColumn(name: 'department_id', nullable: true, onDelete: 'SET NULL')]
     private ?Department $department = null;
 
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private ?array $agentIds = null;
 
-    #[ORM\Column(type: Types::INTEGER)]
+    #[ORM\Column(type: Types::INTEGER, options: ['default' => 0])]
     private int $priority = 0;
 
-    #[ORM\Column(type: Types::INTEGER)]
+    #[ORM\Column(type: Types::INTEGER, options: ['default' => 5])]
     private int $maxConcurrentChats = 5;
 
-    #[ORM\Column(type: Types::BOOLEAN)]
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
     private bool $isActive = true;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]

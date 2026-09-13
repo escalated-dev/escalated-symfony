@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace DoctrineMigrations;
+namespace Escalated\Symfony\Migrations;
 
 use Doctrine\DBAL\Schema\Schema;
-use Doctrine\Migrations\AbstractMigration;
+use Escalated\Symfony\Doctrine\Migration\BundleMigration;
 
-final class Version20260407000001 extends AbstractMigration
+final class Version20260407000001 extends BundleMigration
 {
     public function getDescription(): string
     {
@@ -16,6 +16,10 @@ final class Version20260407000001 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
+        if ($this->executedUnderLegacyName()) {
+            return;
+        }
+
         $table = $schema->getTable('escalated_tickets');
         $table->addColumn('snoozed_until', 'datetime_immutable', ['notnull' => false]);
         $table->addColumn('snoozed_by', 'integer', ['notnull' => false]);

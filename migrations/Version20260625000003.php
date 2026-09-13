@@ -2,17 +2,12 @@
 
 declare(strict_types=1);
 
-namespace DoctrineMigrations;
+namespace Escalated\Symfony\Migrations;
 
 use Doctrine\DBAL\Schema\Schema;
-use Doctrine\Migrations\AbstractMigration;
+use Escalated\Symfony\Doctrine\Migration\BundleMigration;
 
-/**
- * Per-agent, per-channel concurrent-ticket capacity. Mirrors the Laravel
- * agent_capacity table: a configurable ceiling (max_concurrent) and a
- * running load (current_count), unique per (user_id, channel).
- */
-final class Version20260625000003 extends AbstractMigration
+final class Version20260625000003 extends BundleMigration
 {
     public function getDescription(): string
     {
@@ -21,21 +16,24 @@ final class Version20260625000003 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        $this->addSql('CREATE TABLE escalated_agent_capacity (
-            id INT AUTO_INCREMENT NOT NULL,
-            user_id VARCHAR(255) NOT NULL,
-            channel VARCHAR(64) NOT NULL,
-            max_concurrent INT DEFAULT 10 NOT NULL,
-            current_count INT DEFAULT 0 NOT NULL,
-            created_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\',
-            updated_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\',
-            UNIQUE INDEX escalated_agent_capacity_user_channel_unique (user_id, channel),
-            PRIMARY KEY(id)
-        ) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
+        if ($this->executedUnderLegacyName()) {
+            return;
+        }
+
+        $capacity = $schema->createTable('escalated_agent_capacity');
+        $capacity->addColumn('id', 'integer', ['autoincrement' => true]);
+        $capacity->addColumn('user_id', 'string', ['length' => 255]);
+        $capacity->addColumn('channel', 'string', ['length' => 64]);
+        $capacity->addColumn('max_concurrent', 'integer', ['default' => 10]);
+        $capacity->addColumn('current_count', 'integer', ['default' => 0]);
+        $capacity->addColumn('created_at', 'datetime_immutable');
+        $capacity->addColumn('updated_at', 'datetime_immutable');
+        $capacity->setPrimaryKey(['id']);
+        $capacity->addUniqueIndex(['user_id', 'channel'], 'escalated_agent_capacity_user_channel_unique');
     }
 
     public function down(Schema $schema): void
     {
-        $this->addSql('DROP TABLE escalated_agent_capacity');
+        $schema->dropTable('escalated_agent_capacity');
     }
 }

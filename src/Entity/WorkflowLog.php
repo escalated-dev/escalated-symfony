@@ -9,6 +9,8 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_workflow_logs')]
+#[ORM\Index(columns: ['workflow_id'], name: 'idx_wflog_workflow')]
+#[ORM\Index(columns: ['ticket_id'], name: 'idx_wflog_ticket')]
 class WorkflowLog
 {
     #[ORM\Id]
@@ -17,17 +19,17 @@ class WorkflowLog
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: Workflow::class)]
-    #[ORM\JoinColumn(name: 'workflow_id', nullable: false)]
+    #[ORM\JoinColumn(name: 'workflow_id', nullable: false, onDelete: 'CASCADE')]
     private ?Workflow $workflow = null;
 
     #[ORM\ManyToOne(targetEntity: Ticket::class)]
-    #[ORM\JoinColumn(name: 'ticket_id', nullable: false)]
+    #[ORM\JoinColumn(name: 'ticket_id', nullable: false, onDelete: 'CASCADE')]
     private ?Ticket $ticket = null;
 
     #[ORM\Column(type: Types::STRING, length: 255)]
     private string $triggerEvent = '';
 
-    #[ORM\Column(type: Types::BOOLEAN)]
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
     private bool $conditionsMatched = true;
 
     #[ORM\Column(type: Types::JSON)]

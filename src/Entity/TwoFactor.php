@@ -10,6 +10,7 @@ use Escalated\Symfony\Doctrine\UserIdType;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_two_factors')]
+#[ORM\Index(columns: ['user_id'], name: 'idx_two_factor_user')]
 #[ORM\HasLifecycleCallbacks]
 class TwoFactor
 {
@@ -21,7 +22,7 @@ class TwoFactor
     #[ORM\Column(type: UserIdType::NAME)]
     private int|string $userId = 0;
 
-    #[ORM\Column(type: Types::STRING, length: 32)]
+    #[ORM\Column(type: Types::STRING, length: 32, options: ['default' => 'totp'])]
     private string $method = 'totp';
 
     #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
@@ -30,7 +31,7 @@ class TwoFactor
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private ?array $recoveryCodes = null;
 
-    #[ORM\Column(type: Types::BOOLEAN)]
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
     private bool $isEnabled = false;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]

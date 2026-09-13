@@ -20,6 +20,8 @@ use Escalated\Symfony\Doctrine\UserIdType;
  */
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_contacts')]
+#[ORM\UniqueConstraint(name: 'UNIQ_contact_email', columns: ['email'])]
+#[ORM\Index(columns: ['marketing_opt_out_at'], name: 'idx_contact_opt_out')]
 #[ORM\Index(columns: ['user_id'], name: 'idx_contact_user')]
 #[ORM\HasLifecycleCallbacks]
 class Contact
@@ -29,7 +31,7 @@ class Contact
     #[ORM\Column(type: Types::INTEGER)]
     private ?int $id = null;
 
-    #[ORM\Column(type: Types::STRING, length: 320, unique: true)]
+    #[ORM\Column(type: Types::STRING, length: 320)]
     private string $email = '';
 
     #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]

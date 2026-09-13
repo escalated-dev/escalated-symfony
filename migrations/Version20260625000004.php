@@ -2,17 +2,12 @@
 
 declare(strict_types=1);
 
-namespace DoctrineMigrations;
+namespace Escalated\Symfony\Migrations;
 
 use Doctrine\DBAL\Schema\Schema;
-use Doctrine\Migrations\AbstractMigration;
+use Escalated\Symfony\Doctrine\Migration\BundleMigration;
 
-/**
- * Ticket-to-ticket links (problem/incident, parent/child, related). Mirrors
- * the Laravel ticket_links table. Distinct from escalated_ticket_subjects,
- * which links a ticket to a host-app subject.
- */
-final class Version20260625000004 extends AbstractMigration
+final class Version20260625000004 extends BundleMigration
 {
     public function getDescription(): string
     {
@@ -21,29 +16,25 @@ final class Version20260625000004 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        $this->addSql('CREATE TABLE escalated_ticket_links (
-            id INT AUTO_INCREMENT NOT NULL,
-            parent_ticket_id INT NOT NULL,
-            child_ticket_id INT NOT NULL,
-            link_type VARCHAR(32) NOT NULL,
-            created_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\',
-            INDEX idx_ticket_link_parent (parent_ticket_id),
-            INDEX idx_ticket_link_child (child_ticket_id),
-            PRIMARY KEY(id)
-        ) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
+        if ($this->executedUnderLegacyName()) {
+            return;
+        }
 
-        $this->addSql('ALTER TABLE escalated_ticket_links
-            ADD CONSTRAINT FK_escalated_ticket_links_parent
-            FOREIGN KEY (parent_ticket_id) REFERENCES escalated_tickets (id) ON DELETE CASCADE');
-        $this->addSql('ALTER TABLE escalated_ticket_links
-            ADD CONSTRAINT FK_escalated_ticket_links_child
-            FOREIGN KEY (child_ticket_id) REFERENCES escalated_tickets (id) ON DELETE CASCADE');
+        $links = $schema->createTable('escalated_ticket_links');
+        $links->addColumn('id', 'integer', ['autoincrement' => true]);
+        $links->addColumn('parent_ticket_id', 'integer');
+        $links->addColumn('child_ticket_id', 'integer');
+        $links->addColumn('link_type', 'string', ['length' => 32]);
+        $links->addColumn('created_at', 'datetime_immutable');
+        $links->setPrimaryKey(['id']);
+        $links->addIndex(['parent_ticket_id'], 'idx_ticket_link_parent');
+        $links->addIndex(['child_ticket_id'], 'idx_ticket_link_child');
+        $links->addForeignKeyConstraint('escalated_tickets', ['parent_ticket_id'], ['id'], ['onDelete' => 'CASCADE'], 'FK_escalated_ticket_links_parent');
+        $links->addForeignKeyConstraint('escalated_tickets', ['child_ticket_id'], ['id'], ['onDelete' => 'CASCADE'], 'FK_escalated_ticket_links_child');
     }
 
     public function down(Schema $schema): void
     {
-        $this->addSql('ALTER TABLE escalated_ticket_links DROP FOREIGN KEY FK_escalated_ticket_links_parent');
-        $this->addSql('ALTER TABLE escalated_ticket_links DROP FOREIGN KEY FK_escalated_ticket_links_child');
-        $this->addSql('DROP TABLE escalated_ticket_links');
+        $schema->dropTable('escalated_ticket_links');
     }
 }

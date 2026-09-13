@@ -10,6 +10,8 @@ use Escalated\Symfony\Repository\SkillRoutingDepartmentRepository;
 
 #[ORM\Entity(repositoryClass: SkillRoutingDepartmentRepository::class)]
 #[ORM\Table(name: 'escalated_skill_routing_departments')]
+#[ORM\Index(columns: ['skill_id'], name: 'IDX_skill_routing_dept_skill')]
+#[ORM\Index(columns: ['department_id'], name: 'IDX_skill_routing_dept_dept')]
 #[ORM\UniqueConstraint(name: 'UNIQ_skill_routing_dept', columns: ['skill_id', 'department_id'])]
 class SkillRoutingDepartment
 {

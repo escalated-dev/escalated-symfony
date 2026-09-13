@@ -2,17 +2,12 @@
 
 declare(strict_types=1);
 
-namespace DoctrineMigrations;
+namespace Escalated\Symfony\Migrations;
 
 use Doctrine\DBAL\Schema\Schema;
-use Doctrine\Migrations\AbstractMigration;
+use Escalated\Symfony\Doctrine\Migration\BundleMigration;
 
-/**
- * Canned responses — reusable, agent-facing canned replies with a
- * shared/own visibility model. Mirrors the escalated_canned_responses
- * table in escalated-laravel / escalated-rails / escalated-django.
- */
-final class Version20260801000001 extends AbstractMigration
+final class Version20260801000001 extends BundleMigration
 {
     public function getDescription(): string
     {
@@ -21,22 +16,25 @@ final class Version20260801000001 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        $this->addSql('CREATE TABLE escalated_canned_responses (
-            id INT AUTO_INCREMENT NOT NULL,
-            title VARCHAR(255) NOT NULL,
-            body LONGTEXT NOT NULL,
-            category VARCHAR(255) DEFAULT NULL,
-            is_shared TINYINT(1) NOT NULL,
-            created_by INT DEFAULT NULL,
-            created_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\',
-            updated_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\',
-            INDEX idx_canned_response_creator (created_by),
-            PRIMARY KEY(id)
-        ) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
+        if ($this->executedUnderLegacyName()) {
+            return;
+        }
+
+        $responses = $schema->createTable('escalated_canned_responses');
+        $responses->addColumn('id', 'integer', ['autoincrement' => true]);
+        $responses->addColumn('title', 'string', ['length' => 255]);
+        $responses->addColumn('body', 'text');
+        $responses->addColumn('category', 'string', ['length' => 255, 'notnull' => false]);
+        $responses->addColumn('is_shared', 'boolean');
+        $responses->addColumn('created_by', 'integer', ['notnull' => false]);
+        $responses->addColumn('created_at', 'datetime_immutable');
+        $responses->addColumn('updated_at', 'datetime_immutable');
+        $responses->setPrimaryKey(['id']);
+        $responses->addIndex(['created_by'], 'idx_canned_response_creator');
     }
 
     public function down(Schema $schema): void
     {
-        $this->addSql('DROP TABLE escalated_canned_responses');
+        $schema->dropTable('escalated_canned_responses');
     }
 }

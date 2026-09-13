@@ -16,6 +16,7 @@ use Doctrine\ORM\Mapping as ORM;
  */
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_escalation_rules')]
+#[ORM\Index(columns: ['is_active'], name: 'IDX_escalated_escalation_rules_active')]
 #[ORM\HasLifecycleCallbacks]
 class EscalationRule
 {

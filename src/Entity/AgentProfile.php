@@ -25,7 +25,7 @@ class AgentProfile
     #[ORM\Column(type: UserIdType::NAME)]
     private int|string $userId;
 
-    #[ORM\Column(type: Types::STRING, length: 16)]
+    #[ORM\Column(type: Types::STRING, length: 16, options: ['default' => 'full'])]
     private string $agentType = self::TYPE_FULL;
 
     #[ORM\Column(type: Types::INTEGER, nullable: true)]

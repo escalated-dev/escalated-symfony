@@ -9,6 +9,8 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_custom_object_records')]
+#[ORM\Index(columns: ['custom_object_id'], name: 'idx_cor_object')]
+#[ORM\Index(columns: ['linked_entity_type', 'linked_entity_id'], name: 'idx_cor_linked')]
 #[ORM\HasLifecycleCallbacks]
 class CustomObjectRecord
 {

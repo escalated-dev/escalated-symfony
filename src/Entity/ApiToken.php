@@ -19,6 +19,7 @@ use Doctrine\ORM\Mapping as ORM;
  */
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_api_tokens')]
+#[ORM\Index(columns: ['user_id'], name: 'idx_api_token_user')]
 #[ORM\UniqueConstraint(name: 'uniq_escalated_api_token', columns: ['token'])]
 #[ORM\HasLifecycleCallbacks]
 class ApiToken

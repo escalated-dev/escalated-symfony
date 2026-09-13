@@ -16,6 +16,7 @@ use Symfony\Component\HttpKernel\KernelInterface;
  * Options:
  *  - `escalated`:  the `escalated:` configuration block
  *  - `extensions`: extra extension configs, keyed by extension name
+ *  - `host_user`:  map the fixture host user entity (default true)
  */
 trait CreatesEscalatedKernel
 {
@@ -34,6 +35,7 @@ trait CreatesEscalatedKernel
             (bool) ($options['debug'] ?? false),
             $options['escalated'] ?? [],
             $options['extensions'] ?? [],
+            (bool) ($options['host_user'] ?? true),
         );
     }
 
@@ -46,15 +48,20 @@ trait CreatesEscalatedKernel
     }
 
     /**
-     * Create every mapped table on the kernel's (in-memory) connection.
+     * Create every mapped table on the kernel's connection, starting from an
+     * empty database.
+     *
+     * dropDatabase() rather than dropSchema(): on a persistent database the
+     * previous test may have left tables the mapping does not know (the
+     * migrations metadata table, say) holding foreign keys, and dropSchema()
+     * silently skips drops that fail.
      */
     protected static function createSchema(): void
     {
         $em = static::entityManager();
-        $metadata = $em->getMetadataFactory()->getAllMetadata();
 
         $tool = new SchemaTool($em);
-        $tool->dropSchema($metadata);
-        $tool->createSchema($metadata);
+        $tool->dropDatabase();
+        $tool->createSchema($em->getMetadataFactory()->getAllMetadata());
     }
 }

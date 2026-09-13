@@ -10,6 +10,8 @@ use Escalated\Symfony\Doctrine\UserIdType;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_newsletter_lists')]
+#[ORM\Index(columns: ['kind'], name: 'idx_nl_kind')]
+#[ORM\Index(columns: ['created_by'], name: 'idx_nl_created_by')]
 class NewsletterList
 {
     #[ORM\Id]

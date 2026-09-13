@@ -11,6 +11,8 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_custom_fields')]
+#[ORM\UniqueConstraint(name: 'uniq_custom_field_slug', columns: ['slug'])]
+#[ORM\Index(columns: ['entity_type'], name: 'idx_custom_field_entity_type')]
 #[ORM\HasLifecycleCallbacks]
 class CustomField
 {
@@ -42,16 +44,16 @@ class CustomField
     #[ORM\Column(type: Types::STRING, length: 255)]
     private string $name = '';
 
-    #[ORM\Column(type: Types::STRING, length: 255, unique: true)]
+    #[ORM\Column(type: Types::STRING, length: 255)]
     private string $slug = '';
 
-    #[ORM\Column(type: Types::STRING, length: 50)]
+    #[ORM\Column(type: Types::STRING, length: 50, options: ['default' => 'text'])]
     private string $fieldType = self::TYPE_TEXT;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
 
-    #[ORM\Column(type: Types::BOOLEAN)]
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
     private bool $isRequired = false;
 
     #[ORM\Column(type: Types::JSON, nullable: true)]
@@ -60,13 +62,13 @@ class CustomField
     #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
     private ?string $defaultValue = null;
 
-    #[ORM\Column(type: Types::STRING, length: 50)]
+    #[ORM\Column(type: Types::STRING, length: 50, options: ['default' => 'ticket'])]
     private string $entityType = 'ticket';
 
-    #[ORM\Column(type: Types::INTEGER)]
+    #[ORM\Column(type: Types::INTEGER, options: ['default' => 0])]
     private int $position = 0;
 
-    #[ORM\Column(type: Types::BOOLEAN)]
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
     private bool $isActive = true;
 
     /** @var Collection<int, CustomFieldValue> */

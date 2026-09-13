@@ -2,17 +2,12 @@
 
 declare(strict_types=1);
 
-namespace DoctrineMigrations;
+namespace Escalated\Symfony\Migrations;
 
 use Doctrine\DBAL\Schema\Schema;
-use Doctrine\Migrations\AbstractMigration;
+use Escalated\Symfony\Doctrine\Migration\BundleMigration;
 
-/**
- * Side conversations and their replies — private internal/email threads
- * attached to a ticket. Mirrors the Laravel side_conversations and
- * side_conversation_replies tables.
- */
-final class Version20260625000005 extends AbstractMigration
+final class Version20260625000005 extends BundleMigration
 {
     public function getDescription(): string
     {
@@ -21,43 +16,38 @@ final class Version20260625000005 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        $this->addSql('CREATE TABLE escalated_side_conversations (
-            id INT AUTO_INCREMENT NOT NULL,
-            ticket_id INT NOT NULL,
-            subject VARCHAR(255) NOT NULL,
-            channel VARCHAR(32) NOT NULL,
-            status VARCHAR(32) NOT NULL,
-            created_by VARCHAR(255) DEFAULT NULL,
-            created_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\',
-            updated_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\',
-            INDEX idx_side_conversation_ticket (ticket_id),
-            PRIMARY KEY(id)
-        ) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
+        if ($this->executedUnderLegacyName()) {
+            return;
+        }
 
-        $this->addSql('CREATE TABLE escalated_side_conversation_replies (
-            id INT AUTO_INCREMENT NOT NULL,
-            side_conversation_id INT NOT NULL,
-            body LONGTEXT NOT NULL,
-            author_id VARCHAR(255) DEFAULT NULL,
-            created_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\',
-            updated_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\',
-            INDEX idx_side_conversation_reply_conversation (side_conversation_id),
-            PRIMARY KEY(id)
-        ) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
+        $conversations = $schema->createTable('escalated_side_conversations');
+        $conversations->addColumn('id', 'integer', ['autoincrement' => true]);
+        $conversations->addColumn('ticket_id', 'integer');
+        $conversations->addColumn('subject', 'string', ['length' => 255]);
+        $conversations->addColumn('channel', 'string', ['length' => 32]);
+        $conversations->addColumn('status', 'string', ['length' => 32]);
+        $conversations->addColumn('created_by', 'string', ['length' => 255, 'notnull' => false]);
+        $conversations->addColumn('created_at', 'datetime_immutable');
+        $conversations->addColumn('updated_at', 'datetime_immutable');
+        $conversations->setPrimaryKey(['id']);
+        $conversations->addIndex(['ticket_id'], 'idx_side_conversation_ticket');
+        $conversations->addForeignKeyConstraint('escalated_tickets', ['ticket_id'], ['id'], ['onDelete' => 'CASCADE'], 'FK_escalated_side_conversations_ticket');
 
-        $this->addSql('ALTER TABLE escalated_side_conversations
-            ADD CONSTRAINT FK_escalated_side_conversations_ticket
-            FOREIGN KEY (ticket_id) REFERENCES escalated_tickets (id) ON DELETE CASCADE');
-        $this->addSql('ALTER TABLE escalated_side_conversation_replies
-            ADD CONSTRAINT FK_escalated_side_conversation_replies_conversation
-            FOREIGN KEY (side_conversation_id) REFERENCES escalated_side_conversations (id) ON DELETE CASCADE');
+        $replies = $schema->createTable('escalated_side_conversation_replies');
+        $replies->addColumn('id', 'integer', ['autoincrement' => true]);
+        $replies->addColumn('side_conversation_id', 'integer');
+        $replies->addColumn('body', 'text');
+        $replies->addColumn('author_id', 'string', ['length' => 255, 'notnull' => false]);
+        $replies->addColumn('created_at', 'datetime_immutable');
+        $replies->addColumn('updated_at', 'datetime_immutable');
+        $replies->setPrimaryKey(['id']);
+        $replies->addIndex(['side_conversation_id'], 'idx_side_conversation_reply_conversation');
+        $replies->addForeignKeyConstraint('escalated_side_conversations', ['side_conversation_id'], ['id'], ['onDelete' => 'CASCADE'], 'FK_escalated_side_conversation_replies_conversation');
     }
 
     public function down(Schema $schema): void
     {
-        $this->addSql('ALTER TABLE escalated_side_conversation_replies DROP FOREIGN KEY FK_escalated_side_conversation_replies_conversation');
-        $this->addSql('ALTER TABLE escalated_side_conversations DROP FOREIGN KEY FK_escalated_side_conversations_ticket');
-        $this->addSql('DROP TABLE escalated_side_conversation_replies');
-        $this->addSql('DROP TABLE escalated_side_conversations');
+        $schema->dropTable('escalated_side_conversation_replies');
+        $schema->dropTable('escalated_side_conversations');
     }
 }

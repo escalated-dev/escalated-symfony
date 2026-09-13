@@ -10,6 +10,8 @@ use Escalated\Symfony\Repository\SkillRoutingTagRepository;
 
 #[ORM\Entity(repositoryClass: SkillRoutingTagRepository::class)]
 #[ORM\Table(name: 'escalated_skill_routing_tags')]
+#[ORM\Index(columns: ['skill_id'], name: 'IDX_skill_routing_tag_skill')]
+#[ORM\Index(columns: ['tag_id'], name: 'IDX_skill_routing_tag_tag')]
 #[ORM\UniqueConstraint(name: 'UNIQ_skill_routing_tag', columns: ['skill_id', 'tag_id'])]
 class SkillRoutingTag
 {

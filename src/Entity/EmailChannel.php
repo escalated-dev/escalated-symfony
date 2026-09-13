@@ -9,6 +9,8 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_email_channels')]
+#[ORM\Index(columns: ['department_id'], name: 'idx_email_channel_dept')]
+#[ORM\Index(columns: ['is_active'], name: 'idx_email_channel_active')]
 #[ORM\HasLifecycleCallbacks]
 class EmailChannel
 {
@@ -27,13 +29,13 @@ class EmailChannel
     #[ORM\JoinColumn(name: 'department_id', referencedColumnName: 'id', onDelete: 'SET NULL')]
     private ?Department $department = null;
 
-    #[ORM\Column(type: Types::BOOLEAN)]
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
     private bool $isDefault = false;
 
-    #[ORM\Column(type: Types::BOOLEAN)]
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
     private bool $isVerified = false;
 
-    #[ORM\Column(type: Types::STRING, length: 32)]
+    #[ORM\Column(type: Types::STRING, length: 32, options: ['default' => 'pending'])]
     private string $dkimStatus = 'pending';
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
@@ -45,7 +47,7 @@ class EmailChannel
     #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
     private ?string $replyToAddress = null;
 
-    #[ORM\Column(type: Types::STRING, length: 32)]
+    #[ORM\Column(type: Types::STRING, length: 32, options: ['default' => 'tls'])]
     private string $smtpProtocol = 'tls';
 
     #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
@@ -60,7 +62,7 @@ class EmailChannel
     #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
     private ?string $smtpPassword = null;
 
-    #[ORM\Column(type: Types::BOOLEAN)]
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
     private bool $isActive = true;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]

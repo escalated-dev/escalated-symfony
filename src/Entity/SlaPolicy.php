@@ -37,13 +37,13 @@ class SlaPolicy
     #[ORM\Column(type: Types::JSON)]
     private array $resolutionHours = [];
 
-    #[ORM\Column(type: Types::BOOLEAN)]
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
     private bool $businessHoursOnly = false;
 
-    #[ORM\Column(type: Types::BOOLEAN)]
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
     private bool $isDefault = false;
 
-    #[ORM\Column(type: Types::BOOLEAN)]
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
     private bool $isActive = true;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]

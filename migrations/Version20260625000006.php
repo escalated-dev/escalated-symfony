@@ -2,17 +2,12 @@
 
 declare(strict_types=1);
 
-namespace DoctrineMigrations;
+namespace Escalated\Symfony\Migrations;
 
 use Doctrine\DBAL\Schema\Schema;
-use Doctrine\Migrations\AbstractMigration;
+use Escalated\Symfony\Doctrine\Migration\BundleMigration;
 
-/**
- * Knowledge-base tables: article categories (optionally nested) and
- * articles (draft/published, with view and helpfulness counters). Mirrors
- * the Laravel article_categories and articles tables.
- */
-final class Version20260625000006 extends AbstractMigration
+final class Version20260625000006 extends BundleMigration
 {
     public function getDescription(): string
     {
@@ -21,53 +16,48 @@ final class Version20260625000006 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        $this->addSql('CREATE TABLE escalated_article_categories (
-            id INT AUTO_INCREMENT NOT NULL,
-            name VARCHAR(255) NOT NULL,
-            slug VARCHAR(255) NOT NULL,
-            parent_id INT DEFAULT NULL,
-            position INT DEFAULT 0 NOT NULL,
-            description LONGTEXT DEFAULT NULL,
-            created_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\',
-            updated_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\',
-            UNIQUE INDEX escalated_article_categories_slug_unique (slug),
-            INDEX idx_article_category_parent (parent_id),
-            PRIMARY KEY(id)
-        ) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
+        if ($this->executedUnderLegacyName()) {
+            return;
+        }
 
-        $this->addSql('CREATE TABLE escalated_articles (
-            id INT AUTO_INCREMENT NOT NULL,
-            category_id INT DEFAULT NULL,
-            title VARCHAR(255) NOT NULL,
-            slug VARCHAR(255) NOT NULL,
-            body LONGTEXT DEFAULT NULL,
-            status VARCHAR(32) NOT NULL,
-            author_id VARCHAR(255) DEFAULT NULL,
-            view_count INT DEFAULT 0 NOT NULL,
-            helpful_count INT DEFAULT 0 NOT NULL,
-            not_helpful_count INT DEFAULT 0 NOT NULL,
-            published_at DATETIME DEFAULT NULL COMMENT \'(DC2Type:datetime_immutable)\',
-            created_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\',
-            updated_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\',
-            UNIQUE INDEX escalated_articles_slug_unique (slug),
-            INDEX idx_article_status (status),
-            INDEX idx_article_category (category_id),
-            PRIMARY KEY(id)
-        ) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
+        $categories = $schema->createTable('escalated_article_categories');
+        $categories->addColumn('id', 'integer', ['autoincrement' => true]);
+        $categories->addColumn('name', 'string', ['length' => 255]);
+        $categories->addColumn('slug', 'string', ['length' => 255]);
+        $categories->addColumn('parent_id', 'integer', ['notnull' => false]);
+        $categories->addColumn('position', 'integer', ['default' => 0]);
+        $categories->addColumn('description', 'text', ['notnull' => false]);
+        $categories->addColumn('created_at', 'datetime_immutable');
+        $categories->addColumn('updated_at', 'datetime_immutable');
+        $categories->setPrimaryKey(['id']);
+        $categories->addUniqueIndex(['slug'], 'escalated_article_categories_slug_unique');
+        $categories->addIndex(['parent_id'], 'idx_article_category_parent');
+        $categories->addForeignKeyConstraint('escalated_article_categories', ['parent_id'], ['id'], ['onDelete' => 'SET NULL'], 'FK_escalated_article_categories_parent');
 
-        $this->addSql('ALTER TABLE escalated_article_categories
-            ADD CONSTRAINT FK_escalated_article_categories_parent
-            FOREIGN KEY (parent_id) REFERENCES escalated_article_categories (id) ON DELETE SET NULL');
-        $this->addSql('ALTER TABLE escalated_articles
-            ADD CONSTRAINT FK_escalated_articles_category
-            FOREIGN KEY (category_id) REFERENCES escalated_article_categories (id) ON DELETE SET NULL');
+        $articles = $schema->createTable('escalated_articles');
+        $articles->addColumn('id', 'integer', ['autoincrement' => true]);
+        $articles->addColumn('category_id', 'integer', ['notnull' => false]);
+        $articles->addColumn('title', 'string', ['length' => 255]);
+        $articles->addColumn('slug', 'string', ['length' => 255]);
+        $articles->addColumn('body', 'text', ['notnull' => false]);
+        $articles->addColumn('status', 'string', ['length' => 32]);
+        $articles->addColumn('author_id', 'string', ['length' => 255, 'notnull' => false]);
+        $articles->addColumn('view_count', 'integer', ['default' => 0]);
+        $articles->addColumn('helpful_count', 'integer', ['default' => 0]);
+        $articles->addColumn('not_helpful_count', 'integer', ['default' => 0]);
+        $articles->addColumn('published_at', 'datetime_immutable', ['notnull' => false]);
+        $articles->addColumn('created_at', 'datetime_immutable');
+        $articles->addColumn('updated_at', 'datetime_immutable');
+        $articles->setPrimaryKey(['id']);
+        $articles->addUniqueIndex(['slug'], 'escalated_articles_slug_unique');
+        $articles->addIndex(['status'], 'idx_article_status');
+        $articles->addIndex(['category_id'], 'idx_article_category');
+        $articles->addForeignKeyConstraint('escalated_article_categories', ['category_id'], ['id'], ['onDelete' => 'SET NULL'], 'FK_escalated_articles_category');
     }
 
     public function down(Schema $schema): void
     {
-        $this->addSql('ALTER TABLE escalated_articles DROP FOREIGN KEY FK_escalated_articles_category');
-        $this->addSql('ALTER TABLE escalated_article_categories DROP FOREIGN KEY FK_escalated_article_categories_parent');
-        $this->addSql('DROP TABLE escalated_articles');
-        $this->addSql('DROP TABLE escalated_article_categories');
+        $schema->dropTable('escalated_articles');
+        $schema->dropTable('escalated_article_categories');
     }
 }

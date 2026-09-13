@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace DoctrineMigrations;
+namespace Escalated\Symfony\Migrations;
 
 use Doctrine\DBAL\Schema\Schema;
-use Doctrine\Migrations\AbstractMigration;
+use Escalated\Symfony\Doctrine\Migration\BundleMigration;
 
-final class Version20260409000001 extends AbstractMigration
+final class Version20260409000001 extends BundleMigration
 {
     public function getDescription(): string
     {
@@ -16,6 +16,10 @@ final class Version20260409000001 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
+        if ($this->executedUnderLegacyName()) {
+            return;
+        }
+
         // Email Channels
         $emailChannels = $schema->createTable('escalated_email_channels');
         $emailChannels->addColumn('id', 'integer', ['autoincrement' => true]);

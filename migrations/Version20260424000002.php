@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace DoctrineMigrations;
+namespace Escalated\Symfony\Migrations;
 
 use Doctrine\DBAL\Schema\Schema;
-use Doctrine\Migrations\AbstractMigration;
+use Escalated\Symfony\Doctrine\Migration\BundleMigration;
 
-final class Version20260424000002 extends AbstractMigration
+final class Version20260424000002 extends BundleMigration
 {
     public function getDescription(): string
     {
@@ -16,16 +16,21 @@ final class Version20260424000002 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        $this->addSql('CREATE TABLE escalated_settings (
-            `key` VARCHAR(191) NOT NULL,
-            value LONGTEXT DEFAULT NULL,
-            updated_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\',
-            PRIMARY KEY(`key`)
-        ) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
+        if ($this->executedUnderLegacyName()) {
+            return;
+        }
+
+        $settings = $schema->createTable('escalated_settings');
+        // `key` is reserved on MySQL; backticks make DBAL quote it for the
+        // platform, matching the entity's mapping.
+        $settings->addColumn('`key`', 'string', ['length' => 191]);
+        $settings->addColumn('value', 'text', ['notnull' => false]);
+        $settings->addColumn('updated_at', 'datetime_immutable');
+        $settings->setPrimaryKey(['`key`']);
     }
 
     public function down(Schema $schema): void
     {
-        $this->addSql('DROP TABLE escalated_settings');
+        $schema->dropTable('escalated_settings');
     }
 }

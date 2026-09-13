@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Escalated\Symfony\Service;
 
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Entity\Reply;
 use Escalated\Symfony\Entity\Ticket;
@@ -123,16 +124,17 @@ class WorkflowEngine
         $conditions = \is_string($workflow['conditions']) ? json_decode($workflow['conditions'], true) : $workflow['conditions'];
         $matched = $this->evaluateConditions($conditions ?? [], $ticket);
         if (!$matched) {
-            $this->logExecution((int) $workflow['id'], $ticket->getId(), $eventName, 'skipped', []);
+            $this->logExecution((int) $workflow['id'], $ticket->getId(), $eventName, false, []);
 
             return;
         }
+        $startedAt = new \DateTimeImmutable();
         try {
             $actions = \is_string($workflow['actions']) ? json_decode($workflow['actions'], true) : $workflow['actions'];
             $executed = $this->executeActions($actions ?? [], $ticket, (int) $workflow['id']);
-            $this->logExecution((int) $workflow['id'], $ticket->getId(), $eventName, 'success', $executed);
+            $this->logExecution((int) $workflow['id'], $ticket->getId(), $eventName, true, $executed, null, $startedAt);
         } catch (\Throwable $e) {
-            $this->logExecution((int) $workflow['id'], $ticket->getId(), $eventName, 'failure', [], $e->getMessage());
+            $this->logExecution((int) $workflow['id'], $ticket->getId(), $eventName, true, [], $e->getMessage(), $startedAt);
         }
     }
 
@@ -251,16 +253,41 @@ class WorkflowEngine
         }, $text);
     }
 
-    private function logExecution(int $workflowId, int $ticketId, string $event, string $status, array $actions, ?string $error = null): void
-    {
+    /**
+     * Writes a row in the WorkflowLog entity's shape. A run whose conditions did
+     * not match executed nothing, so it has no start or completion time.
+     */
+    private function logExecution(
+        int $workflowId,
+        int $ticketId,
+        string $event,
+        bool $conditionsMatched,
+        array $actions,
+        ?string $error = null,
+        ?\DateTimeImmutable $startedAt = null,
+    ): void {
+        $now = new \DateTimeImmutable();
+
         $this->em->getConnection()->insert('escalated_workflow_logs', [
             'workflow_id' => $workflowId,
             'ticket_id' => $ticketId,
             'trigger_event' => $event,
-            'status' => $status,
-            'actions_executed' => json_encode($actions),
+            'conditions_matched' => $conditionsMatched,
+            'actions_executed' => $actions,
             'error_message' => $error,
-            'created_at' => (new \DateTime())->format('Y-m-d H:i:s'),
+            'started_at' => $startedAt,
+            'completed_at' => null === $startedAt ? null : $now,
+            'created_at' => $now,
+        ], [
+            'workflow_id' => Types::INTEGER,
+            'ticket_id' => Types::INTEGER,
+            'trigger_event' => Types::STRING,
+            'conditions_matched' => Types::BOOLEAN,
+            'actions_executed' => Types::JSON,
+            'error_message' => Types::TEXT,
+            'started_at' => Types::DATETIME_IMMUTABLE,
+            'completed_at' => Types::DATETIME_IMMUTABLE,
+            'created_at' => Types::DATETIME_IMMUTABLE,
         ]);
     }
 }

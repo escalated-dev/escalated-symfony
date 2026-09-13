@@ -15,6 +15,7 @@ use Doctrine\ORM\Mapping as ORM;
  */
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_article_categories')]
+#[ORM\Index(columns: ['parent_id'], name: 'idx_article_category_parent')]
 #[ORM\UniqueConstraint(name: 'escalated_article_categories_slug_unique', columns: ['slug'])]
 #[ORM\HasLifecycleCallbacks]
 class ArticleCategory

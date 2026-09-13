@@ -9,6 +9,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_holidays')]
+#[ORM\Index(columns: ['business_schedule_id'], name: 'idx_holiday_schedule')]
 #[ORM\HasLifecycleCallbacks]
 class Holiday
 {
@@ -27,7 +28,7 @@ class Holiday
     #[ORM\Column(type: Types::DATE_IMMUTABLE)]
     private \DateTimeImmutable $date;
 
-    #[ORM\Column(type: Types::BOOLEAN)]
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
     private bool $isRecurring = false;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]

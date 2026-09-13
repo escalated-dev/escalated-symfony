@@ -9,6 +9,9 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_audit_logs')]
+#[ORM\Index(columns: ['entity_type', 'entity_id'], name: 'idx_audit_entity')]
+#[ORM\Index(columns: ['performer_type', 'performer_id'], name: 'idx_audit_performer')]
+#[ORM\Index(columns: ['created_at'], name: 'idx_audit_created')]
 #[ORM\HasLifecycleCallbacks]
 class AuditLog
 {

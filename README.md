@@ -107,7 +107,16 @@ ids back as `int`. Generate a Doctrine migration after changing it.
 php bin/console doctrine:migrations:migrate
 ```
 
-The migration creates all necessary tables (`escalated_tickets`, `escalated_replies`, `escalated_departments`, `escalated_tags`, `escalated_sla_policies`, `escalated_ticket_activities`, `escalated_agent_profiles`).
+The bundle registers its own migrations, in the `Escalated\Symfony\Migrations` namespace, whenever DoctrineMigrationsBundle is enabled. You do not need a `migrations_paths` entry for them. They are written against Doctrine's schema API and run on MySQL/MariaDB, PostgreSQL and SQLite. Afterwards `php bin/console doctrine:schema:validate` reports the Escalated tables in sync with the entities.
+
+#### Upgrading from 0.2.x or earlier
+
+Earlier releases shipped one migration as `Escalated\Symfony\Migrations\Version20260406000001` and the rest as `DoctrineMigrations\Version…`. Doctrine could discover only one of the two groups, and most of them were MySQL-only SQL. They all now share the bundle namespace. Find your situation below:
+
+- **You ran them as `DoctrineMigrations\Version…`** (by mapping that namespace to the bundle's `migrations/` directory, or by copying the files into your own). Nothing to do. On the next `migrate`, each of those migrations sees its old name in `doctrine_migration_versions`, records the new name without running again, and leaves the old row alone. Doctrine will list the old rows as "previously executed migrations that are not registered". Once the new names show as executed, you can remove the old rows with `php bin/console doctrine:migrations:version 'DoctrineMigrations\Version20260407000001' --delete` (one call per version). If you copied the files into your own migrations directory, delete the copies too.
+- **You renamed Doctrine's metadata table** (`doctrine_migrations.storage.table_storage.table_name`). The automatic step reads the default table name. Record the versions you had already run under their new names instead: `php bin/console doctrine:migrations:version 'Escalated\Symfony\Migrations\Version20260407000001' --add`, and so on.
+- **You created the tables some other way** (`doctrine:schema:update`, as the Docker demo used to). Record each already-applied bundle version with `doctrine:migrations:version 'Escalated\Symfony\Migrations\Version…' --add` before running `migrate`.
+- **You mapped `Escalated\Symfony\Migrations` to `vendor/escalated-dev/escalated-symfony/migrations` yourself.** You can remove that entry; it is now redundant.
 
 ### 4. Set up security
 

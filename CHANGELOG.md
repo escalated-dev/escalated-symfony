@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Required packages were not declared.** The bundle uses these packages at
+  runtime but did not require them:
+  - `symfony/serializer` (API controllers and normalizers)
+  - `symfony/mailer` and `twig/twig` with `symfony/twig-bundle` (newsletters)
+  - `symfony/yaml` (its own service and routing configuration)
+
+  A host that had not installed them could not build its container. They are
+  now in `require`.
 - **SLA breaches and delayed workflow actions never ran.**
   `SlaService::checkBreaches()` and `WorkflowEngine::processDelayedActions()` had
   no caller. Two new console commands run them, `escalated:check-sla-breaches`

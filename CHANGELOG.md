@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **The default configuration broke the container build.** With `ui_enabled: true`
+  the bundle imported `config/routes.yaml` through the service-container loader,
+  which failed with `There is no extension able to load the configuration for
+  "escalated_customer"`. Routes now come from an `escalated` route loader behind
+  `@EscalatedBundle/config/routes.yaml`: the API always, the UI only when
+  `ui_enabled` is true, the newsletter routes only when `enable_newsletters` is
+  also true, all under `route_prefix`. Hosts must import that file (README,
+  "Import the routes"); hosts that already import it need no change.
 - **Four screens rendered blank.** The bundle asked for page names that
   `@escalated-dev/escalated` does not ship:
 
@@ -26,6 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   has no separate form page, as the Laravel package already reflected.
 
 ### Added
+- **Kernel test harness** (`tests/Kernel/`) that boots the bundle in a minimal
+  host with its real configuration, services and routes, so wiring faults fail a
+  test instead of an install.
 - **`tests/PageNameParityTest.php`**, asserting every page name this bundle
   renders resolves to a component. The comparison runs against the manifest the
   frontend publishes, vendored at `tests/Fixtures/escalated-pages.json` — no

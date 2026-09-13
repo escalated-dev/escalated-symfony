@@ -7,6 +7,7 @@ namespace Escalated\Symfony\Controller\Admin;
 use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Entity\Webhook;
 use Escalated\Symfony\Entity\WebhookDelivery;
+use Escalated\Symfony\Http\WebhookUrlGuard;
 use Escalated\Symfony\Rendering\UiRendererInterface;
 use Escalated\Symfony\Service\WebhookDispatcher;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -29,6 +30,7 @@ class WebhookController extends AbstractController
         private readonly EntityManagerInterface $em,
         private readonly UiRendererInterface $renderer,
         private readonly WebhookDispatcher $dispatcher,
+        private readonly WebhookUrlGuard $urlGuard,
     ) {
     }
 
@@ -200,6 +202,12 @@ class WebhookController extends AbstractController
         $url = isset($payload['url']) ? trim((string) $payload['url']) : '';
         if ('' === $url || false === filter_var($url, \FILTER_VALIDATE_URL)) {
             return 'A valid webhook URL is required.';
+        }
+
+        // Deliveries are server-side requests whose responses are stored and
+        // shown here, so the URL must not reach the host's own network.
+        if (null !== $refused = $this->urlGuard->check($url)) {
+            return $refused;
         }
 
         $events = $payload['events'] ?? null;

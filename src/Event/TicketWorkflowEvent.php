@@ -15,10 +15,15 @@ use Symfony\Contracts\EventDispatcher\Event;
  * Currently dispatched:
  *   - ticket.updated
  *   - ticket.status_changed
+ *   - ticket.reopened            (alongside ticket.status_changed)
  *   - ticket.assigned
+ *   - ticket.unassigned
  *   - ticket.priority_changed
- *   - ticket.replied
- *   - ticket.tagged
+ *   - ticket.department_changed  (escalation rules)
+ *   - ticket.tagged              (context action: added / removed)
+ *   - reply.created              (earlier releases: ticket.replied)
+ *   - note.created
+ *   - sla.breached
  *
  * (ticket.created is emitted by the Doctrine postPersist listener
  * so guest-path submissions that don't go through TicketService

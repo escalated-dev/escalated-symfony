@@ -139,6 +139,79 @@ class WebhookSubscriberTest extends TestCase
         $subscriber->onTicketEvent(new TicketWorkflowEvent('ticket.updated', new Ticket()));
     }
 
+    public function testReplyCreatedTriggerMapsToReplyCreated(): void
+    {
+        $calls = [];
+        $subscriber = new WebhookSubscriber($this->recordingDispatcher($calls), $this->payloads(), new NullLogger());
+        $subscriber->onTicketEvent(new TicketWorkflowEvent('reply.created', new Ticket(), [
+            'reply_id' => 56,
+            'author_id' => 8,
+        ]));
+
+        $this->assertCount(1, $calls);
+        [$name, $payload] = $calls[0];
+        $this->assertSame('reply.created', $name);
+        $this->assertSame(56, $payload['reply']['id']);
+        $this->assertFalse($payload['reply']['is_internal_note']);
+        $this->assertSame(8, $payload['agent_id']);
+    }
+
+    public function testNoteCreatedMapsToNoteCreatedMarkedInternal(): void
+    {
+        $calls = [];
+        $subscriber = new WebhookSubscriber($this->recordingDispatcher($calls), $this->payloads(), new NullLogger());
+        $subscriber->onTicketEvent(new TicketWorkflowEvent('note.created', new Ticket(), [
+            'reply_id' => 57,
+            'author_id' => 9,
+        ]));
+
+        $this->assertCount(1, $calls);
+        [$name, $payload] = $calls[0];
+        $this->assertSame('note.created', $name);
+        $this->assertSame(57, $payload['reply']['id']);
+        $this->assertTrue($payload['reply']['is_internal_note']);
+    }
+
+    public function testUnassignedMapsToTicketUnassignedWithThePreviousAgent(): void
+    {
+        $calls = [];
+        $subscriber = new WebhookSubscriber($this->recordingDispatcher($calls), $this->payloads(), new NullLogger());
+        $subscriber->onTicketEvent(new TicketWorkflowEvent('ticket.unassigned', new Ticket(), [
+            'previous_agent_id' => 12,
+        ]));
+
+        $this->assertCount(1, $calls);
+        [$name, $payload] = $calls[0];
+        $this->assertSame('ticket.unassigned', $name);
+        $this->assertSame(12, $payload['previous_agent_id']);
+    }
+
+    public function testDepartmentChangedMapsToTicketDepartmentChanged(): void
+    {
+        $calls = [];
+        $subscriber = new WebhookSubscriber($this->recordingDispatcher($calls), $this->payloads(), new NullLogger());
+        $subscriber->onTicketEvent(new TicketWorkflowEvent('ticket.department_changed', new Ticket(), [
+            'old_department_id' => 1,
+            'new_department_id' => 2,
+        ]));
+
+        $this->assertCount(1, $calls);
+        [$name, $payload] = $calls[0];
+        $this->assertSame('ticket.department_changed', $name);
+        $this->assertSame(1, $payload['old_department_id']);
+        $this->assertSame(2, $payload['new_department_id']);
+    }
+
+    public function testReopenedTriggerAddsNoSecondWebhook(): void
+    {
+        // ticket.reopened already goes out, derived from ticket.status_changed.
+        $calls = [];
+        $subscriber = new WebhookSubscriber($this->recordingDispatcher($calls), $this->payloads(), new NullLogger());
+        $subscriber->onTicketEvent(new TicketWorkflowEvent('ticket.reopened', new Ticket()));
+
+        $this->assertCount(0, $calls);
+    }
+
     /**
      * A mock dispatcher whose enqueue() appends ($event, $payload) tuples to the
      * caller-owned $calls array (bound by reference so mutations are visible).

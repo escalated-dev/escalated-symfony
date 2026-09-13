@@ -105,6 +105,22 @@ The adapter can also be sent as an `X-Escalated-Adapter` header.
 - The same secret signs the Reply-To address on outbound mail, so a reply is matched back to its ticket.
 - To support another provider, implement `Escalated\Symfony\Mail\Inbound\InboundEmailParser`. Autoconfigured services implementing it are registered automatically.
 
+### Schedule the background commands
+
+Several features run from console commands rather than on a request. Run them from cron, Symfony Scheduler or your platform's job runner:
+
+```cron
+* * * * *  php bin/console escalated:check-sla-breaches      # mark overdue tickets, fire sla.breached
+* * * * *  php bin/console escalated:process-delayed-actions # run delayed workflow actions that are due
+* * * * *  php bin/console escalated:wake-snoozed-tickets    # reopen tickets whose snooze expired
+*/5 * * * * php bin/console escalated:automations:run        # time-based automations
+*/5 * * * * php bin/console escalated:escalations:run        # escalation rules
+*/5 * * * * php bin/console escalated:chat:close-idle        # close idle live chats
+* * * * *  php bin/console escalated:newsletters:dispatch    # only with enable_newsletters
+```
+
+Without the first two, SLA breaches are never recorded and delayed workflow actions never run.
+
 ### Host user key type (UUID / string users)
 
 Escalated stores references to your app's users (ticket requester, assignee,

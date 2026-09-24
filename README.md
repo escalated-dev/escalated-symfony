@@ -17,6 +17,8 @@
 
 # Escalated for Symfony
 
+[![Views](https://hits.sh/github.com/escalated-dev/escalated-symfony.svg?style=flat&label=views&color=007ec6)](https://hits.sh/github.com/escalated-dev/escalated-symfony/)
+
 An embeddable support ticket system for Symfony applications. Drop-in helpdesk with tickets, replies, departments, tags, SLA policies, and role-based access control.
 
 ## Requirements

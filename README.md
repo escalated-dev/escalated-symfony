@@ -537,4 +537,4 @@ tables and copy the rows across first.
 
 ## License
 
-MIT
+MIT - Copyright (c) Escalated.dev. See [LICENSE](LICENSE).

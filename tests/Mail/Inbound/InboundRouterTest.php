@@ -97,6 +97,21 @@ class InboundRouterTest extends TestCase
         $this->assertNull($router->resolveTicket($m));
     }
 
+    public function testWithASecretHeadersAndSubjectReferencesAreNotTrusted(): void
+    {
+        $this->repo->expects($this->never())->method('find');
+        $this->repo->expects($this->never())->method('findByReference');
+
+        $router = new InboundRouter($this->repo, self::SECRET);
+        $m = $this->message(
+            inReplyTo: '<ticket-42@support.example.com>',
+            references: '<ticket-42@support.example.com>',
+            subject: 'RE: [ESC-00042] help',
+        );
+
+        $this->assertNull($router->resolveTicket($m));
+    }
+
     public function testIgnoresSignedReplyToWhenSecretBlank(): void
     {
         $this->repo->expects($this->never())->method('find');

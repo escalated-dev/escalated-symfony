@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- **Inbound email replies were accepted from any sender.** An email that
+  matched a ticket by `In-Reply-To` / `References` or a subject reference was
+  added as a reply whoever sent it.
+  - Only the signed Reply-To address now links an inbound email to a ticket.
+  - A matched email is a reply only when `From` is the ticket's guest email or
+    the requester user's email, and a requester user is recorded as the
+    reply's author. Any other sender gets a new ticket of their own.
+
 ## [0.2.1] - 2026-09-13
 
 ### Security

@@ -29,7 +29,8 @@ class Configuration implements ConfigurationInterface
                     ->info(
                         'Shared secret for inbound email. Providers must send it in the X-Escalated-Inbound-Secret '
                         .'header to the inbound webhook, and it signs the Reply-To address on outbound mail so '
-                        .'replies thread back to their ticket. Empty keeps the inbound webhook disabled.'
+                        .'replies thread back to their ticket. Only that signed address links inbound mail to a '
+                        .'ticket, and only the requester may reply. Empty keeps the inbound webhook disabled.'
                     )
                 ->end()
                 ->booleanNode('ui_enabled')

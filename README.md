@@ -104,7 +104,9 @@ X-Escalated-Inbound-Secret: <the secret>
 The adapter can also be sent as an `X-Escalated-Adapter` header.
 
 - With no secret configured, the webhook refuses every request.
-- The same secret signs the Reply-To address on outbound mail, so a reply is matched back to its ticket.
+- The same secret signs the Reply-To address on outbound mail (`reply+{id}.{hmac8}@domain`). Only that signed address links an inbound email to a ticket; `In-Reply-To` / `References` and a subject reference such as `[ESC-00001]` are not trusted, because they can be guessed.
+- A matched email becomes a reply only when its `From` address (case-insensitive) is the ticket's requester: the guest email, or the requester user's email. The reply is posted as that requester. Identity is never taken from `From`, so an email naming an agent's address is not posted as that agent; agents reply in the app.
+- Anything else (no match, or a sender who is not the requester) becomes a new ticket, so mail is never dropped and the matched ticket is left untouched. `From` can still be forged for the requester's own address, so also have your provider enforce SPF/DKIM/DMARC.
 - To support another provider, implement `Escalated\Symfony\Mail\Inbound\InboundEmailParser`. Autoconfigured services implementing it are registered automatically.
 
 ### Outbound webhooks

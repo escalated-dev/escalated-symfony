@@ -204,18 +204,24 @@ class TicketService
     }
 
     /**
-     * Add a reply to a ticket from an inbound email (no authenticated
-     * author — the sender is identified by email address alone).
+     * Add a reply to a ticket from an inbound email.
      *
-     * {@code authorClass} is tagged with {@code "inbound_email"} so
-     * consumers can distinguish these from agent/customer replies.
+     * The caller has already checked that the sender is the ticket's
+     * requester. A requester user is the author ({@code $authorId} /
+     * {@code $authorClass}); a guest reply has no author id and its
+     * {@code authorClass} is tagged {@code "inbound_email"} so consumers
+     * can tell it from agent/customer replies.
      */
-    public function addInboundEmailReply(Ticket $ticket, string $body): Reply
-    {
+    public function addInboundEmailReply(
+        Ticket $ticket,
+        string $body,
+        int|string|null $authorId = null,
+        ?string $authorClass = null,
+    ): Reply {
         $reply = new Reply();
         $reply->setTicket($ticket);
-        $reply->setAuthorId(null);
-        $reply->setAuthorClass('inbound_email');
+        $reply->setAuthorId($authorId);
+        $reply->setAuthorClass(null !== $authorId ? $authorClass : 'inbound_email');
         $reply->setBody($body);
         $reply->setIsInternalNote(false);
         $reply->setType('reply');
@@ -224,7 +230,7 @@ class TicketService
         $this->em->persist($reply);
         $this->em->flush();
 
-        $this->logActivity($ticket, TicketActivity::TYPE_REPLIED, null);
+        $this->logActivity($ticket, TicketActivity::TYPE_REPLIED, $authorId);
 
         return $reply;
     }

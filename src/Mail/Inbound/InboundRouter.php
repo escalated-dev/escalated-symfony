@@ -12,15 +12,19 @@ use Escalated\Symfony\Repository\TicketRepository;
  * Resolves an inbound email to an existing ticket via canonical
  * Message-ID parsing + signed Reply-To verification.
  *
- * Resolution order (first match wins):
- *   1. In-Reply-To parsed via MessageIdUtil::parseTicketIdFromMessageId
- *      — cold-start path, no DB lookup on the header value required.
+ * With an inbound secret configured, only the signed Reply-To on
+ * toEmail (reply+{id}.{hmac8}@...) identifies a ticket, verified via
+ * MessageIdUtil::verifyReplyTo (hash_equals, timing-safe). Message-IDs
+ * and references are guessable, so they are not trusted once a secret
+ * exists.
+ *
+ * Without a secret (first match wins):
+ *   1. In-Reply-To parsed via MessageIdUtil::parseTicketIdFromMessageId.
  *   2. References parsed via MessageIdUtil, each id in order.
- *   3. Signed Reply-To on toEmail (reply+{id}.{hmac8}@...) verified
- *      via MessageIdUtil::verifyReplyTo. Survives clients that strip
- *      threading headers; forged signatures are rejected with
- *      hash_equals (timing-safe).
- *   4. Subject-line reference tag [{PREFIX}-...].
+ *   3. Subject-line reference tag [{PREFIX}-...].
+ *
+ * A resolved ticket is only a lookup: {@see InboundEmailService} still
+ * requires the sender to be the ticket's requester.
  *
  * Mirrors the NestJS reference and the per-framework inbound-verify
  * PRs plus the greenfield .NET / Spring / Go / Phoenix routers.
@@ -41,6 +45,19 @@ class InboundRouter
      */
     public function resolveTicket(InboundMessage $message): ?Ticket
     {
+        // With a secret, only the signed Reply-To on the recipient address.
+        if ('' !== $this->inboundSecret) {
+            $verified = '' !== $message->toEmail
+                ? MessageIdUtil::verifyReplyTo($message->toEmail, $this->inboundSecret)
+                : null;
+            if (null === $verified) {
+                return null;
+            }
+            $ticket = $this->ticketRepository->find($verified);
+
+            return $ticket instanceof Ticket ? $ticket : null;
+        }
+
         // 1 + 2. Parse canonical Message-IDs out of our own headers.
         foreach (self::candidateHeaderMessageIds($message) as $raw) {
             $ticketId = MessageIdUtil::parseTicketIdFromMessageId($raw);
@@ -52,18 +69,7 @@ class InboundRouter
             }
         }
 
-        // 3. Signed Reply-To on the recipient address.
-        if ('' !== $this->inboundSecret && '' !== $message->toEmail) {
-            $verified = MessageIdUtil::verifyReplyTo($message->toEmail, $this->inboundSecret);
-            if (null !== $verified) {
-                $ticket = $this->ticketRepository->find($verified);
-                if ($ticket instanceof Ticket) {
-                    return $ticket;
-                }
-            }
-        }
-
-        // 4. Subject-line reference tag.
+        // 3. Subject-line reference tag.
         if (preg_match(self::SUBJECT_REF_PATTERN, $message->subject, $m)) {
             $ticket = $this->ticketRepository->findByReference($m[1]);
             if ($ticket instanceof Ticket) {

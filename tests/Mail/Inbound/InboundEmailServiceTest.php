@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Escalated\Symfony\Tests\Mail\Inbound;
 
+use Doctrine\Persistence\ManagerRegistry;
+use Doctrine\Persistence\ObjectManager;
 use Escalated\Symfony\Entity\Reply;
 use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Mail\Inbound\InboundAttachment;
@@ -64,6 +66,7 @@ class InboundEmailServiceTest extends TestCase
     public function testMatchedTicketAddsReplyAndReturnsRepliedToExisting(): void
     {
         $ticket = $this->ticket(42);
+        $ticket->setGuestEmail('Customer@Example.com');
         $reply = $this->reply(202);
 
         $this->router->method('resolveTicket')->willReturn($ticket);
@@ -80,6 +83,73 @@ class InboundEmailServiceTest extends TestCase
         $this->assertSame(42, $result->ticketId);
         $this->assertSame(202, $result->replyId);
         $this->assertSame([], $result->pendingAttachmentDownloads);
+    }
+
+    public function testAStrangerOnAMatchedThreadGetsANewTicket(): void
+    {
+        $ticket = $this->ticket(42);
+        $ticket->setGuestEmail('alice@example.com');
+        $ticket->setStatus(Ticket::STATUS_CLOSED);
+
+        $this->router->method('resolveTicket')->willReturn($ticket);
+        $this->tickets->expects($this->never())->method('addInboundEmailReply');
+        $this->tickets->expects($this->never())->method('changeStatus');
+        $this->tickets->expects($this->once())
+            ->method('create')
+            ->with($this->callback(fn (array $data) => 'mallory@example.com' === $data['guest_email']))
+            ->willReturn($this->ticket(101));
+
+        $svc = new InboundEmailService($this->router, $this->tickets);
+        $result = $svc->process($this->message('Re: [ESC-00042] hello', 'body', 'mallory@example.com'));
+
+        $this->assertSame(InboundEmailService::OUTCOME_CREATED_NEW, $result->outcome);
+        $this->assertSame(101, $result->ticketId);
+        $this->assertSame(Ticket::STATUS_CLOSED, $ticket->getStatus());
+    }
+
+    public function testTheRequesterUserIsTheAuthorOfTheirReply(): void
+    {
+        $ticket = $this->ticket(42);
+        $ticket->setRequesterId(7)->setRequesterClass(InboundRequesterStub::class);
+
+        $this->router->method('resolveTicket')->willReturn($ticket);
+        $this->tickets->expects($this->once())
+            ->method('addInboundEmailReply')
+            ->with($ticket, 'body', 7, InboundRequesterStub::class)
+            ->willReturn($this->reply(202));
+        $this->tickets->expects($this->never())->method('create');
+
+        $svc = new InboundEmailService($this->router, $this->tickets, null, $this->doctrineFinding(7, 'customer@example.com'));
+        $result = $svc->process($this->message(fromEmail: 'CUSTOMER@example.com'));
+
+        $this->assertSame(InboundEmailService::OUTCOME_REPLIED_TO_EXISTING, $result->outcome);
+    }
+
+    public function testAnAgentAddressInFromIsNotPostedAsTheAgent(): void
+    {
+        $ticket = $this->ticket(42);
+        $ticket->setRequesterId(7)->setRequesterClass(InboundRequesterStub::class);
+
+        $this->router->method('resolveTicket')->willReturn($ticket);
+        $this->tickets->expects($this->never())->method('addInboundEmailReply');
+        $this->tickets->expects($this->once())->method('create')->willReturn($this->ticket(101));
+
+        $svc = new InboundEmailService($this->router, $this->tickets, null, $this->doctrineFinding(7, 'customer@example.com'));
+        $result = $svc->process($this->message(fromEmail: 'agent@example.com'));
+
+        $this->assertSame(InboundEmailService::OUTCOME_CREATED_NEW, $result->outcome);
+    }
+
+    private function doctrineFinding(int $id, string $email): ManagerRegistry
+    {
+        $manager = $this->createMock(ObjectManager::class);
+        $manager->method('find')->willReturnCallback(
+            fn (string $class, mixed $requested) => (string) $requested === (string) $id ? new InboundRequesterStub($email) : null
+        );
+        $registry = $this->createMock(ManagerRegistry::class);
+        $registry->method('getManagerForClass')->willReturn($manager);
+
+        return $registry;
     }
 
     public function testNoMatchWithRealContentCreatesNewTicket(): void
@@ -221,5 +291,17 @@ class InboundEmailServiceTest extends TestCase
                 false,
             ],
         ];
+    }
+}
+
+final class InboundRequesterStub
+{
+    public function __construct(private readonly string $email)
+    {
+    }
+
+    public function getEmail(): string
+    {
+        return $this->email;
     }
 }

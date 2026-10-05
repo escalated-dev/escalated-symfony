@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Per-IP rate limit on guest widget tickets and replies.** The widget ticket
+  endpoint allows 5 tickets and the widget reply endpoint 10 replies per client
+  IP per minute, with separate counters. Over the limit the request gets `429`
+  with `Retry-After`. Replies are counted before the guest token is checked, so
+  wrong-token guesses count too.
+  - Configure under `escalated.guest_rate_limit`: `enabled`,
+    `tickets_per_minute`, `replies_per_minute`, and `cache_pool` (a PSR-6 pool
+    service id, default `cache.app`; name a shared pool on multiple servers).
+  - Behind a reverse proxy, set `framework.trusted_proxies`, or every guest
+    shares the proxy's address.
+
 ### Security
 - **Inbound email replies were accepted from any sender.** An email that
   matched a ticket by `In-Reply-To` / `References` or a subject reference was

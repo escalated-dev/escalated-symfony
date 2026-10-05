@@ -119,6 +119,21 @@ escalated:
         allow_private_networks: true
 ```
 
+### Guest widget rate limits
+
+The unauthenticated widget endpoints are limited per client IP: 5 guest tickets and 10 guest replies a minute, each with its own counter. Over the limit a request gets `429` with `Retry-After`. A reply is counted before its guest token is checked, so wrong-token guesses count too.
+
+```yaml
+escalated:
+    guest_rate_limit:
+        enabled: true            # false only if you already throttle upstream
+        tickets_per_minute: 5
+        replies_per_minute: 10
+        cache_pool: cache.app    # any PSR-6 pool service id; use a shared (Redis) pool on multiple servers
+```
+
+The client IP is `Request::getClientIp()`. Behind a reverse proxy or load balancer, set `framework.trusted_proxies` and `trusted_headers`, or every guest shares the proxy's address.
+
 ### Schedule the background commands
 
 Several features run from console commands rather than on a request. Run them from cron, Symfony Scheduler or your platform's job runner:

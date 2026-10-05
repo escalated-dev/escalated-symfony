@@ -64,6 +64,16 @@ services:
             $taggedActions: !tagged_iterator escalated.ticket_action
             $configActions: '%escalated.ticket_actions%'
 
+    # Per-IP limits on the guest widget endpoints. `escalated.guest_rate_limit.cache`
+    # is aliased in EscalatedBundle to the `guest_rate_limit.cache_pool` option
+    # (default cache.app).
+    Escalated\Symfony\Service\GuestRateLimiter:
+        arguments:
+            $cache: '@escalated.guest_rate_limit.cache'
+            $enabled: '%escalated.guest_rate_limit.enabled%'
+            $ticketsPerMinute: '%escalated.guest_rate_limit.tickets_per_minute%'
+            $repliesPerMinute: '%escalated.guest_rate_limit.replies_per_minute%'
+
     # SlaService needs parameter injection
     Escalated\Symfony\Service\SlaService:
         arguments:

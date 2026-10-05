@@ -60,6 +60,8 @@ class EscalatedBundle extends AbstractBundle
 
         $this->setNewsletterParameters($builder, $config['newsletters']);
 
+        self::setGuestRateLimit($builder, $config['guest_rate_limit']);
+
         // Custom ticket actions (host-defined buttons)
         $builder->setParameter('escalated.ticket_actions', $config['ticket_actions'] ?? []);
 
@@ -135,6 +137,20 @@ class EscalatedBundle extends AbstractBundle
                 ],
             ]);
         }
+    }
+
+    /**
+     * Parameters for Service\GuestRateLimiter, and the alias its cache pool is
+     * injected through.
+     *
+     * @param array{enabled: bool, tickets_per_minute: int, replies_per_minute: int, cache_pool: string} $guestRateLimit
+     */
+    public static function setGuestRateLimit(ContainerBuilder $builder, array $guestRateLimit): void
+    {
+        $builder->setParameter('escalated.guest_rate_limit.enabled', $guestRateLimit['enabled']);
+        $builder->setParameter('escalated.guest_rate_limit.tickets_per_minute', $guestRateLimit['tickets_per_minute']);
+        $builder->setParameter('escalated.guest_rate_limit.replies_per_minute', $guestRateLimit['replies_per_minute']);
+        $builder->setAlias('escalated.guest_rate_limit.cache', $guestRateLimit['cache_pool']);
     }
 
     /**

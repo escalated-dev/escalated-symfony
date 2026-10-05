@@ -69,6 +69,39 @@ class Configuration implements ConfigurationInterface
                         ->end()
                     ->end()
                 ->end()
+                ->arrayNode('guest_rate_limit')
+                    ->addDefaultsIfNotSet()
+                    ->info(
+                        'Per-client-IP limits on the unauthenticated widget endpoints (guest ticket creation and '
+                        .'guest replies). A request over the limit gets 429 with Retry-After. The client IP is '
+                        .'Request::getClientIp(): behind a reverse proxy or load balancer, configure '
+                        .'framework.trusted_proxies, or every guest shares the proxy\'s address.'
+                    )
+                    ->children()
+                        ->booleanNode('enabled')
+                            ->defaultTrue()
+                            ->info('Set false only when the host already throttles these endpoints upstream.')
+                        ->end()
+                        ->integerNode('tickets_per_minute')
+                            ->defaultValue(5)
+                            ->min(1)
+                            ->info('Guest ticket submissions per IP per minute.')
+                        ->end()
+                        ->integerNode('replies_per_minute')
+                            ->defaultValue(10)
+                            ->min(1)
+                            ->info('Guest replies per IP per minute.')
+                        ->end()
+                        ->scalarNode('cache_pool')
+                            ->defaultValue('cache.app')
+                            ->cannotBeEmpty()
+                            ->info(
+                                'Service id of the PSR-6 cache pool that holds the counters. A multi-server '
+                                .'deployment should name a shared pool (Redis, Memcached).'
+                            )
+                        ->end()
+                    ->end()
+                ->end()
                 ->arrayNode('newsletters')
                     ->addDefaultsIfNotSet()
                     ->children()

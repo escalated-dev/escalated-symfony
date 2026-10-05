@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Escalated\Symfony\Controller\Widget;
 
+use Escalated\Symfony\Service\GuestRateLimiter;
 use Escalated\Symfony\Service\TicketService;
 use Escalated\Symfony\Widget\WidgetSettings;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -18,6 +19,7 @@ class WidgetController extends AbstractController
     public function __construct(
         private readonly WidgetSettings $widgetSettings,
         private readonly TicketService $ticketService,
+        private readonly GuestRateLimiter $guestRateLimiter,
     ) {
     }
 
@@ -46,6 +48,10 @@ class WidgetController extends AbstractController
     {
         if (!$this->widgetSettings->isEnabled()) {
             return $this->json(['error' => 'Widget is disabled.'], Response::HTTP_NOT_FOUND);
+        }
+
+        if (null !== $limited = $this->throttle(GuestRateLimiter::TICKET, $request)) {
+            return $limited;
         }
 
         if (!$this->widgetSettings->isAllowGuestTickets()) {
@@ -154,6 +160,12 @@ class WidgetController extends AbstractController
             return $this->json(['error' => 'Widget is disabled.'], Response::HTTP_NOT_FOUND);
         }
 
+        // Before the guest token check, so requests with a missing or wrong
+        // token are counted too and tokens cannot be guessed at speed.
+        if (null !== $limited = $this->throttle(GuestRateLimiter::REPLY, $request)) {
+            return $limited;
+        }
+
         $guestToken = $request->headers->get('X-Guest-Token');
         if (null === $guestToken) {
             return $this->json(['error' => 'Guest token required.'], Response::HTTP_UNAUTHORIZED);
@@ -187,5 +199,24 @@ class WidgetController extends AbstractController
         }
 
         return $response;
+    }
+
+    /**
+     * 429 with Retry-After when the client IP is over the guest limit for this
+     * scope. See GuestRateLimiter for configuration and the trusted-proxy
+     * requirement.
+     */
+    private function throttle(string $scope, Request $request): ?JsonResponse
+    {
+        $retryAfter = $this->guestRateLimiter->attempt($scope, $request->getClientIp() ?? 'unknown');
+        if (null === $retryAfter) {
+            return null;
+        }
+
+        return $this->json(
+            ['error' => 'Too many requests. Please try again later.'],
+            Response::HTTP_TOO_MANY_REQUESTS,
+            ['Retry-After' => (string) $retryAfter],
+        );
     }
 }

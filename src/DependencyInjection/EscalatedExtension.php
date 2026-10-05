@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Escalated\Symfony\DependencyInjection;
 
 use Escalated\Symfony\Doctrine\UserIdType;
+use Escalated\Symfony\EscalatedBundle;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\Extension;
@@ -35,6 +36,7 @@ class EscalatedExtension extends Extension implements PrependExtensionInterface
         foreach ($config['newsletters'] as $key => $value) {
             $container->setParameter('escalated.newsletters.'.$key, $value);
         }
+        EscalatedBundle::setGuestRateLimit($container, $config['guest_rate_limit']);
         $container->setParameter('escalated.sla.enabled', $config['sla']['enabled']);
         $container->setParameter('escalated.sla.business_hours_only', $config['sla']['business_hours_only']);
         $container->setParameter('escalated.sla.business_hours', $config['sla']['business_hours']);

@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-08
+
+This release changes how inbound email is matched to tickets. Read
+**Upgrading** before deploying.
+
+### Upgrading
+- **Inbound replies come only from the ticket's requester, through the signed
+  Reply-To address.** `In-Reply-To` / `References` headers and subject
+  references no longer link an inbound email to a ticket; only the signed
+  Reply-To address that outbound notifications carry does. A matched email is
+  a reply only when `From` is the ticket's guest email or the requester user's
+  email. Every other email, including an agent answering a notification by
+  email, opens a new ticket for its sender. Agents should reply in the app.
+- `escalated.inbound_secret` must be set for the inbound webhook to work at all
+  (it is also the key that signs Reply-To addresses). Replies to mail sent
+  before a secret was configured carry no signed address and open new tickets.
+- **Guest widget endpoints are rate-limited per client IP** (5 tickets and 10
+  replies per minute by default). Configure `escalated.guest_rate_limit`
+  (`enabled`, `tickets_per_minute`, `replies_per_minute`, `cache_pool`). Set
+  `framework.trusted_proxies` behind a reverse proxy, or every guest shares the
+  proxy's budget, and name a shared PSR-6 cache pool when running more than one
+  server.
+
 ### Added
 - **Per-IP rate limit on guest widget tickets and replies.** The widget ticket
   endpoint allows 5 tickets and the widget reply endpoint 10 replies per client

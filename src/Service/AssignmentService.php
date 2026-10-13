@@ -17,6 +17,7 @@ class AssignmentService
         private readonly EntityManagerInterface $em,
         private readonly TicketRepository $ticketRepository,
         private readonly EventDispatcherInterface $dispatcher,
+        private readonly ?\Escalated\Symfony\Security\TicketAccess $access = null,
     ) {
     }
 
@@ -25,6 +26,8 @@ class AssignmentService
      */
     public function assign(Ticket $ticket, int|string $agentId, int|string|null $causerId = null): Ticket
     {
+        $this->access?->assertVisible($ticket);
+        $this->access?->assertAssignable($ticket, $agentId);
         $previousAgentId = $ticket->getAssignedTo();
         $ticket->setAssignedTo($agentId);
         $this->em->flush();
@@ -47,6 +50,7 @@ class AssignmentService
      */
     public function unassign(Ticket $ticket, int|string|null $causerId = null): Ticket
     {
+        $this->access?->assertVisible($ticket);
         $previousAgentId = $ticket->getAssignedTo();
         $ticket->setAssignedTo(null);
         $this->em->flush();
@@ -71,6 +75,8 @@ class AssignmentService
      */
     public function reassign(Ticket $ticket, int|string $agentId, int|string|null $causerId = null): Ticket
     {
+        $this->access?->assertVisible($ticket);
+
         return $this->assign($ticket, $agentId, $causerId);
     }
 
@@ -79,6 +85,7 @@ class AssignmentService
      */
     public function autoAssign(Ticket $ticket): ?Ticket
     {
+        $this->access?->assertVisible($ticket);
         $department = $ticket->getDepartment();
         if (null === $department) {
             return null;

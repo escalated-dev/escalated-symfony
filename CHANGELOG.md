@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Add opt-in department/account visibility across ticket queries, services, policies, reports, widget and API access, with guarded assignments and delivery hooks.
+- Add nullable ticket account identities, resolver hooks, account/type routing conditions, and opt-in targeted SLAs.
+- Add cross-database regression coverage for visibility, custom prefixes, separate host databases, migration upgrade/rollback and UUID memberships.
+- Correct the SLA report query field names.
+
 All notable changes to `escalated-symfony` will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),

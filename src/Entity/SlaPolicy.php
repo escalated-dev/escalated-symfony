@@ -9,9 +9,41 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_sla_policies')]
+#[ORM\Index(columns: ['department_id', 'ticket_type'], name: 'idx_sla_target')]
 #[ORM\HasLifecycleCallbacks]
 class SlaPolicy
 {
+    #[ORM\ManyToOne(targetEntity: Department::class)]
+    #[ORM\JoinColumn(name: 'department_id', nullable: true, onDelete: 'RESTRICT')]
+    private ?Department $department = null;
+
+    #[ORM\Column(type: Types::STRING, length: 32, nullable: true)]
+    private ?string $ticketType = null;
+
+    public function getDepartment(): ?Department
+    {
+        return $this->department;
+    }
+
+    public function setDepartment(?Department $department): self
+    {
+        $this->department = $department;
+
+        return $this;
+    }
+
+    public function getTicketType(): ?string
+    {
+        return $this->ticketType;
+    }
+
+    public function setTicketType(?string $type): self
+    {
+        $this->ticketType = $type;
+
+        return $this;
+    }
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::INTEGER)]

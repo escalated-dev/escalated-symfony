@@ -41,6 +41,7 @@ class TicketNormalizer implements NormalizerInterface, NormalizerAwareInterface
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly TicketSubjectService $ticketSubjectService,
+        private readonly ?\Escalated\Symfony\Security\TicketAccess $access = null,
     ) {
     }
 
@@ -49,10 +50,14 @@ class TicketNormalizer implements NormalizerInterface, NormalizerAwareInterface
      */
     public function normalize(mixed $object, ?string $format = null, array $context = []): array
     {
+        $this->access?->assertVisible($object);
         $context[self::ALREADY_CALLED] = true;
 
         /** @var array<string, mixed> $data */
         $data = $this->normalizer->normalize($object, $format, $context);
+
+        $data['account_type'] = $object->getAccountType();
+        $data['account_id'] = $object->getAccountId();
 
         // requester_name: guest name when available, null otherwise
         if (!array_key_exists('requester_name', $data)) {

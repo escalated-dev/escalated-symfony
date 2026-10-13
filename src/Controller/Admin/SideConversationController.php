@@ -124,7 +124,7 @@ class SideConversationController extends AbstractController
 
     private function requireConversation(int $id, Ticket $ticket): SideConversation
     {
-        $conversation = $this->em->getRepository(SideConversation::class)->find($id);
+        $conversation = $this->em->getRepository(SideConversation::class)->findOneBy(['id' => $id]);
         if (null === $conversation || $conversation->getTicket() !== $ticket) {
             throw $this->createNotFoundException('Side conversation not found.');
         }

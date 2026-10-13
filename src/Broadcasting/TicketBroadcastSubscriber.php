@@ -19,6 +19,7 @@ class TicketBroadcastSubscriber implements EventSubscriberInterface
     public function __construct(
         private readonly BroadcasterInterface $broadcaster,
         private readonly BroadcastSettings $settings,
+        private readonly ?TicketBroadcastDelivery $delivery = null,
     ) {
     }
 
@@ -55,7 +56,7 @@ class TicketBroadcastSubscriber implements EventSubscriberInterface
             ],
         );
 
-        $this->broadcaster->broadcast($event);
+        ($this->delivery ?? $this->broadcaster)->broadcast($event);
     }
 
     /**

@@ -35,7 +35,7 @@ class TicketSplitController extends AbstractController
         }
 
         $replyId = (int) $request->request->get('reply_id');
-        $reply = $this->em->find(Reply::class, $replyId);
+        $reply = $this->em->getRepository(Reply::class)->findOneBy(['id' => $replyId]);
         if (null === $reply) {
             throw $this->createNotFoundException('Reply not found.');
         }

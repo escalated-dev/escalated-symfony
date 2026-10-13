@@ -80,6 +80,9 @@ class EscalationService
 
         $params = 0;
         foreach ($rule->getConditions() as $condition) {
+            if (TicketRoutingConditions::constrain($qb, $condition, $params)) {
+                continue;
+            }
             $field = $condition['field'] ?? '';
             $value = $condition['value'] ?? null;
 
@@ -125,7 +128,15 @@ class EscalationService
         /** @var Ticket[] $result */
         $result = $qb->getQuery()->getResult();
 
-        return $result;
+        return array_values(array_filter($result, static function (Ticket $ticket) use ($rule): bool {
+            foreach ($rule->getConditions() as $condition) {
+                if (false === TicketRoutingConditions::matches($ticket, $condition)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }));
     }
 
     private function executeActions(EscalationRule $rule, Ticket $ticket): void

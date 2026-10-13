@@ -27,6 +27,8 @@ class EscalatedExtension extends Extension implements PrependExtensionInterface
 
         $loader = new YamlFileLoader($container, new FileLocator(__DIR__.'/../../config'));
         $loader->load('services.yaml');
+        EscalatedBundle::setTicketAccess($container, $config);
+        $container->setAlias('escalated.entity_manager', empty($config['entity_manager']) ? 'doctrine.orm.entity_manager' : 'doctrine.orm.'.$config['entity_manager'].'_entity_manager');
 
         $container->setParameter('escalated.user_class', $config['user_class']);
         $container->setParameter('escalated.route_prefix', $config['route_prefix']);
@@ -57,7 +59,7 @@ class EscalatedExtension extends Extension implements PrependExtensionInterface
 
     public function prepend(ContainerBuilder $container): void
     {
-        $container->prependExtensionConfig('doctrine', [
+        $doctrine = [
             'dbal' => [
                 'types' => [
                     UserIdType::NAME => UserIdType::class,
@@ -74,6 +76,14 @@ class EscalatedExtension extends Extension implements PrependExtensionInterface
                     ],
                 ],
             ],
-        ]);
+        ];
+        $manager = null;
+        foreach ($container->getExtensionConfig('escalated') as $raw) {
+            $manager = $raw['entity_manager'] ?? $manager;
+        }
+        if (null !== $manager && '' !== $manager) {
+            $doctrine['orm'] = ['entity_managers' => [$manager => $doctrine['orm']]];
+        }
+        $container->prependExtensionConfig('doctrine', $doctrine);
     }
 }

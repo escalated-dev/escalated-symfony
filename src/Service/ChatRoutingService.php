@@ -16,6 +16,7 @@ class ChatRoutingService
 
     public function __construct(
         private readonly EntityManagerInterface $em,
+        private readonly ?\Escalated\Symfony\Security\TicketAccess $access = null,
     ) {
     }
 
@@ -26,12 +27,12 @@ class ChatRoutingService
      * first agent ID that passes concurrent-chat limits, or null if no
      * agent is available.
      */
-    public function findAvailableAgent(?Department $department = null): ?int
+    public function findAvailableAgent(?Department $department = null, ?\Escalated\Symfony\Entity\Ticket $ticket = null): ?int
     {
         $rules = $this->getActiveRules($department);
 
         foreach ($rules as $rule) {
-            $agentId = $this->evaluateRule($rule);
+            $agentId = $this->evaluateRule($rule, $ticket);
             if (null !== $agentId) {
                 return $agentId;
             }
@@ -74,9 +75,16 @@ class ChatRoutingService
         return $qb->getQuery()->getResult();
     }
 
-    private function evaluateRule(ChatRoutingRule $rule): ?int
+    private function evaluateRule(ChatRoutingRule $rule, ?\Escalated\Symfony\Entity\Ticket $ticket = null): ?int
     {
         $agentIds = $rule->getAgentIds();
+        if ($this->access?->restricted()) {
+            if (null === $ticket) {
+                return null;
+            }
+            $agentIds = array_values(array_filter($agentIds, fn ($id) => $this->access->canAssign($ticket, $id)));
+            $agentIds = array_map(intval(...), $agentIds);
+        }
         if (empty($agentIds)) {
             return null;
         }

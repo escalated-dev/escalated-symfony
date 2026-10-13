@@ -20,6 +20,7 @@ class SlaService
         private readonly bool $slaEnabled,
         private readonly bool $businessHoursOnly,
         private readonly array $businessHours,
+        private readonly bool $targetedSlas = false,
     ) {
     }
 
@@ -33,7 +34,11 @@ class SlaService
         }
 
         $policy = $this->em->getRepository(SlaPolicy::class)
-            ->findOneBy(['isDefault' => true, 'isActive' => true]);
+            ->findOneBy(['isDefault' => true, 'isActive' => true, 'department' => null, 'ticketType' => null]);
+
+        if ($this->targetedSlas) {
+            $policy = $this->selectPolicy($ticket);
+        }
 
         if (null === $policy) {
             return;
@@ -45,9 +50,40 @@ class SlaService
     /**
      * Attach a specific SLA policy to a ticket, calculating due dates.
      */
+    public function selectPolicy(Ticket $ticket): ?SlaPolicy
+    {
+        $policies = $this->em->getRepository(SlaPolicy::class)->findBy(['isActive' => true], ['id' => 'ASC']);
+        $best = null;
+        $score = -1;
+        foreach ($policies as $policy) {
+            $department = $policy->getDepartment()?->getId();
+            $type = $policy->getTicketType();
+            if (null !== $department && $department !== $ticket->getDepartment()?->getId()) {
+                continue;
+            }
+            if (null !== $type && $type !== $ticket->getTicketType()) {
+                continue;
+            }
+            $rank = (null !== $department ? 2 : 0) + (null !== $type ? 1 : 0);
+            if (0 === $rank && !$policy->isDefault()) {
+                continue;
+            }
+            if ($rank > $score) {
+                $best = $policy;
+                $score = $rank;
+            }
+        }
+
+        return $best;
+    }
+
     public function attachPolicy(Ticket $ticket, SlaPolicy $policy): void
     {
         $ticket->setSlaPolicy($policy);
+        if ($this->targetedSlas) {
+            $ticket->setFirstResponseDueAt(null);
+            $ticket->setResolutionDueAt(null);
+        }
 
         $firstResponseHours = $policy->getFirstResponseHoursFor($ticket->getPriority());
         $resolutionHours = $policy->getResolutionHoursFor($ticket->getPriority());

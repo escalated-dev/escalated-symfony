@@ -35,6 +35,7 @@ class EscalatedBundle extends AbstractBundle
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
     {
         $container->import('../config/services.yaml');
+        self::setTicketAccess($builder, $config);
 
         // Store resolved config as parameters so services can access them
         $builder->setParameter('escalated.user_class', $config['user_class']);
@@ -82,7 +83,7 @@ class EscalatedBundle extends AbstractBundle
     public function prependExtension(ContainerConfigurator $container, ContainerBuilder $builder): void
     {
         // Prepend Doctrine mapping configuration for Escalated entities
-        $builder->prependExtensionConfig('doctrine', [
+        $doctrine = [
             'dbal' => [
                 'types' => [
                     UserIdType::NAME => UserIdType::class,
@@ -99,7 +100,15 @@ class EscalatedBundle extends AbstractBundle
                     ],
                 ],
             ],
-        ]);
+        ];
+        $manager = null;
+        foreach ($builder->getExtensionConfig('escalated') as $raw) {
+            $manager = $raw['entity_manager'] ?? $manager;
+        }
+        if (null !== $manager && '' !== $manager) {
+            $doctrine['orm'] = ['entity_managers' => [$manager => $doctrine['orm']]];
+        }
+        $builder->prependExtensionConfig('doctrine', $doctrine);
 
         // Register the bundle's migrations. Every migration lives in one namespace
         // so Doctrine discovers all of them and orders them by version; without
@@ -139,11 +148,22 @@ class EscalatedBundle extends AbstractBundle
         }
     }
 
+    public static function setTicketAccess(ContainerBuilder $builder, array $config): void
+    {
+        $builder->setParameter('escalated.visibility', $config['visibility']);
+        $builder->setParameter('escalated.targeted_slas', $config['targeted_slas']);
+        $builder->setParameter('escalated.accounts.enabled', $config['accounts']['enabled']);
+        $builder->setParameter('escalated.accounts.scope_agents', $config['accounts']['scope_agents']);
+        foreach (['account_resolver' => $config['accounts']['resolver'], 'access_user_resolver' => $config['access_user_resolver']] as $name => $service) {
+            if (null !== $service && '' !== $service) {
+                $builder->setAlias('escalated.'.$name, $service);
+            }
+        }
+    }
+
     /**
      * Parameters for Service\GuestRateLimiter, and the alias its cache pool is
      * injected through.
-     *
-     * @param array{enabled: bool, tickets_per_minute: int, replies_per_minute: int, cache_pool: string} $guestRateLimit
      */
     public static function setGuestRateLimit(ContainerBuilder $builder, array $guestRateLimit): void
     {

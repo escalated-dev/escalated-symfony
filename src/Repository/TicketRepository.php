@@ -24,6 +24,16 @@ class TicketRepository extends ServiceEntityRepository
         parent::__construct($registry, Ticket::class);
     }
 
+    public function find(mixed $id, mixed $lockMode = null, mixed $lockVersion = null): ?Ticket
+    {
+        $query = $this->createQueryBuilder('t')->where('t.id = :id')->setParameter('id', $id)->getQuery();
+        if (null !== $lockMode) {
+            $query->setLockMode($lockMode);
+        }
+
+        return $query->getOneOrNullResult();
+    }
+
     public function findByReference(string $reference): ?Ticket
     {
         return $this->findOneBy(['reference' => $reference]);
@@ -134,7 +144,21 @@ class TicketRepository extends ServiceEntityRepository
                 ->setParameter('search', '%'.$filters['search'].'%');
         }
 
+        if (array_key_exists('ticket_type', $filters)) {
+            $qb->andWhere('t.ticketType = :ticketType')->setParameter('ticketType', $filters['ticket_type']);
+        }
+        if (array_key_exists('account_type', $filters) || array_key_exists('account_id', $filters)) {
+            $account = \Escalated\Symfony\Security\TicketAccess::accountPair(['type' => $filters['account_type'] ?? null, 'id' => $filters['account_id'] ?? null]);
+            if (null === $account) {
+                $qb->andWhere('1 = 0');
+            } else {
+                $qb->andWhere('t.accountType = :accountType AND t.accountId = :accountId AND LENGTH(t.accountType) = LENGTH(:accountType) AND LENGTH(t.accountId) = LENGTH(:accountId)')->setParameter('accountType', $account['type'])->setParameter('accountId', $account['id']);
+            }
+        }
         $sortBy = $filters['sort_by'] ?? 'createdAt';
+        if (!in_array($sortBy, ['id', 'createdAt', 'updatedAt', 'subject', 'reference', 'status', 'priority', 'ticketType', 'assignedTo'], true)) {
+            $sortBy = 'createdAt';
+        }
         $sortDir = strtoupper($filters['sort_dir'] ?? 'DESC');
         $sortDir = in_array($sortDir, ['ASC', 'DESC'], true) ? $sortDir : 'DESC';
 

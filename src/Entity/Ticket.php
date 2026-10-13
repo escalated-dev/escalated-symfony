@@ -14,6 +14,7 @@ use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity(repositoryClass: TicketRepository::class)]
 #[ORM\Table(name: 'escalated_tickets')]
+#[ORM\Index(columns: ['account_type', 'account_id'], name: 'idx_ticket_account')]
 #[ORM\Index(columns: ['snoozed_until'], name: 'idx_ticket_snoozed_until')]
 #[ORM\Index(columns: ['channel'], name: 'idx_ticket_channel')]
 #[ORM\Index(columns: ['contact_id'], name: 'idx_ticket_contact')]
@@ -24,6 +25,33 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\HasLifecycleCallbacks]
 class Ticket
 {
+    #[ORM\Column(type: Types::STRING, length: 191, nullable: true)]
+    private ?string $accountType = null;
+
+    #[ORM\Column(type: Types::STRING, length: 191, nullable: true)]
+    private ?string $accountId = null;
+
+    public function getAccountType(): ?string
+    {
+        return $this->accountType;
+    }
+
+    public function getAccountId(): ?string
+    {
+        return $this->accountId;
+    }
+
+    public function setAccount(?string $type, ?string $id): self
+    {
+        if ((null === $type) !== (null === $id) || '' === $type || '' === $id || strlen($type ?? '') > 191 || strlen($id ?? '') > 191) {
+            throw new \InvalidArgumentException('An account requires both a type and an id (1-191 bytes each).');
+        }
+        $this->accountType = $type;
+        $this->accountId = $id;
+
+        return $this;
+    }
+
     public const TYPES = ['question', 'problem', 'incident', 'task'];
 
     public const STATUS_OPEN = 'open';

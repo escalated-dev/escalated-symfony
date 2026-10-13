@@ -85,7 +85,7 @@ class TicketLinkController extends AbstractController
 
         $ticket = $this->requireTicket($reference);
 
-        $link = $this->em->getRepository(TicketLink::class)->find($linkId);
+        $link = $this->em->getRepository(TicketLink::class)->findOneBy(['id' => $linkId]);
         if (null !== $link) {
             $this->ticketLinks->unlink($link);
         }

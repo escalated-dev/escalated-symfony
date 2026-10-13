@@ -44,16 +44,19 @@ class WorkflowEngine
 
     public function __construct(
         private readonly EntityManagerInterface $em,
+        private readonly string $tablePrefix = 'escalated_',
+        private readonly ?\Escalated\Symfony\Security\TicketAccess $access = null,
     ) {
     }
 
     public function processEvent(string $eventName, Ticket $ticket): void
     {
+        $this->access?->assertVisible($ticket);
         $triggers = [$eventName, ...(self::LEGACY_TRIGGER_NAMES[$eventName] ?? [])];
         $placeholders = implode(', ', array_fill(0, \count($triggers), '?'));
 
         $workflows = $this->em->getConnection()->fetchAllAssociative(
-            'SELECT * FROM escalated_workflows WHERE trigger_event IN ('.$placeholders.') AND is_active = ? ORDER BY position ASC',
+            $this->sql('SELECT * FROM escalated_workflows WHERE trigger_event IN ('.$placeholders.') AND is_active = ? ORDER BY position ASC'),
             [...$triggers, true],
             [...array_fill(0, \count($triggers), Types::STRING), Types::BOOLEAN],
         );
@@ -64,6 +67,7 @@ class WorkflowEngine
 
     public function evaluateConditions(array $conditions, Ticket $ticket): bool
     {
+        $this->access?->assertVisible($ticket);
         if (isset($conditions['all'])) {
             foreach ($conditions['all'] as $c) {
                 if (!$this->evalSingle($c, $ticket)) {
@@ -100,9 +104,10 @@ class WorkflowEngine
 
     public function dryRun(array $workflow, Ticket $ticket): array
     {
+        $this->access?->assertVisible($ticket);
         $conditions = \is_string($workflow['conditions']) ? json_decode($workflow['conditions'], true) : $workflow['conditions'];
         $actions = \is_string($workflow['actions']) ? json_decode($workflow['actions'], true) : $workflow['actions'];
-        $matched = $this->evaluateConditions($conditions ?? [], $ticket);
+        $matched = is_array($conditions) && $this->evaluateConditions($conditions, $ticket);
         $preview = array_map(fn ($a) => [
             'type' => $a['type'],
             'value' => $this->interpolate((string) ($a['value'] ?? ''), $ticket),
@@ -117,20 +122,20 @@ class WorkflowEngine
         // Booleans are bound with their DBAL type: PostgreSQL rejects comparing a
         // boolean column to an integer literal.
         $pending = $this->em->getConnection()->fetchAllAssociative(
-            'SELECT * FROM escalated_delayed_actions WHERE executed = ? AND execute_at <= ?',
+            $this->sql('SELECT * FROM escalated_delayed_actions WHERE executed = ? AND execute_at <= ?'),
             [false, new \DateTimeImmutable()],
             [Types::BOOLEAN, Types::DATETIME_IMMUTABLE],
         );
         foreach ($pending as $delayed) {
             try {
-                $ticket = $this->em->find(Ticket::class, $delayed['ticket_id']);
+                $ticket = $this->em->getRepository(Ticket::class)->find($delayed['ticket_id']);
                 if (!$ticket) {
                     continue;
                 }
                 $actionData = \is_string($delayed['action_data']) ? json_decode($delayed['action_data'], true) : $delayed['action_data'];
                 $this->executeSingleAction($actionData, $ticket, (int) $delayed['workflow_id']);
                 $this->em->getConnection()->executeStatement(
-                    'UPDATE escalated_delayed_actions SET executed = ? WHERE id = ?',
+                    $this->sql('UPDATE escalated_delayed_actions SET executed = ? WHERE id = ?'),
                     [true, $delayed['id']],
                     [Types::BOOLEAN, Types::INTEGER],
                 );
@@ -143,7 +148,7 @@ class WorkflowEngine
     private function processWorkflow(array $workflow, Ticket $ticket, string $eventName): void
     {
         $conditions = \is_string($workflow['conditions']) ? json_decode($workflow['conditions'], true) : $workflow['conditions'];
-        $matched = $this->evaluateConditions($conditions ?? [], $ticket);
+        $matched = is_array($conditions) && $this->evaluateConditions($conditions, $ticket);
         if (!$matched) {
             $this->logExecution((int) $workflow['id'], $ticket->getId(), $eventName, false, []);
 
@@ -161,6 +166,10 @@ class WorkflowEngine
 
     private function evalSingle(array $condition, Ticket $ticket): bool
     {
+        $routing = TicketRoutingConditions::matches($ticket, $condition);
+        if (null !== $routing) {
+            return $routing;
+        }
         $field = $condition['field'] ?? '';
         $operator = $condition['operator'] ?? 'equals';
         $expected = $condition['value'] ?? '';
@@ -289,7 +298,7 @@ class WorkflowEngine
     ): void {
         $now = new \DateTimeImmutable();
 
-        $this->em->getConnection()->insert('escalated_workflow_logs', [
+        $this->em->getConnection()->insert($this->sql('escalated_workflow_logs'), [
             'workflow_id' => $workflowId,
             'ticket_id' => $ticketId,
             'trigger_event' => $event,
@@ -310,5 +319,10 @@ class WorkflowEngine
             'completed_at' => Types::DATETIME_IMMUTABLE,
             'created_at' => Types::DATETIME_IMMUTABLE,
         ]);
+    }
+
+    private function sql(string $sql): string
+    {
+        return preg_replace('/\bescalated_([a-z_]+)\b/', $this->tablePrefix.'$1', $sql);
     }
 }

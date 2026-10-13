@@ -19,6 +19,7 @@ class SideConversationService
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
+        private readonly ?\Escalated\Symfony\Security\TicketAccess $access = null,
     ) {
     }
 
@@ -42,6 +43,7 @@ class SideConversationService
         string $body,
         ?string $createdBy = null,
     ): SideConversation {
+        $this->access?->assertVisible($ticket);
         $subject = trim($subject);
         $body = trim($body);
 
@@ -84,6 +86,7 @@ class SideConversationService
         string $body,
         ?string $authorId = null,
     ): SideConversationReply {
+        $this->access?->assertVisible($conversation->getTicket());
         $body = trim($body);
         if ('' === $body) {
             throw new \InvalidArgumentException('Body is required.');
@@ -101,6 +104,7 @@ class SideConversationService
 
     public function close(SideConversation $conversation): void
     {
+        $this->access?->assertVisible($conversation->getTicket());
         $conversation->setStatus(SideConversation::STATUS_CLOSED);
         $this->em->flush();
     }
@@ -112,6 +116,8 @@ class SideConversationService
      */
     public function forTicket(Ticket $ticket): array
     {
+        $this->access?->assertVisible($ticket);
+
         return $this->em->getRepository(SideConversation::class)
             ->findBy(['ticket' => $ticket], ['createdAt' => 'DESC']);
     }

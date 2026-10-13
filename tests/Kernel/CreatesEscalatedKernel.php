@@ -41,7 +41,7 @@ trait CreatesEscalatedKernel
 
     protected static function entityManager(): EntityManagerInterface
     {
-        $em = static::getContainer()->get('doctrine.orm.entity_manager');
+        $em = static::getContainer()->get('escalated.entity_manager');
         \assert($em instanceof EntityManagerInterface);
 
         return $em;
@@ -58,10 +58,10 @@ trait CreatesEscalatedKernel
      */
     protected static function createSchema(): void
     {
-        $em = static::entityManager();
-
-        $tool = new SchemaTool($em);
-        $tool->dropDatabase();
-        $tool->createSchema($em->getMetadataFactory()->getAllMetadata());
+        foreach (static::getContainer()->get('doctrine')->getManagers() as $em) {
+            $tool = new SchemaTool($em);
+            $tool->dropDatabase();
+            $tool->createSchema($em->getMetadataFactory()->getAllMetadata());
+        }
     }
 }

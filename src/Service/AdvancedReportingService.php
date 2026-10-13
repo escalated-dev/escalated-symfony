@@ -23,10 +23,10 @@ class AdvancedReportingService
             $results[] = [
                 'date' => $date->format('Y-m-d'),
                 'frt_breaches' => (int) $this->em->createQuery(
-                    'SELECT COUNT(t.id) FROM Escalated\Symfony\Entity\Ticket t WHERE t.slaFirstResponseBreached = true AND t.firstResponseAt IS NULL AND t.slaFirstResponseDueAt BETWEEN :start AND :end'
+                    'SELECT COUNT(t.id) FROM Escalated\Symfony\Entity\Ticket t WHERE t.slaFirstResponseBreached = true AND t.firstResponseAt IS NULL AND t.firstResponseDueAt BETWEEN :start AND :end'
                 )->setParameter('start', $dayStart)->setParameter('end', $dayEnd)->getSingleScalarResult(),
                 'resolution_breaches' => (int) $this->em->createQuery(
-                    'SELECT COUNT(t.id) FROM Escalated\Symfony\Entity\Ticket t WHERE t.slaResolutionBreached = true AND t.resolvedAt IS NULL AND t.slaResolutionDueAt BETWEEN :start AND :end'
+                    'SELECT COUNT(t.id) FROM Escalated\Symfony\Entity\Ticket t WHERE t.slaResolutionBreached = true AND t.resolvedAt IS NULL AND t.resolutionDueAt BETWEEN :start AND :end'
                 )->setParameter('start', $dayStart)->setParameter('end', $dayEnd)->getSingleScalarResult(),
             ];
         }

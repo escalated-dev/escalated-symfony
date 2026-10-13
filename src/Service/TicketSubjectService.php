@@ -21,6 +21,7 @@ class TicketSubjectService
         private readonly EntityManagerInterface $em,
         private readonly array $allowedTypes = [],
         private readonly ?TicketSubjectResolverInterface $resolver = null,
+        private readonly ?\Escalated\Symfony\Security\TicketAccess $access = null,
     ) {
     }
 
@@ -29,6 +30,7 @@ class TicketSubjectService
      */
     public function list(Ticket $ticket): array
     {
+        $this->access?->assertVisible($ticket);
         if (null === $ticket->getId()) {
             return [];
         }
@@ -46,6 +48,21 @@ class TicketSubjectService
         ?string $role = null,
         bool $enforceAllowlist = true,
     ): TicketSubjectLink {
+        if ($this->access?->accountsEnabled()) {
+            return $this->em->wrapInTransaction(fn () => $this->attachLink($ticket, $subjectType, $subjectId, $role, $enforceAllowlist));
+        }
+
+        return $this->attachLink($ticket, $subjectType, $subjectId, $role, $enforceAllowlist);
+    }
+
+    private function attachLink(
+        Ticket $ticket,
+        string $subjectType,
+        string|int $subjectId,
+        ?string $role = null,
+        bool $enforceAllowlist = true,
+    ): TicketSubjectLink {
+        $this->access?->assertVisible($ticket);
         if ($enforceAllowlist) {
             $this->assertTypeAllowed($subjectType);
         }
@@ -82,6 +99,7 @@ class TicketSubjectService
         $link->setRole($role);
         $link->setPosition($maxPosition + 1);
 
+        $this->access?->resolveSubject($ticket, $link->getSubjectType(), $link->getSubjectId());
         $this->em->persist($link);
         $this->em->flush();
 
@@ -90,6 +108,7 @@ class TicketSubjectService
 
     public function detach(Ticket $ticket, int $linkId): void
     {
+        $this->access?->assertVisible($ticket);
         $link = $this->em->getRepository(TicketSubjectLink::class)->findOneBy([
             'id' => $linkId,
             'ticket' => $ticket,
@@ -105,6 +124,7 @@ class TicketSubjectService
 
     public function detachByKey(Ticket $ticket, string $subjectType, string|int $subjectId): int
     {
+        $this->access?->assertVisible($ticket);
         $link = $this->em->getRepository(TicketSubjectLink::class)->findOneBy([
             'ticket' => $ticket,
             'subjectType' => $subjectType,
@@ -128,6 +148,16 @@ class TicketSubjectService
      */
     public function sync(Ticket $ticket, array $items, bool $enforceAllowlist = true): array
     {
+        if ($this->access?->accountsEnabled()) {
+            return $this->em->wrapInTransaction(fn () => $this->syncLinks($ticket, $items, $enforceAllowlist));
+        }
+
+        return $this->syncLinks($ticket, $items, $enforceAllowlist);
+    }
+
+    private function syncLinks(Ticket $ticket, array $items, bool $enforceAllowlist = true): array
+    {
+        $this->access?->assertVisible($ticket);
         foreach ($this->list($ticket) as $existing) {
             $this->em->remove($existing);
         }
@@ -147,6 +177,7 @@ class TicketSubjectService
             $link->setRole($item['role'] ?? null);
             $link->setPosition($position++);
 
+            $this->access?->resolveSubject($ticket, $link->getSubjectType(), $link->getSubjectId());
             $this->em->persist($link);
             $links[] = $link;
         }
@@ -192,6 +223,8 @@ class TicketSubjectService
      */
     public function serializeForTicket(Ticket $ticket): array
     {
+        $this->access?->assertVisible($ticket);
+
         return $this->serializeLinks($this->list($ticket));
     }
 

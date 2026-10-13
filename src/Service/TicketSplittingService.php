@@ -17,6 +17,7 @@ class TicketSplittingService
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly TicketService $ticketService,
+        private readonly ?\Escalated\Symfony\Security\TicketAccess $access = null,
     ) {
     }
 
@@ -31,6 +32,7 @@ class TicketSplittingService
      */
     public function splitTicket(Ticket $originalTicket, Reply $reply, int|string $causerId, array $overrides = []): Ticket
     {
+        $this->access?->assertVisible($originalTicket);
         if ($reply->getTicket() !== $originalTicket) {
             throw new \InvalidArgumentException('The reply does not belong to the specified ticket.');
         }
@@ -58,7 +60,9 @@ class TicketSplittingService
             $newTicketData['department_id'] = $originalTicket->getDepartment()->getId();
         }
 
-        $newTicket = $this->ticketService->create($newTicketData);
+        $newTicket = $this->ticketService->create($newTicketData, $originalTicket);
+
+        $newTicket->setAccount($originalTicket->getAccountType(), $originalTicket->getAccountId());
 
         // Copy tags
         foreach ($originalTicket->getTags() as $tag) {
@@ -98,6 +102,7 @@ class TicketSplittingService
      */
     public function getSplitChildren(Ticket $ticket): array
     {
+        $this->access?->assertVisible($ticket);
         $meta = $ticket->getMetadata() ?? [];
 
         return $meta['split_to'] ?? [];
@@ -108,6 +113,7 @@ class TicketSplittingService
      */
     public function getSplitParent(Ticket $ticket): ?string
     {
+        $this->access?->assertVisible($ticket);
         $meta = $ticket->getMetadata() ?? [];
 
         return $meta['split_from'] ?? null;

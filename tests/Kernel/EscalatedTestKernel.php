@@ -92,7 +92,7 @@ final class EscalatedTestKernel extends Kernel
     {
         // Keyed by checkout, so two clones or worktrees never share or wipe
         // each other's compiled containers.
-        return sys_get_temp_dir().'/escalated-symfony-tests/'.substr(hash('xxh128', __DIR__), 0, 8);
+        return sys_get_temp_dir().'/escalated-symfony-tests/'.substr(hash('xxh128', __DIR__.'|'.self::databaseUrl()), 0, 8);
     }
 
     /**
@@ -122,6 +122,7 @@ final class EscalatedTestKernel extends Kernel
 
     private function configureContainer(ContainerConfigurator $container): void
     {
+        $container->services()->set(Fixtures\TestAccountResolver::class)->public();
         $container->extension('framework', [
             'test' => true,
             'secret' => 'escalated-test-secret',
@@ -167,10 +168,19 @@ final class EscalatedTestKernel extends Kernel
             $orm['enable_native_lazy_objects'] = true;
         }
 
-        $container->extension('doctrine', [
-            'dbal' => ['url' => self::databaseUrl()],
-            'orm' => $orm,
-        ]);
+        if ('support' === ($this->escalatedConfig['entity_manager'] ?? null)) {
+            $nativeLazy = $orm['enable_native_lazy_objects'] ?? false;
+            unset($orm['enable_native_lazy_objects']);
+            $supportOrm = $orm;
+            $supportOrm['connection'] = 'support';
+            unset($supportOrm['mappings']);
+            $container->extension('doctrine', [
+                'dbal' => ['connections' => ['default' => ['url' => 'sqlite:///:memory:'], 'support' => ['url' => self::databaseUrl()]]],
+                'orm' => ['enable_native_lazy_objects' => $nativeLazy, 'default_entity_manager' => 'default', 'entity_managers' => ['default' => $orm, 'support' => $supportOrm]],
+            ]);
+        } else {
+            $container->extension('doctrine', ['dbal' => ['url' => self::databaseUrl()], 'orm' => $orm]);
+        }
 
         $container->extension('escalated', $this->escalatedConfig);
 

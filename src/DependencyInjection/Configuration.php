@@ -16,6 +16,14 @@ class Configuration implements ConfigurationInterface
 
         $rootNode
             ->children()
+                ->enumNode('visibility')->values(['all', 'department'])->defaultValue('all')->end()
+                ->booleanNode('targeted_slas')->defaultFalse()->end()
+                ->arrayNode('accounts')->addDefaultsIfNotSet()->children()
+                    ->booleanNode('enabled')->defaultFalse()->end()
+                    ->booleanNode('scope_agents')->defaultFalse()->end()
+                    ->scalarNode('resolver')->defaultNull()->end()
+                ->end()->end()
+                ->scalarNode('access_user_resolver')->defaultNull()->end()
                 ->scalarNode('user_class')
                     ->defaultValue('App\\Entity\\User')
                     ->info('The fully qualified class name of the user entity.')

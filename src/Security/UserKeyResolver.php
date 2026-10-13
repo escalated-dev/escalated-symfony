@@ -20,6 +20,7 @@ class UserKeyResolver
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
+        private readonly ?\Doctrine\Persistence\ManagerRegistry $registry = null,
     ) {
     }
 
@@ -29,12 +30,13 @@ class UserKeyResolver
             return self::normalize($user->getUserIdentifier());
         }
 
-        $factory = $this->em->getMetadataFactory();
+        $manager = $this->registry?->getManagerForClass($user::class) ?? $this->em;
+        $factory = $manager->getMetadataFactory();
         if (!$factory->hasMetadataFor($user::class) && $factory->isTransient($user::class)) {
             return null;
         }
 
-        $idValues = $this->em->getClassMetadata($user::class)->getIdentifierValues($user);
+        $idValues = $manager->getClassMetadata($user::class)->getIdentifierValues($user);
         $id = reset($idValues);
 
         if (false === $id || null === $id) {
@@ -55,7 +57,9 @@ class UserKeyResolver
                 return null;
             }
 
-            return is_numeric($id) ? (int) $id : $id;
+            $type = strtolower((string) ($_ENV['ESCALATED_USER_KEY_TYPE'] ?? getenv('ESCALATED_USER_KEY_TYPE') ?: 'int'));
+
+            return !in_array($type, ['uuid', 'string', 'varchar'], true) && is_numeric($id) ? (int) $id : $id;
         }
 
         return is_numeric($id) ? (int) $id : (string) $id;

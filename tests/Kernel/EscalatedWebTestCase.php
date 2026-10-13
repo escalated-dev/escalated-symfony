@@ -15,6 +15,12 @@ abstract class EscalatedWebTestCase extends WebTestCase
 {
     use CreatesEscalatedKernel;
 
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+        gc_collect_cycles();
+    }
+
     /**
      * A client on an in-memory database with the schema created. The kernel is
      * not rebooted between requests, so fixtures persisted in the test are

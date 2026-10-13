@@ -18,6 +18,8 @@ class ChatSessionService
         private readonly TicketService $ticketService,
         private readonly ChatRoutingService $routingService,
         private readonly BroadcasterInterface $broadcaster,
+        private readonly ?\Escalated\Symfony\Security\TicketAccess $access = null,
+        private readonly ?\Escalated\Symfony\Broadcasting\TicketBroadcastDelivery $delivery = null,
     ) {
     }
 
@@ -58,12 +60,12 @@ class ChatSessionService
         $this->em->flush();
 
         // Attempt auto-routing
-        $agentId = $this->routingService->findAvailableAgent($ticket->getDepartment());
+        $agentId = $this->routingService->findAvailableAgent($ticket->getDepartment(), $ticket);
         if (null !== $agentId) {
             $this->assignAgent($session, $agentId);
         }
 
-        $this->broadcaster->broadcast(new BroadcastableEvent(
+        ($this->delivery ?? $this->broadcaster)->broadcast(new BroadcastableEvent(
             'chat.session_started',
             'agents',
             [
@@ -91,11 +93,13 @@ class ChatSessionService
         $session->setAgentJoinedAt(new \DateTimeImmutable());
 
         $ticket = $session->getTicket();
+        $this->access?->assertVisible($ticket);
+        $this->access?->assertAssignable($ticket, $agentId);
         $ticket->setAssignedTo($agentId);
 
         $this->em->flush();
 
-        $this->broadcaster->broadcast(new BroadcastableEvent(
+        ($this->delivery ?? $this->broadcaster)->broadcast(new BroadcastableEvent(
             'chat.agent_joined',
             sprintf('ticket.%d', $ticket->getId()),
             [
@@ -126,7 +130,7 @@ class ChatSessionService
         $session->setLastActivityAt(new \DateTimeImmutable());
         $this->em->flush();
 
-        $this->broadcaster->broadcast(new BroadcastableEvent(
+        ($this->delivery ?? $this->broadcaster)->broadcast(new BroadcastableEvent(
             'chat.message',
             sprintf('ticket.%d', $ticket->getId()),
             [
@@ -162,7 +166,7 @@ class ChatSessionService
 
         $this->em->flush();
 
-        $this->broadcaster->broadcast(new BroadcastableEvent(
+        ($this->delivery ?? $this->broadcaster)->broadcast(new BroadcastableEvent(
             'chat.session_ended',
             sprintf('ticket.%d', $ticket->getId()),
             [
@@ -245,7 +249,7 @@ class ChatSessionService
             $ticket->setStatus(Ticket::STATUS_OPEN);
             $ticket->setChatEndedAt(new \DateTimeImmutable());
 
-            $this->broadcaster->broadcast(new BroadcastableEvent(
+            ($this->delivery ?? $this->broadcaster)->broadcast(new BroadcastableEvent(
                 'chat.session_abandoned',
                 sprintf('ticket.%d', $ticket->getId()),
                 ['session_id' => $session->getId()]

@@ -79,6 +79,9 @@ class AutomationRunner
 
         $params = 0;
         foreach ($automation->getConditions() as $condition) {
+            if (TicketRoutingConditions::constrain($qb, $condition, $params)) {
+                continue;
+            }
             $field = $condition['field'] ?? '';
             $operator = $condition['operator'] ?? '>';
             $value = $condition['value'] ?? null;
@@ -106,6 +109,10 @@ class AutomationRunner
                        ->setParameter($p, $threshold);
                     break;
 
+                case 'department_id':
+                    $p = 'p'.$params++;
+                    $qb->andWhere('IDENTITY(t.department) = :'.$p)->setParameter($p, (int) $value);
+                    break;
                 case 'status':
                     $p = 'p'.$params++;
                     $qb->andWhere(sprintf('t.status = :%s', $p))->setParameter($p, $value);
@@ -133,7 +140,15 @@ class AutomationRunner
         /** @var Ticket[] $result */
         $result = $qb->getQuery()->getResult();
 
-        return $result;
+        return array_values(array_filter($result, static function (Ticket $ticket) use ($automation): bool {
+            foreach ($automation->getConditions() as $condition) {
+                if (false === TicketRoutingConditions::matches($ticket, $condition)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }));
     }
 
     private function executeActions(Automation $automation, Ticket $ticket): void

@@ -27,7 +27,7 @@ jobs:
         run: composer install --no-interaction --prefer-dist
 
       - name: Run PHPUnit
-        run: vendor/bin/phpunit tests
+        run: php -d memory_limit=512M vendor/bin/phpunit tests
 
   # The kernel tests boot the bundle in a host application and run its
   # migrations, schema validation and HTTP flows against a real database.
@@ -68,7 +68,7 @@ jobs:
         run: composer install --no-interaction --prefer-dist
 
       - name: Run kernel tests
-        run: vendor/bin/phpunit tests/Kernel
+        run: php -d memory_limit=512M vendor/bin/phpunit tests/Kernel
 
   kernel-mysql:
     name: Kernel tests (MySQL)
@@ -105,4 +105,4 @@ jobs:
         run: composer install --no-interaction --prefer-dist
 
       - name: Run kernel tests
-        run: vendor/bin/phpunit tests/Kernel
+        run: php -d memory_limit=512M vendor/bin/phpunit tests/Kernel

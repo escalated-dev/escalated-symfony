@@ -20,6 +20,9 @@ class TicketService
         private readonly EntityManagerInterface $em,
         private readonly TicketRepository $ticketRepository,
         private readonly EventDispatcherInterface $dispatcher,
+        private readonly ?\Escalated\Symfony\Security\TicketAccess $access = null,
+        private readonly ?SlaService $sla = null,
+        private readonly bool $targetedSlas = false,
     ) {
     }
 
@@ -39,7 +42,16 @@ class TicketService
      *     metadata?: array,
      * } $data
      */
-    public function create(array $data): Ticket
+    public function create(array $data, ?Ticket $accountSource = null): Ticket
+    {
+        if ($this->access?->accountsEnabled() || $this->access?->restricted()) {
+            return $this->em->wrapInTransaction(fn () => $this->createTicket($data, $accountSource));
+        }
+
+        return $this->createTicket($data, $accountSource);
+    }
+
+    private function createTicket(array $data, ?Ticket $accountSource): Ticket
     {
         $ticket = new Ticket();
         $ticket->setSubject($data['subject']);
@@ -74,12 +86,21 @@ class TicketService
             $ticket->setDepartment($department);
         }
 
+        if (null !== $accountSource) {
+            $this->access?->assertVisible($accountSource);
+            $ticket->setAccount($accountSource->getAccountType(), $accountSource->getAccountId());
+        }
+        $this->access?->resolveRequester($ticket);
         $this->em->persist($ticket);
         $this->em->flush();
 
         // Generate the final reference from the primary key
         $ticket->setReference($ticket->generateReference());
         $this->em->flush();
+
+        if ($this->targetedSlas) {
+            $this->sla?->attachDefaultPolicy($ticket);
+        }
 
         // Log creation activity
         $this->logActivity($ticket, TicketActivity::TYPE_CREATED, $data['requester_id'] ?? null);
@@ -92,6 +113,7 @@ class TicketService
      */
     public function update(Ticket $ticket, array $data): Ticket
     {
+        $this->access?->assertVisible($ticket);
         $oldPriority = $ticket->getPriority();
 
         if (isset($data['subject'])) {
@@ -130,6 +152,7 @@ class TicketService
      */
     public function changeStatus(Ticket $ticket, string $newStatus, int|string|null $causerId = null): Ticket
     {
+        $this->access?->assertVisible($ticket);
         if (!$ticket->canTransitionTo($newStatus)) {
             throw new \InvalidArgumentException(sprintf('Cannot transition from "%s" to "%s".', $ticket->getStatus(), $newStatus));
         }
@@ -175,6 +198,7 @@ class TicketService
      */
     public function addReply(Ticket $ticket, int|string $authorId, string $body, bool $isNote = false, ?string $authorClass = null): Reply
     {
+        $this->access?->assertVisible($ticket);
         $reply = new Reply();
         $reply->setTicket($ticket);
         $reply->setAuthorId($authorId);
@@ -218,6 +242,7 @@ class TicketService
         int|string|null $authorId = null,
         ?string $authorClass = null,
     ): Reply {
+        $this->access?->assertVisible($ticket);
         $reply = new Reply();
         $reply->setTicket($ticket);
         $reply->setAuthorId($authorId);
@@ -262,16 +287,22 @@ class TicketService
 
     public function close(Ticket $ticket, int|string|null $causerId = null): Ticket
     {
+        $this->access?->assertVisible($ticket);
+
         return $this->changeStatus($ticket, Ticket::STATUS_CLOSED, $causerId);
     }
 
     public function resolve(Ticket $ticket, int|string|null $causerId = null): Ticket
     {
+        $this->access?->assertVisible($ticket);
+
         return $this->changeStatus($ticket, Ticket::STATUS_RESOLVED, $causerId);
     }
 
     public function reopen(Ticket $ticket, int|string|null $causerId = null): Ticket
     {
+        $this->access?->assertVisible($ticket);
+
         return $this->changeStatus($ticket, Ticket::STATUS_REOPENED, $causerId);
     }
 
@@ -282,6 +313,7 @@ class TicketService
      */
     public function addTags(Ticket $ticket, array $tagIds, int|string|null $causerId = null): Ticket
     {
+        $this->access?->assertVisible($ticket);
         foreach ($tagIds as $tagId) {
             $tag = $this->em->getReference(\Escalated\Symfony\Entity\Tag::class, $tagId);
             $ticket->addTag($tag);
@@ -311,6 +343,7 @@ class TicketService
      */
     public function removeTags(Ticket $ticket, array $tagIds, int|string|null $causerId = null): Ticket
     {
+        $this->access?->assertVisible($ticket);
         $removed = [];
         foreach ($tagIds as $tagId) {
             $tag = $this->em->find(\Escalated\Symfony\Entity\Tag::class, $tagId);

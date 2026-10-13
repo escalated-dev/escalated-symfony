@@ -19,6 +19,8 @@ class SkillRoutingService
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly TicketRepository $ticketRepository,
+        private readonly string $tablePrefix = 'escalated_',
+        private readonly ?\Escalated\Symfony\Security\TicketAccess $access = null,
     ) {
     }
 
@@ -51,7 +53,10 @@ class SkillRoutingService
 
         $candidates = [];
         foreach ($rows as $row) {
-            $uid = (int) $row['uid'];
+            $uid = $row['uid'];
+            if (null !== $this->access && !$this->access->canAssign($ticket, $uid)) {
+                continue;
+            }
             $candidates[$uid] = [
                 'user_id' => $uid,
                 'proficiency_sum' => (int) $row['profSum'],
@@ -89,7 +94,7 @@ class SkillRoutingService
 
         if ([] !== $tagIds) {
             $rows = $conn->fetchFirstColumn(
-                'SELECT DISTINCT skill_id FROM escalated_skill_routing_tags WHERE tag_id IN (?)',
+                'SELECT DISTINCT skill_id FROM '.$this->tablePrefix.'skill_routing_tags WHERE tag_id IN (?)',
                 [$tagIds],
                 [ArrayParameterType::INTEGER]
             );
@@ -100,7 +105,7 @@ class SkillRoutingService
 
         if (null !== $deptId) {
             $rows = $conn->fetchFirstColumn(
-                'SELECT DISTINCT skill_id FROM escalated_skill_routing_departments WHERE department_id = ?',
+                'SELECT DISTINCT skill_id FROM '.$this->tablePrefix.'skill_routing_departments WHERE department_id = ?',
                 [$deptId]
             );
             foreach ($rows as $sid) {

@@ -555,3 +555,7 @@ tables and copy the rows across first.
 ## License
 
 MIT - Copyright (c) Escalated.dev. See [LICENSE](LICENSE).
+
+### Configurable ticket access and routing
+
+Optional department visibility, ticket accounts, account/type rule conditions and targeted SLAs are documented in [Ticket access and routing](docs/ticket-access-and-routing.md). All options default off; apply the additive migration before enabling them.

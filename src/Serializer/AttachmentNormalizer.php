@@ -22,6 +22,7 @@ class AttachmentNormalizer implements NormalizerInterface
 {
     public function __construct(
         private readonly string $baseStorageUrl = '',
+        private readonly ?\Escalated\Symfony\Security\TicketAccess $access = null,
     ) {
     }
 
@@ -30,6 +31,10 @@ class AttachmentNormalizer implements NormalizerInterface
      */
     public function normalize(mixed $object, ?string $format = null, array $context = []): array
     {
+        if (null !== $this->access && !$this->access->visibleEntity($object)) {
+            throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException('Attachment not found.');
+        }
+
         return $object->toArray('' !== $this->baseStorageUrl ? $this->baseStorageUrl : null);
     }
 

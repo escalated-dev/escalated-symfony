@@ -4,6 +4,7 @@ services:
         autoconfigure: true
         public: false
         bind:
+            string $tablePrefix: '%escalated.table_prefix%'
             # Every service in this bundle that injects an EntityManagerInterface
             # gets Escalated's manager, not the host's default one. Bound by type
             # so the sixty-two call sites need no change -- and so a new service
@@ -37,6 +38,7 @@ services:
             - '../src/Support/ArrayTicketAction.php'
             # Plain security identity built by ApiTokenAuthenticator — not a service.
             - '../src/Security/ApiTokenUser.php'
+            - '../src/Doctrine/TicketVisibilityFilter.php'
 
     # Route loader behind @EscalatedBundle/config/routes.yaml. Applies ui_enabled,
     # enable_newsletters and route_prefix when the host's router loads it.
@@ -74,10 +76,15 @@ services:
             $ticketsPerMinute: '%escalated.guest_rate_limit.tickets_per_minute%'
             $repliesPerMinute: '%escalated.guest_rate_limit.replies_per_minute%'
 
+    Escalated\Symfony\Service\TicketService:
+        arguments:
+            $targetedSlas: '%escalated.targeted_slas%'
+
     # SlaService needs parameter injection
     Escalated\Symfony\Service\SlaService:
         arguments:
             $slaEnabled: '%escalated.sla.enabled%'
+            $targetedSlas: '%escalated.targeted_slas%'
             $businessHoursOnly: '%escalated.sla.business_hours_only%'
             $businessHours: '%escalated.sla.business_hours%'
 
@@ -271,3 +278,25 @@ services:
 
     Escalated\Symfony\Controller\Api\AuthController:
         tags: ['controller.service_arguments']
+
+    Escalated\Symfony\Security\TicketAccess:
+        arguments:
+            $visibility: '%escalated.visibility%'
+            $accountsEnabled: '%escalated.accounts.enabled%'
+            $scopeAccounts: '%escalated.accounts.scope_agents%'
+            $accountResolver: '@?escalated.account_resolver'
+            $userResolver: '@?escalated.access_user_resolver'
+            $userClass: '%escalated.user_class%'
+
+    Escalated\Symfony\Doctrine\TicketAccessMetadata:
+        arguments:
+            $tablePrefix: '%escalated.table_prefix%'
+
+    Escalated\Symfony\Broadcasting\BroadcasterInterface: '@Escalated\Symfony\Broadcasting\NullBroadcaster'
+
+    Escalated\Symfony\Doctrine\Migration\TicketAccessMigrationFactory:
+        decorates: doctrine.migrations.migrations_factory
+        decoration_on_invalid: ignore
+        arguments:
+            $inner: '@Escalated\Symfony\Doctrine\Migration\TicketAccessMigrationFactory.inner'
+            $tablePrefix: '%escalated.table_prefix%'

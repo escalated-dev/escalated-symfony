@@ -13,4 +13,10 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 abstract class EscalatedKernelTestCase extends KernelTestCase
 {
     use CreatesEscalatedKernel;
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+        gc_collect_cycles();
+    }
 }

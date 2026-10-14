@@ -9,6 +9,7 @@ use Escalated\Symfony\Entity\Department;
 use Escalated\Symfony\Entity\EscalationRule;
 use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Event\TicketWorkflowEvent;
+use Escalated\Symfony\Security\UserKeyResolver;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
@@ -156,7 +157,7 @@ class EscalationService
                         $this->em->flush();
                         break;
                     case 'assign_to':
-                        $ticket->setAssignedTo((int) $value);
+                        $ticket->setAssignedTo(UserKeyResolver::normalize($value));
                         $this->em->flush();
                         break;
                     case 'change_department':

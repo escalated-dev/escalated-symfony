@@ -46,7 +46,11 @@ class UserKeyResolver
         return self::normalize($id);
     }
 
-    private static function normalize(mixed $id): int|string|null
+    /**
+     * Shape a stored or submitted user id the way the host's key type does:
+     * numeric ids become ints for int/bigint keys, uuid/string keys stay strings.
+     */
+    public static function normalize(mixed $id): int|string|null
     {
         if (is_int($id)) {
             return $id;

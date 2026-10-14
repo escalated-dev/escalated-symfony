@@ -6,6 +6,7 @@
 - Add nullable ticket account identities, resolver hooks, account/type routing conditions, and opt-in targeted SLAs.
 - Add cross-database regression coverage for visibility, custom prefixes, separate host databases, migration upgrade/rollback and UUID memberships.
 - Correct the SLA report query field names.
+- Keep UUID/ULID agent ids in escalation-rule, macro, automation and workflow assign actions; they were cast to int and stored as 0 or the id's leading digits (#97).
 
 All notable changes to `escalated-symfony` will be documented in this file.
 

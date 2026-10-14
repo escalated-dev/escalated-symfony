@@ -9,6 +9,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Entity\Reply;
 use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Entity\TicketFollower;
+use Escalated\Symfony\Security\UserKeyResolver;
 
 class WorkflowEngine
 {
@@ -229,7 +230,7 @@ class WorkflowEngine
         try {
             match ($action['type']) {
                 'change_status' => $ticket->setStatus($action['value']) && $this->em->flush(),
-                'assign_agent' => $ticket->setAssignedTo((int) $action['value']) && $this->em->flush(),
+                'assign_agent' => $ticket->setAssignedTo(UserKeyResolver::normalize($action['value'])) && $this->em->flush(),
                 'change_priority' => $ticket->setPriority($action['value']) && $this->em->flush(),
                 'add_note' => $this->addNote($ticket, $this->interpolate((string) ($action['value'] ?? ''), $ticket)),
                 'set_type' => $ticket->setTicketType($action['value']) && $this->em->flush(),

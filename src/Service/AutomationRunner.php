@@ -9,6 +9,7 @@ use Escalated\Symfony\Entity\Automation;
 use Escalated\Symfony\Entity\Reply;
 use Escalated\Symfony\Entity\Tag;
 use Escalated\Symfony\Entity\Ticket;
+use Escalated\Symfony\Security\UserKeyResolver;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
@@ -168,7 +169,7 @@ class AutomationRunner
                         $this->em->flush();
                         break;
                     case 'assign':
-                        $ticket->setAssignedTo((int) $value);
+                        $ticket->setAssignedTo(UserKeyResolver::normalize($value));
                         $this->em->flush();
                         break;
                     case 'add_tag':

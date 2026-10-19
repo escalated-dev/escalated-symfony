@@ -311,7 +311,8 @@ final class WidgetEmbeddingTest extends EscalatedWebTestCase
         $response = $this->post($client, '/tickets', $this->ticketPayload(['metadata' => ['page_url' => 'javascript:alert(1)', 'plan' => 'pro']]));
 
         $ticket = $this->ticket(json_decode((string) $response->getContent(), true)['data']['reference']);
-        self::assertSame(['plan' => 'pro', 'embedded_on' => self::SHOP, 'source' => 'widget'], $ticket->getMetadata());
+        // MySQL's JSON type does not keep key order.
+        self::assertEquals(['plan' => 'pro', 'embedded_on' => self::SHOP, 'source' => 'widget'], $ticket->getMetadata());
     }
 
     public function testLeavesWidgetTicketsWithoutHostParametersUnchanged(): void

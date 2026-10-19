@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Changed
+- The bundled widget is now `@escalated-dev/escalated` 0.12.2. It hides its Check Status tab when `/config` returns `status_lookup_enabled: false`.
+
 - Add opt-in department/account visibility across ticket queries, services, policies, reports, widget and API access, with guarded assignments and delivery hooks.
 - Add nullable ticket account identities, resolver hooks, account/type routing conditions, and opt-in targeted SLAs.
 - Add cross-database regression coverage for visibility, custom prefixes, separate host databases, migration upgrade/rollback and UUID memberships.

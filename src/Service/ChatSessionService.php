@@ -42,6 +42,9 @@ class ChatSessionService
         $ticket->setGuestName($data['guest_name'] ?? null);
         $ticket->setGuestEmail($data['guest_email'] ?? null);
         $ticket->setGuestToken(Uuid::v4()->toRfc4122());
+        if (($data['department'] ?? null) instanceof \Escalated\Symfony\Entity\Department) {
+            $ticket->setDepartment($data['department']);
+        }
         // Host parameters (already sanitised by the caller) first, so they
         // cannot replace the server's own keys.
         $ticket->setChatMetadata(array_merge(\is_array($data['metadata'] ?? null) ? $data['metadata'] : [], [
@@ -146,6 +149,59 @@ class ChatSessionService
                 'created_at' => $reply->getCreatedAt()->format(\DateTimeInterface::ATOM),
             ]
         ));
+    }
+
+    /**
+     * The visitor is typing: tells the agents watching the ticket.
+     */
+    public function customerTyping(ChatSession $session): void
+    {
+        $ticket = $session->getTicket();
+
+        ($this->delivery ?? $this->broadcaster)->broadcast(new BroadcastableEvent(
+            'chat.typing',
+            sprintf('ticket.%d', $ticket->getId()),
+            [
+                'session_id' => $session->getId(),
+                'is_agent' => false,
+            ]
+        ));
+    }
+
+    /**
+     * Whether a session is over (ended by someone, or abandoned in the queue).
+     */
+    public function isOver(ChatSession $session): bool
+    {
+        return \in_array($session->getStatus(), [ChatSession::STATUS_ENDED, ChatSession::STATUS_ABANDONED], true);
+    }
+
+    /**
+     * Record the visitor's 1-5 rating of an ended chat in the ticket's chat
+     * metadata.
+     *
+     * @throws \InvalidArgumentException when the chat is not over, the score
+     *                                   is out of range, or it is already rated
+     */
+    public function rateSession(ChatSession $session, int $rating, ?string $comment = null): void
+    {
+        if (!$this->isOver($session)) {
+            throw new \InvalidArgumentException('Chat must be ended before rating.');
+        }
+        if ($rating < 1 || $rating > 5) {
+            throw new \InvalidArgumentException('Rating must be an integer between 1 and 5.');
+        }
+
+        $ticket = $session->getTicket();
+        $chatMeta = $ticket->getChatMetadata() ?? [];
+        if (isset($chatMeta['rating'])) {
+            throw new \InvalidArgumentException('This chat has already been rated.');
+        }
+
+        $chatMeta['rating'] = $rating;
+        $chatMeta['rating_comment'] = null !== $comment && '' !== $comment ? mb_substr($comment, 0, 1000) : null;
+        $ticket->setChatMetadata($chatMeta);
+        $this->em->flush();
     }
 
     /**

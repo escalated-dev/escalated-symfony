@@ -89,6 +89,18 @@ request's allowed `Origin` and cannot be supplied by the page. A `metadata`
 that is not an object, or has more than 50 keys, is refused with 422. Treat all
 of it as unverified visitor input.
 
+### Widget API
+
+The bundled widget calls, under `{route_prefix}/widget/api`: `GET /config`,
+`GET /articles?q=`, `GET /articles/{slug}`, `POST /tickets`,
+`GET /chat/availability`, `POST /chat/start`, and `GET`/`POST
+/chat/{id}/messages`, `POST /chat/{id}/typing`, `/end` and `/rate`, where
+`{id}` is the random guest token `/chat/start` returns as `id`. `/config`
+returns `status_lookup_enabled: false`: this backend has no mailbox
+verification, so it does not offer status lookup by reference and email and
+the widget hides its Status tab. The original routes and response envelopes
+(`data`, `/chat/sessions/{reference}/...` with `X-Guest-Token`) still work.
+
 ### The script
 
 `GET {route_prefix}/widget/api/embed.js` serves `public/widget/escalated-widget.js`

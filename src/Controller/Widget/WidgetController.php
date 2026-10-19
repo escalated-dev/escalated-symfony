@@ -6,6 +6,8 @@ namespace Escalated\Symfony\Controller\Widget;
 
 use Escalated\Symfony\Service\GuestRateLimiter;
 use Escalated\Symfony\Service\TicketService;
+use Escalated\Symfony\Widget\WidgetMetadata;
+use Escalated\Symfony\Widget\WidgetOrigins;
 use Escalated\Symfony\Widget\WidgetSettings;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -30,17 +32,10 @@ class WidgetController extends AbstractController
             return $this->json(['error' => 'Widget is disabled.'], Response::HTTP_NOT_FOUND);
         }
 
-        $origin = $request->headers->get('Origin', '');
-        if ('' !== $origin && !$this->widgetSettings->isOriginAllowed($origin)) {
-            return $this->json(['error' => 'Origin not allowed.'], Response::HTTP_FORBIDDEN);
-        }
-
-        $response = $this->json(['data' => $this->widgetSettings->toPublicConfig()]);
-        if ('' !== $origin) {
-            $response->headers->set('Access-Control-Allow-Origin', $origin);
-        }
-
-        return $response;
+        // CORS for other sites is WidgetCorsSubscriber's job: an origin that
+        // is not allowed gets this answer without a grant, so the browser
+        // withholds it from the page.
+        return $this->json(['data' => $this->widgetSettings->toPublicConfig()]);
     }
 
     #[Route('/tickets', name: 'tickets.store', methods: ['POST'])]
@@ -58,7 +53,8 @@ class WidgetController extends AbstractController
             return $this->json(['error' => 'Guest tickets are disabled.'], Response::HTTP_FORBIDDEN);
         }
 
-        $data = json_decode($request->getContent(), true) ?? [];
+        $data = json_decode($request->getContent(), true);
+        $data = \is_array($data) ? $data : [];
 
         if (empty($data['subject']) || empty($data['guest_name']) || empty($data['guest_email'])) {
             return $this->json(
@@ -67,13 +63,26 @@ class WidgetController extends AbstractController
             );
         }
 
+        if (!WidgetMetadata::isValid($data['metadata'] ?? null)) {
+            return $this->json(
+                ['error' => 'Metadata must be an object with at most 50 entries.'],
+                Response::HTTP_UNPROCESSABLE_ENTITY
+            );
+        }
+
+        // Host parameters from the embedding page, sanitised; `source` stays
+        // the server's.
+        $origin = $request->attributes->get(WidgetOrigins::ATTRIBUTE);
+        $metadata = WidgetMetadata::sanitize($data['metadata'] ?? null, \is_string($origin) ? $origin : null) ?? [];
+        $metadata['source'] = 'widget';
+
         try {
             $ticket = $this->ticketService->create([
                 'subject' => $data['subject'],
                 'description' => $data['description'] ?? null,
                 'guest_name' => $data['guest_name'],
                 'guest_email' => $data['guest_email'],
-                'metadata' => ['source' => 'widget'],
+                'metadata' => $metadata,
             ]);
         } catch (\Exception $e) {
             return $this->json(
@@ -88,11 +97,6 @@ class WidgetController extends AbstractController
                 'guest_token' => $ticket->getGuestToken(),
             ],
         ], Response::HTTP_CREATED);
-
-        $origin = $request->headers->get('Origin', '');
-        if ('' !== $origin) {
-            $response->headers->set('Access-Control-Allow-Origin', $origin);
-        }
 
         return $response;
     }
@@ -145,11 +149,6 @@ class WidgetController extends AbstractController
             ],
         ]);
 
-        $origin = $request->headers->get('Origin', '');
-        if ('' !== $origin) {
-            $response->headers->set('Access-Control-Allow-Origin', $origin);
-        }
-
         return $response;
     }
 
@@ -192,11 +191,6 @@ class WidgetController extends AbstractController
                 'created_at' => $reply->getCreatedAt()->format(\DateTimeInterface::ATOM),
             ],
         ], Response::HTTP_CREATED);
-
-        $origin = $request->headers->get('Origin', '');
-        if ('' !== $origin) {
-            $response->headers->set('Access-Control-Allow-Origin', $origin);
-        }
 
         return $response;
     }

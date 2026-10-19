@@ -119,6 +119,10 @@ escalated:
         allow_private_networks: true
 ```
 
+### Embedding the widget on other sites
+
+Load the widget on another site with `<script src="https://help.example.com/support/widget/api/embed.js" async></script>` after listing that site's origin, either in the `WidgetSettings` service's `$allowedOrigins` argument (for example `'%env(csv:ESCALATED_WIDGET_ALLOWED_ORIGINS)%'`) or in the admin setting `widget_allowed_origins`. An empty list allows no other site. See [docs/embedding-the-widget.md](docs/embedding-the-widget.md).
+
 ### Guest widget rate limits
 
 The unauthenticated widget endpoints are limited per client IP: 5 guest tickets and 10 guest replies a minute, each with its own counter. Over the limit a request gets `429` with `Retry-After`. A reply is counted before its guest token is checked, so wrong-token guesses count too.

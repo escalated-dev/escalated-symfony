@@ -76,6 +76,14 @@ services:
             $ticketsPerMinute: '%escalated.guest_rate_limit.tickets_per_minute%'
             $repliesPerMinute: '%escalated.guest_rate_limit.replies_per_minute%'
 
+    # CORS for the widget API, for the origins WidgetOrigins allows (the
+    # WidgetSettings allowedOrigins argument plus the widget_allowed_origins
+    # admin setting). An empty list allows no other site.
+    Escalated\Symfony\EventSubscriber\WidgetCorsSubscriber:
+        arguments:
+            $routePrefix: '%escalated.route_prefix%'
+            $uiEnabled: '%escalated.ui_enabled%'
+
     Escalated\Symfony\Service\TicketService:
         arguments:
             $targetedSlas: '%escalated.targeted_slas%'

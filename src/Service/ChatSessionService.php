@@ -28,6 +28,9 @@ class ChatSessionService
      *
      * Creates a ticket with channel=chat and status=live, then creates
      * a ChatSession in "waiting" state and attempts auto-routing.
+     *
+     * `metadata` holds host parameters from an embedding page; callers must
+     * pass them through {@see \Escalated\Symfony\Widget\WidgetMetadata::sanitize()}.
      */
     public function startSession(array $data): array
     {
@@ -39,10 +42,12 @@ class ChatSessionService
         $ticket->setGuestName($data['guest_name'] ?? null);
         $ticket->setGuestEmail($data['guest_email'] ?? null);
         $ticket->setGuestToken(Uuid::v4()->toRfc4122());
-        $ticket->setChatMetadata([
+        // Host parameters (already sanitised by the caller) first, so they
+        // cannot replace the server's own keys.
+        $ticket->setChatMetadata(array_merge(\is_array($data['metadata'] ?? null) ? $data['metadata'] : [], [
             'started_at' => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
             'page_url' => $data['page_url'] ?? null,
-        ]);
+        ]));
 
         $this->em->persist($ticket);
         $this->em->flush();
@@ -54,7 +59,7 @@ class ChatSessionService
         $session->setTicket($ticket);
         $session->setVisitorIp($data['visitor_ip'] ?? null);
         $session->setVisitorUserAgent($data['visitor_user_agent'] ?? null);
-        $session->setVisitorPageUrl($data['page_url'] ?? null);
+        $session->setVisitorPageUrl(isset($data['page_url']) ? mb_substr((string) $data['page_url'], 0, 255) : null);
 
         $this->em->persist($session);
         $this->em->flush();

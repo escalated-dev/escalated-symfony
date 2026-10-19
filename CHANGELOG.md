@@ -7,6 +7,9 @@
 - Add cross-database regression coverage for visibility, custom prefixes, separate host databases, migration upgrade/rollback and UUID memberships.
 - Correct the SLA report query field names.
 - Keep UUID/ULID agent ids in escalation-rule, macro, automation and workflow assign actions; they were cast to int and stored as 0 or the id's leading digits (#97).
+- Add cross-origin widget embedding: `GET {route_prefix}/widget/api/embed.js` serves the standalone widget bundle (`@escalated-dev/escalated` 0.12.1), and the widget API answers CORS preflights and grants CORS only to origins on the allow list (`WidgetSettings` `$allowedOrigins`, e.g. from `ESCALATED_WIDGET_ALLOWED_ORIGINS`, plus the new admin setting `widget_allowed_origins`; `https://*.example.com` wildcards). Allowed cross-site requests always run as a guest. See `docs/embedding-the-widget.md`.
+- Widget tickets and live chats store sanitised host parameters sent as `metadata` (tickets keep `source: widget`; chats store them in `chat_metadata`), with `embedded_on` set by the server. `/config` returns `accepts_metadata: true`. Chat start no longer passes the raw request body to `ChatSessionService::startSession()`.
+- **Behaviour change (security):** an empty `WidgetSettings` `$allowedOrigins` list used to allow every site, and the widget routes echoed any request `Origin` back as `Access-Control-Allow-Origin` without checking it. An empty list now allows no other site, unlisted origins get normal answers without CORS headers, and `/config` no longer answers 403 for an unlisted `Origin`. Hosts that embed the widget on another site must list that site. `WidgetSettings::isOriginAllowed()` follows the same rules.
 
 All notable changes to `escalated-symfony` will be documented in this file.
 

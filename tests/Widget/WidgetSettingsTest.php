@@ -63,11 +63,11 @@ class WidgetSettingsTest extends TestCase
         $this->assertSame('#333', $settings->getPrimaryColor());
     }
 
-    public function testIsOriginAllowedWithEmptyList(): void
+    public function testAnEmptyListAllowsNoOtherSite(): void
     {
         $settings = new WidgetSettings();
 
-        $this->assertTrue($settings->isOriginAllowed('https://anything.com'));
+        $this->assertFalse($settings->isOriginAllowed('https://anything.com'));
     }
 
     public function testIsOriginAllowedWithRestrictions(): void
@@ -75,7 +75,9 @@ class WidgetSettingsTest extends TestCase
         $settings = new WidgetSettings(allowedOrigins: ['https://allowed.com']);
 
         $this->assertTrue($settings->isOriginAllowed('https://allowed.com'));
+        $this->assertTrue($settings->isOriginAllowed('https://Allowed.com:443'));
         $this->assertFalse($settings->isOriginAllowed('https://blocked.com'));
+        $this->assertFalse($settings->isOriginAllowed('http://allowed.com'));
     }
 
     public function testToPublicConfig(): void
@@ -97,6 +99,7 @@ class WidgetSettingsTest extends TestCase
         $this->assertSame('Welcome', $config['greeting']);
         $this->assertTrue($config['allow_guest_tickets']);
         $this->assertFalse($config['show_articles']);
+        $this->assertTrue($config['accepts_metadata']);
         // Should NOT include sensitive config like allowed_origins
         $this->assertArrayNotHasKey('allowed_origins', $config);
         $this->assertArrayNotHasKey('max_articles_shown', $config);

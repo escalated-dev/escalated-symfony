@@ -4,6 +4,17 @@ declare(strict_types=1);
 
 namespace Escalated\Symfony\Widget;
 
+/**
+ * Widget configuration. Hosts set it through the service's arguments, for example:
+ *
+ *     Escalated\Symfony\Widget\WidgetSettings:
+ *         arguments:
+ *             $enabled: true
+ *             $allowedOrigins: '%env(csv:ESCALATED_WIDGET_ALLOWED_ORIGINS)%'
+ *
+ * `allowedOrigins` lists the other sites that may embed the widget; see
+ * {@see WidgetOrigins}.
+ */
 class WidgetSettings
 {
     public function __construct(
@@ -114,13 +125,14 @@ class WidgetSettings
         return $this;
     }
 
+    /**
+     * Whether the configured list alone allows the origin. An empty list
+     * allows no other site. Request handling uses {@see WidgetOrigins}, which
+     * adds the `widget_allowed_origins` admin setting to this list.
+     */
     public function isOriginAllowed(string $origin): bool
     {
-        if (empty($this->allowedOrigins)) {
-            return true;
-        }
-
-        return in_array($origin, $this->allowedOrigins, true);
+        return WidgetOrigins::matchesAny(WidgetOrigins::patterns($this->allowedOrigins), $origin);
     }
 
     public function toPublicConfig(): array
@@ -132,6 +144,8 @@ class WidgetSettings
             'greeting' => $this->greeting,
             'allow_guest_tickets' => $this->allowGuestTickets,
             'show_articles' => $this->showArticles,
+            // Widget tickets and chats keep host parameters sent as `metadata`.
+            'accepts_metadata' => true,
         ];
     }
 }

@@ -15,3 +15,7 @@ Dockerfile* text eol=lf
 *.jpeg binary
 *.gif binary
 *.ico binary
+
+# Vendored build of @escalated-dev/escalated (dist/widget/escalated-widget.js),
+# served at {route_prefix}/widget/api/embed.js. Kept byte for byte.
+public/widget/escalated-widget.js -text linguist-generated=true

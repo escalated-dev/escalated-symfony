@@ -6,6 +6,8 @@ namespace Escalated\Symfony\Controller\Widget;
 
 use Escalated\Symfony\Service\ChatAvailabilityService;
 use Escalated\Symfony\Service\ChatSessionService;
+use Escalated\Symfony\Widget\WidgetMetadata;
+use Escalated\Symfony\Widget\WidgetOrigins;
 use Escalated\Symfony\Widget\WidgetSettings;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -31,7 +33,6 @@ class WidgetChatController extends AbstractController
         }
 
         $response = $this->json(['data' => $this->availabilityService->getStatus()]);
-        $this->setCors($response, $request);
 
         return $response;
     }
@@ -43,7 +44,8 @@ class WidgetChatController extends AbstractController
             return $this->json(['error' => 'Widget is disabled.'], Response::HTTP_NOT_FOUND);
         }
 
-        $data = json_decode($request->getContent(), true) ?? [];
+        $data = json_decode($request->getContent(), true);
+        $data = \is_array($data) ? $data : [];
 
         if (empty($data['guest_name']) || empty($data['guest_email'])) {
             return $this->json(
@@ -52,11 +54,30 @@ class WidgetChatController extends AbstractController
             );
         }
 
-        $data['visitor_ip'] = $request->getClientIp();
-        $data['visitor_user_agent'] = $request->headers->get('User-Agent');
+        if (!WidgetMetadata::isValid($data['metadata'] ?? null)) {
+            return $this->json(
+                ['error' => 'Metadata must be an object with at most 50 entries.'],
+                Response::HTTP_UNPROCESSABLE_ENTITY
+            );
+        }
+
+        // Only the fields a chat needs, never the raw body: the visitor's IP
+        // and user agent come from the request, host parameters are sanitised.
+        $origin = $request->attributes->get(WidgetOrigins::ATTRIBUTE);
+        $metadata = WidgetMetadata::sanitize($data['metadata'] ?? null, \is_string($origin) ? $origin : null);
+        $pageUrl = $metadata['page_url'] ?? (WidgetMetadata::isWebUrl($data['page_url'] ?? null) ? $data['page_url'] : null);
 
         try {
-            $result = $this->chatSessionService->startSession($data);
+            $result = $this->chatSessionService->startSession([
+                'subject' => self::text($data['subject'] ?? null),
+                'message' => self::text($data['message'] ?? null),
+                'guest_name' => self::text($data['guest_name']),
+                'guest_email' => self::text($data['guest_email']),
+                'page_url' => \is_string($pageUrl) ? $pageUrl : null,
+                'metadata' => $metadata,
+                'visitor_ip' => $request->getClientIp(),
+                'visitor_user_agent' => $request->headers->get('User-Agent'),
+            ]);
         } catch (\Exception $e) {
             return $this->json(
                 ['error' => 'Failed to start chat session.'],
@@ -75,8 +96,6 @@ class WidgetChatController extends AbstractController
                 'status' => $session->getStatus(),
             ],
         ], Response::HTTP_CREATED);
-
-        $this->setCors($response, $request);
 
         return $response;
     }
@@ -109,7 +128,6 @@ class WidgetChatController extends AbstractController
         $this->chatSessionService->sendMessage($session, $data['body']);
 
         $response = $this->json(['data' => ['status' => 'sent']], Response::HTTP_CREATED);
-        $this->setCors($response, $request);
 
         return $response;
     }
@@ -134,9 +152,13 @@ class WidgetChatController extends AbstractController
         $this->chatSessionService->endSession($session);
 
         $response = $this->json(['data' => ['status' => 'ended']]);
-        $this->setCors($response, $request);
 
         return $response;
+    }
+
+    private static function text(mixed $value): ?string
+    {
+        return \is_scalar($value) ? (string) $value : null;
     }
 
     private function findSessionByReferenceAndToken(string $reference, string $token): ?\Escalated\Symfony\Entity\ChatSession
@@ -150,13 +172,5 @@ class WidgetChatController extends AbstractController
         }
 
         return $this->chatSessionService->findByTicket($ticket->getId());
-    }
-
-    private function setCors(JsonResponse $response, Request $request): void
-    {
-        $origin = $request->headers->get('Origin', '');
-        if ('' !== $origin) {
-            $response->headers->set('Access-Control-Allow-Origin', $origin);
-        }
     }
 }

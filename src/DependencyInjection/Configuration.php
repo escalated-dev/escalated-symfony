@@ -93,7 +93,7 @@ class Configuration implements ConfigurationInterface
                         ->integerNode('tickets_per_minute')
                             ->defaultValue(5)
                             ->min(1)
-                            ->info('Guest ticket submissions per IP per minute.')
+                            ->info('Guest ticket submissions and live chat starts per IP per minute (one shared counter).')
                         ->end()
                         ->integerNode('replies_per_minute')
                             ->defaultValue(10)

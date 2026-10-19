@@ -125,7 +125,7 @@ Load the widget on another site with `<script src="https://help.example.com/supp
 
 ### Guest widget rate limits
 
-The unauthenticated widget endpoints are limited per client IP: 5 guest tickets and 10 guest replies a minute, each with its own counter. Over the limit a request gets `429` with `Retry-After`. A reply is counted before its guest token is checked, so wrong-token guesses count too.
+The unauthenticated widget endpoints are limited per client IP: 5 guest tickets a minute (new tickets and live chat starts share this counter) and 10 guest replies a minute (ticket replies, chat messages and chat ratings), each with its own counter. Over the limit a request gets `429` with `Retry-After`. A reply is counted before its guest token is checked, so wrong-token guesses count too.
 
 ```yaml
 escalated:

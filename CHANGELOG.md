@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- Rate-limit `POST {route_prefix}/widget/api/chat/start`. It creates a ticket and chat session per request but had no limit; it now shares the guest ticket limit (`escalated.guest_rate_limit.tickets_per_minute`, default 5 per client IP per minute) with `POST /widget/api/tickets`, checked before validation, and answers 429 with `Retry-After`. Allowed embedding origins still get CORS headers on the 429.
+
 ## [0.3.0] - 2026-10-08
 
 This release changes how inbound email is matched to tickets. Read

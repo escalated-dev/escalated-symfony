@@ -22,6 +22,7 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 final class GuestRateLimitTest extends EscalatedWebTestCase
 {
     private const TICKETS = '/support/widget/api/tickets';
+    private const CHAT_START = '/support/widget/api/chat/start';
 
     private string $ip;
 
@@ -65,6 +66,20 @@ final class GuestRateLimitTest extends EscalatedWebTestCase
             'description' => 'Something broke.',
             'guest_name' => 'Guest '.$n,
             'guest_email' => 'guest'.$n.'@example.com',
+        ]));
+
+        return $client->getResponse()->getStatusCode();
+    }
+
+    private function startChat(KernelBrowser $client, int $n): int
+    {
+        $client->request('POST', self::CHAT_START, server: [
+            'REMOTE_ADDR' => $this->ip,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: (string) json_encode([
+            'name' => 'Guest '.$n,
+            'email' => 'chat'.$n.'@example.com',
+            'message' => 'Hello',
         ]));
 
         return $client->getResponse()->getStatusCode();
@@ -186,6 +201,58 @@ final class GuestRateLimitTest extends EscalatedWebTestCase
         $client = $this->client(['enabled' => false]);
 
         self::assertSame(array_fill(0, 8, 201), $this->ticketStatuses($client, 8));
+    }
+
+    public function testTheSixthChatStartFromOneIpWithinAMinuteGets429(): void
+    {
+        $client = $this->client();
+
+        $out = [];
+        for ($i = 0; $i < 6; ++$i) {
+            $out[] = $this->startChat($client, $i);
+        }
+
+        self::assertSame([201, 201, 201, 201, 201, 429], $out);
+        self::assertSame(5, $this->rows(Ticket::class));
+
+        $retryAfter = (int) $client->getResponse()->headers->get('Retry-After');
+        self::assertGreaterThan(0, $retryAfter);
+        self::assertLessThanOrEqual(60, $retryAfter);
+    }
+
+    public function testInvalidChatStartsAreCounted(): void
+    {
+        $client = $this->client(['tickets_per_minute' => 1]);
+
+        $client->request('POST', self::CHAT_START, server: [
+            'REMOTE_ADDR' => $this->ip,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: (string) json_encode(['message' => 'No name']));
+        self::assertSame(422, $client->getResponse()->getStatusCode());
+
+        self::assertSame(429, $this->startChat($client, 1));
+    }
+
+    public function testChatStartsAndGuestTicketsShareTheSubmissionLimit(): void
+    {
+        $client = $this->client(['tickets_per_minute' => 2]);
+
+        self::assertSame(201, $this->createTicket($client, 1));
+        self::assertSame(201, $this->startChat($client, 1));
+        self::assertSame(429, $this->createTicket($client, 2));
+        self::assertSame(429, $this->startChat($client, 2));
+    }
+
+    public function testChatStartIsUnlimitedWhenTheHostSwitchesTheLimitOff(): void
+    {
+        $client = $this->client(['enabled' => false]);
+
+        $out = [];
+        for ($i = 0; $i < 7; ++$i) {
+            $out[] = $this->startChat($client, $i);
+        }
+
+        self::assertSame(array_fill(0, 7, 201), $out);
     }
 
     public function testCountersLiveInTheConfiguredCachePool(): void

@@ -343,6 +343,20 @@ final class WidgetEmbeddingTest extends EscalatedWebTestCase
         self::assertSame(0, static::entityManager()->getRepository(Ticket::class)->count([]));
     }
 
+    public function testAddsCorsHeadersToARateLimitedChatStartForAllowedSites(): void
+    {
+        $client = $this->client(['guest_rate_limit' => ['tickets_per_minute' => 1]]);
+        $chat = ['name' => 'John Doe', 'email' => 'john@example.com', 'message' => 'Hello'];
+
+        self::assertSame(201, $this->post($client, '/chat/start', $chat)->getStatusCode());
+
+        $limited = $this->post($client, '/chat/start', $chat);
+        self::assertSame(429, $limited->getStatusCode());
+        self::assertTrue($limited->headers->has('Retry-After'));
+        self::assertGranted($limited);
+        self::assertSame('Retry-After', $limited->headers->get('Access-Control-Expose-Headers'));
+    }
+
     public function testLetsAnAllowedSiteStartALiveChatAndKeepsItsHostParameters(): void
     {
         $client = $this->client();

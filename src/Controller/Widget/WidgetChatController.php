@@ -62,6 +62,12 @@ class WidgetChatController extends AbstractController
             return WidgetRequest::error('Widget is disabled.', Response::HTTP_NOT_FOUND);
         }
 
+        // Starting a chat creates a ticket, so it shares the guest ticket
+        // limit with POST /tickets, checked before validation.
+        if (null !== $limited = $this->throttle($request, GuestRateLimiter::TICKET)) {
+            return $limited;
+        }
+
         $data = WidgetRequest::body($request);
         $name = WidgetRequest::guestName($data);
         $email = WidgetRequest::guestEmail($data);
@@ -343,9 +349,9 @@ class WidgetChatController extends AbstractController
         return null !== $session->getAgentId() ? ['name' => 'Support'] : null;
     }
 
-    private function throttle(Request $request): ?JsonResponse
+    private function throttle(Request $request, string $scope = GuestRateLimiter::REPLY): ?JsonResponse
     {
-        $retryAfter = $this->guestRateLimiter->attempt(GuestRateLimiter::REPLY, $request->getClientIp() ?? 'unknown');
+        $retryAfter = $this->guestRateLimiter->attempt($scope, $request->getClientIp() ?? 'unknown');
 
         return null === $retryAfter ? null : WidgetRequest::error(
             'Too many requests. Please try again later.',

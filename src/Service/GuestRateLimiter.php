@@ -12,7 +12,9 @@ use Psr\Cache\CacheItemPoolInterface;
  * Every accepted guest ticket or reply writes rows and sends outbound mail, so
  * an uncapped endpoint lets anyone flood the helpdesk and the mail provider.
  * Two scopes, each with its own fixed 60-second window per client IP:
- *   - ticket: POST {route_prefix}/widget/api/tickets (default 5 per minute)
+ *   - ticket: POST {route_prefix}/widget/api/tickets and
+ *             POST {route_prefix}/widget/api/chat/start, one shared counter
+ *             (default 5 per minute)
  *   - reply:  POST {route_prefix}/widget/api/tickets/{reference}/replies
  *             (default 10 per minute), checked before the guest token so
  *             wrong-token requests count too.

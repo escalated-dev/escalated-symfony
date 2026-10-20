@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Escalated\Symfony\Dto;
 
+use Escalated\Symfony\Security\UserKeyResolver;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
 /**
@@ -62,7 +63,7 @@ final class SkillWriteInput
     }
 
     /**
-     * @return list<array{user_id: int, proficiency: int}>
+     * @return list<array{user_id: int|string, proficiency: int}>
      */
     private static function agentsList(mixed $raw): array
     {
@@ -74,10 +75,14 @@ final class SkillWriteInput
             if (!\is_array($row)) {
                 throw new UnprocessableEntityHttpException('each agent entry must be an object.');
             }
-            if (!isset($row['user_id']) || !is_numeric($row['user_id'])) {
+            // Host user keys may be ints or UUID/string ids
+            // (ESCALATED_USER_KEY_TYPE); keep the shape the key type uses.
+            $uid = \is_int($row['user_id'] ?? null) || \is_string($row['user_id'] ?? null)
+                ? UserKeyResolver::normalize(\is_string($row['user_id']) ? trim($row['user_id']) : $row['user_id'])
+                : null;
+            if (null === $uid) {
                 throw new UnprocessableEntityHttpException('each agent requires user_id.');
             }
-            $uid = (int) $row['user_id'];
             $prof = isset($row['proficiency']) && is_numeric($row['proficiency'])
                 ? (int) $row['proficiency']
                 : 3;

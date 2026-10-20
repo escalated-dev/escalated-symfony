@@ -6,6 +6,7 @@ namespace Escalated\Symfony\Entity;
 
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Escalated\Symfony\Doctrine\UserIdType;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_chat_sessions')]
@@ -31,8 +32,8 @@ class ChatSession
     #[ORM\Column(type: Types::STRING, length: 32, options: ['default' => 'waiting'])]
     private string $status = self::STATUS_WAITING;
 
-    #[ORM\Column(type: Types::INTEGER, nullable: true)]
-    private ?int $agentId = null;
+    #[ORM\Column(type: UserIdType::NAME, nullable: true)]
+    private int|string|null $agentId = null;
 
     #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
     private ?string $visitorUserAgent = null;
@@ -106,12 +107,12 @@ class ChatSession
         return $this;
     }
 
-    public function getAgentId(): ?int
+    public function getAgentId(): int|string|null
     {
         return $this->agentId;
     }
 
-    public function setAgentId(?int $agentId): self
+    public function setAgentId(int|string|null $agentId): self
     {
         $this->agentId = $agentId;
 

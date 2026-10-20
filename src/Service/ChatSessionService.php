@@ -94,7 +94,7 @@ class ChatSessionService
     /**
      * Assign an agent to a chat session.
      */
-    public function assignAgent(ChatSession $session, int $agentId): ChatSession
+    public function assignAgent(ChatSession $session, int|string $agentId): ChatSession
     {
         $session->setAgentId($agentId);
         $session->setStatus(ChatSession::STATUS_ACTIVE);
@@ -122,7 +122,7 @@ class ChatSessionService
     /**
      * Send a chat message (creates a reply on the ticket).
      */
-    public function sendMessage(ChatSession $session, string $body, ?int $authorId = null, ?string $authorClass = null): void
+    public function sendMessage(ChatSession $session, string $body, int|string|null $authorId = null, ?string $authorClass = null): void
     {
         $ticket = $session->getTicket();
         $isAgent = null !== $authorClass;
@@ -207,7 +207,7 @@ class ChatSessionService
     /**
      * End a chat session.
      */
-    public function endSession(ChatSession $session, ?int $causerId = null): ChatSession
+    public function endSession(ChatSession $session, int|string|null $causerId = null): ChatSession
     {
         $now = new \DateTimeImmutable();
         $session->setStatus(ChatSession::STATUS_ENDED);

@@ -62,7 +62,7 @@ class MentionService
         ], $users);
     }
 
-    public function unreadMentions(int $userId): array
+    public function unreadMentions(int|string $userId): array
     {
         return $this->em->getConnection()->fetchAllAssociative(
             $this->sql('SELECT m.id, m.reply_id, r.ticket_id, t.reference as ticket_reference, t.subject as ticket_subject, m.created_at
@@ -75,7 +75,7 @@ class MentionService
         );
     }
 
-    public function markAsRead(array $mentionIds, int $userId): void
+    public function markAsRead(array $mentionIds, int|string $userId): void
     {
         if (empty($mentionIds)) {
             return;

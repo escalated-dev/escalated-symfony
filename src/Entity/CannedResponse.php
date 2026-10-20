@@ -6,6 +6,7 @@ namespace Escalated\Symfony\Entity;
 
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Escalated\Symfony\Doctrine\UserIdType;
 
 /**
  * CannedResponse — a reusable, agent-facing canned reply.
@@ -49,8 +50,8 @@ class CannedResponse
      * Host-app user id of the agent who created this response.
      * Null only for system-seeded responses.
      */
-    #[ORM\Column(type: Types::INTEGER, nullable: true)]
-    private ?int $createdBy = null;
+    #[ORM\Column(type: UserIdType::NAME, nullable: true)]
+    private int|string|null $createdBy = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
@@ -123,12 +124,12 @@ class CannedResponse
         return $this;
     }
 
-    public function getCreatedBy(): ?int
+    public function getCreatedBy(): int|string|null
     {
         return $this->createdBy;
     }
 
-    public function setCreatedBy(?int $createdBy): self
+    public function setCreatedBy(int|string|null $createdBy): self
     {
         $this->createdBy = $createdBy;
 

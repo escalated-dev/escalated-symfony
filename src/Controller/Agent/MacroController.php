@@ -7,6 +7,7 @@ namespace Escalated\Symfony\Controller\Agent;
 use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Entity\Macro;
 use Escalated\Symfony\Entity\Ticket;
+use Escalated\Symfony\Security\UserKeyResolver;
 use Escalated\Symfony\Service\MacroService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -24,6 +25,7 @@ class MacroController extends AbstractController
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly MacroService $macroService,
+        private readonly UserKeyResolver $userKeys,
     ) {
     }
 
@@ -35,8 +37,8 @@ class MacroController extends AbstractController
     {
         $this->denyAccessUnlessGranted('ESCALATED_AGENT');
 
-        $agentId = $this->currentUserId() ?? 0;
-        $macros = $this->macroService->listForAgent($agentId);
+        // No resolvable key: shared macros only.
+        $macros = $this->macroService->listForAgent($this->currentUserId());
 
         return new JsonResponse(array_map([$this, 'serialize'], $macros));
     }
@@ -59,7 +61,11 @@ class MacroController extends AbstractController
             throw $this->createNotFoundException('Ticket not found.');
         }
 
-        $agentId = $this->currentUserId() ?? 0;
+        // Replies and notes the macro adds are authored by this agent.
+        $agentId = $this->currentUserId();
+        if (null === $agentId) {
+            throw $this->createAccessDeniedException();
+        }
         $this->macroService->apply($macro, $ticket, $agentId);
 
         return new JsonResponse([
@@ -73,15 +79,15 @@ class MacroController extends AbstractController
         ]);
     }
 
-    private function currentUserId(): ?int
+    /**
+     * The signed-in user's host user key -- not getUserIdentifier(), which
+     * is usually the email.
+     */
+    private function currentUserId(): int|string|null
     {
         $user = $this->getUser();
-        if (null === $user) {
-            return null;
-        }
-        $id = $user->getUserIdentifier();
 
-        return is_numeric($id) ? (int) $id : null;
+        return null === $user ? null : $this->userKeys->resolve($user);
     }
 
     /** @return array<string, mixed> */

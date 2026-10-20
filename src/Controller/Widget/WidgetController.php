@@ -203,7 +203,7 @@ class WidgetController extends AbstractController
                 $replyAttachments[] = $a->toArray();
             }
 
-            $isAgent = null !== $r->getAuthorClass();
+            $isAgent = $r->isByAgent();
             $repliesArray[] = [
                 'body' => $r->getBody(),
                 'author' => $isAgent ? 'Support' : ($ticket->getGuestName() ?? 'You'),

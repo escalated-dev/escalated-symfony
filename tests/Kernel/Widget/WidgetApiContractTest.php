@@ -10,6 +10,7 @@ use Escalated\Symfony\Entity\ChatSession;
 use Escalated\Symfony\Entity\Department;
 use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Service\ChatSessionService;
+use Escalated\Symfony\Service\TicketService;
 use Escalated\Symfony\Tests\Kernel\EscalatedWebTestCase;
 use Escalated\Symfony\Tests\Kernel\Fixtures\Entity\TestUser;
 use Escalated\Symfony\Widget\WidgetSettings;
@@ -350,5 +351,58 @@ final class WidgetApiContractTest extends EscalatedWebTestCase
             'HTTP_X_GUEST_TOKEN' => $data['guest_token'],
         ], content: (string) json_encode(['body' => 'Still here']));
         self::assertSame(201, $this->code($client));
+    }
+
+    /**
+     * A guest who answers the notification email wrote that reply: the widget
+     * must not show it as Support's. Inbound guest replies are tagged with an
+     * `inbound_email` author class, which the old `authorClass !== null` check
+     * read as an agent.
+     */
+    public function testRepliesTheRequesterSentByEmailAreNotAgentReplies(): void
+    {
+        $client = $this->client();
+        $created = $this->api($client, 'POST', '/tickets', [
+            'name' => 'Ada Guest', 'email' => 'ada@example.com', 'subject' => 'Order missing', 'description' => 'Where is it?',
+        ]);
+        $ticket = static::entityManager()->getRepository(Ticket::class)->findOneBy(['reference' => $created['reference']]);
+        self::assertNotNull($ticket);
+        $tickets = static::getContainer()->get(TicketService::class);
+        \assert($tickets instanceof TicketService);
+        $tickets->addReply($ticket, 1, 'We are looking into it.', false, TestUser::class);
+        $tickets->addInboundEmailReply($ticket, 'Thanks, any news?');
+
+        $status = $this->api($client, 'GET', '/tickets/'.rawurlencode($created['reference']), null, $created['guest_access_token']);
+
+        self::assertSame(200, $this->code($client));
+        $byBody = array_column($status['replies'], null, 'body');
+        self::assertTrue($byBody['We are looking into it.']['is_agent']);
+        self::assertSame('Support', $byBody['We are looking into it.']['author']);
+        self::assertFalse($byBody['Thanks, any news?']['is_agent']);
+        self::assertSame('Ada Guest', $byBody['Thanks, any news?']['author']);
+    }
+
+    public function testRequesterUserRepliesAreNotAgentRepliesInAChat(): void
+    {
+        $client = $this->client();
+        $session = $this->api($client, 'POST', '/chat/start', ['name' => 'Ada Guest', 'email' => 'ada@example.com', 'message' => 'Hello']);
+        self::assertSame(201, $this->code($client));
+        $ticket = static::entityManager()->getRepository(Ticket::class)->findOneBy(['reference' => $session['data']['ticket_reference']]);
+        self::assertNotNull($ticket);
+        $ticket->setRequesterId(42)->setRequesterClass(TestUser::class);
+        static::entityManager()->flush();
+        $tickets = static::getContainer()->get(TicketService::class);
+        \assert($tickets instanceof TicketService);
+        $tickets->addInboundEmailReply($ticket, 'Guest by email');
+        $tickets->addInboundEmailReply($ticket, 'Requester by email', 42, TestUser::class);
+        $tickets->addReply($ticket, 1, 'Agent here', false, TestUser::class);
+
+        $poll = $this->api($client, 'GET', '/chat/'.$session['id'].'/messages');
+
+        self::assertSame(200, $this->code($client));
+        $isAgent = array_column($poll['messages'], 'is_agent', 'body');
+        self::assertFalse($isAgent['Guest by email']);
+        self::assertFalse($isAgent['Requester by email']);
+        self::assertTrue($isAgent['Agent here']);
     }
 }

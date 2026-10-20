@@ -330,7 +330,7 @@ class WidgetChatController extends AbstractController
         $replies = $ticket->getPublicReplies()->toArray();
         usort($replies, static fn ($a, $b): int => [$a->getCreatedAt(), $a->getId()] <=> [$b->getCreatedAt(), $b->getId()]);
         foreach (\array_slice($replies, -100) as $reply) {
-            $isAgent = null !== $reply->getAuthorClass();
+            $isAgent = $reply->isByAgent();
             $messages[] = [
                 'id' => $reply->getId(),
                 'body' => $reply->getBody(),

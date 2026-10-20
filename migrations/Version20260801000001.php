@@ -20,7 +20,7 @@ final class Version20260801000001 extends BundleMigration
             return;
         }
 
-        $responses = $schema->createTable('escalated_canned_responses');
+        $responses = $schema->createTable($this->table('canned_responses'));
         $responses->addColumn('id', 'integer', ['autoincrement' => true]);
         $responses->addColumn('title', 'string', ['length' => 255]);
         $responses->addColumn('body', 'text');
@@ -35,6 +35,6 @@ final class Version20260801000001 extends BundleMigration
 
     public function down(Schema $schema): void
     {
-        $schema->dropTable('escalated_canned_responses');
+        $schema->dropTable($this->table('canned_responses'));
     }
 }

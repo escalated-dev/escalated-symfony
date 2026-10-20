@@ -16,6 +16,11 @@ use Escalated\Symfony\Doctrine\UserIdType;
 #[ORM\HasLifecycleCallbacks]
 class Reply
 {
+    /**
+     * Author class of a reply a guest sent by email: it has no author id.
+     */
+    public const AUTHOR_INBOUND_EMAIL = 'inbound_email';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::INTEGER)]
@@ -114,6 +119,28 @@ class Reply
         $this->authorClass = $authorClass;
 
         return $this;
+    }
+
+    /**
+     * Whether an agent wrote this reply, as opposed to the ticket's requester.
+     *
+     * Guest replies have no author class, or the inbound-email tag when sent
+     * by email; a requester user's reply carries their own key and class.
+     */
+    public function isByAgent(): bool
+    {
+        if (null === $this->authorClass || self::AUTHOR_INBOUND_EMAIL === $this->authorClass) {
+            return false;
+        }
+
+        $requesterId = $this->ticket->getRequesterId();
+        $requesterClass = $this->ticket->getRequesterClass();
+        $byRequester = null !== $requesterId
+            && null !== $this->authorId
+            && (string) $requesterId === (string) $this->authorId
+            && (null === $requesterClass || $requesterClass === $this->authorClass);
+
+        return !$byRequester;
     }
 
     public function getBody(): string

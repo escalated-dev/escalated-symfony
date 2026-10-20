@@ -20,7 +20,7 @@ final class Version20260413000001 extends BundleMigration
             return;
         }
 
-        $attachments = $schema->createTable('escalated_attachments');
+        $attachments = $schema->createTable($this->table('attachments'));
         $attachments->addColumn('id', 'integer', ['autoincrement' => true]);
         $attachments->addColumn('ticket_id', 'integer', ['notnull' => false]);
         $attachments->addColumn('reply_id', 'integer', ['notnull' => false]);
@@ -35,12 +35,12 @@ final class Version20260413000001 extends BundleMigration
         $attachments->setPrimaryKey(['id']);
         $attachments->addIndex(['ticket_id'], 'idx_attachment_ticket');
         $attachments->addIndex(['reply_id'], 'idx_attachment_reply');
-        $attachments->addForeignKeyConstraint('escalated_tickets', ['ticket_id'], ['id'], ['onDelete' => 'CASCADE'], 'fk_attachment_ticket');
-        $attachments->addForeignKeyConstraint('escalated_replies', ['reply_id'], ['id'], ['onDelete' => 'CASCADE'], 'fk_attachment_reply');
+        $attachments->addForeignKeyConstraint($this->table('tickets'), ['ticket_id'], ['id'], ['onDelete' => 'CASCADE'], 'fk_attachment_ticket');
+        $attachments->addForeignKeyConstraint($this->table('replies'), ['reply_id'], ['id'], ['onDelete' => 'CASCADE'], 'fk_attachment_reply');
     }
 
     public function down(Schema $schema): void
     {
-        $schema->dropTable('escalated_attachments');
+        $schema->dropTable($this->table('attachments'));
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Escalated\Symfony\Controller\Agent;
 
 use Escalated\Symfony\Entity\CannedResponse;
+use Escalated\Symfony\Security\UserKeyResolver;
 use Escalated\Symfony\Service\CannedResponseService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -23,6 +24,7 @@ class CannedResponseController extends AbstractController
 {
     public function __construct(
         private readonly CannedResponseService $service,
+        private readonly UserKeyResolver $userKeys,
     ) {
     }
 
@@ -31,21 +33,21 @@ class CannedResponseController extends AbstractController
     {
         $this->denyAccessUnlessGranted('ESCALATED_AGENT');
 
-        $agentId = $this->currentUserId() ?? 0;
-        $responses = $this->service->listForAgent($agentId);
+        // No resolvable key: shared responses only.
+        $responses = $this->service->listForAgent($this->currentUserId());
 
         return new JsonResponse(array_map([$this, 'serialize'], $responses));
     }
 
-    private function currentUserId(): ?int
+    /**
+     * The signed-in user's host user key -- not getUserIdentifier(), which
+     * is usually the email.
+     */
+    private function currentUserId(): int|string|null
     {
         $user = $this->getUser();
-        if (null === $user) {
-            return null;
-        }
-        $id = $user->getUserIdentifier();
 
-        return is_numeric($id) ? (int) $id : null;
+        return null === $user ? null : $this->userKeys->resolve($user);
     }
 
     /** @return array<string, mixed> */

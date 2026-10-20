@@ -37,7 +37,7 @@ class MacroService
      *
      * @return Macro[]
      */
-    public function listForAgent(int $agentId): array
+    public function listForAgent(int|string|null $agentId): array
     {
         return $this->em->createQueryBuilder()
             ->select('m')
@@ -101,7 +101,7 @@ class MacroService
      * failure is caught and logged so a bad action does not abort the
      * rest of the bundle.
      */
-    public function apply(Macro $macro, Ticket $ticket, int $agentId): Ticket
+    public function apply(Macro $macro, Ticket $ticket, int|string $agentId): Ticket
     {
         foreach ($macro->getActions() as $action) {
             $type = $action['type'] ?? '';
@@ -147,7 +147,7 @@ class MacroService
                 }
             } catch (\Throwable $e) {
                 $this->logger->warning(sprintf(
-                    'Macro #%d action %s on ticket #%d (agent %d) failed: %s',
+                    'Macro #%d action %s on ticket #%d (agent %s) failed: %s',
                     $macro->getId() ?? 0,
                     $type,
                     $ticket->getId() ?? 0,
@@ -160,7 +160,7 @@ class MacroService
         return $ticket;
     }
 
-    private function createReply(Ticket $ticket, int $authorId, string $body, bool $isInternal): void
+    private function createReply(Ticket $ticket, int|string $authorId, string $body, bool $isInternal): void
     {
         $reply = new Reply();
         $reply->setTicket($ticket);

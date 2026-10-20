@@ -20,14 +20,14 @@ final class Version20260604000001 extends BundleMigration
             return;
         }
 
-        $deliveries = $schema->getTable('escalated_newsletter_deliveries');
+        $deliveries = $schema->getTable($this->table('newsletter_deliveries'));
         $deliveries->addColumn('next_attempt_at', 'datetime', ['notnull' => false]);
         $deliveries->addIndex(['status', 'next_attempt_at'], 'idx_escalated_nl_deliveries_claim');
     }
 
     public function down(Schema $schema): void
     {
-        $deliveries = $schema->getTable('escalated_newsletter_deliveries');
+        $deliveries = $schema->getTable($this->table('newsletter_deliveries'));
         $deliveries->dropIndex('idx_escalated_nl_deliveries_claim');
         $deliveries->dropColumn('next_attempt_at');
     }

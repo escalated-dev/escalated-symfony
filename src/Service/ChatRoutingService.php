@@ -8,6 +8,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Entity\ChatRoutingRule;
 use Escalated\Symfony\Entity\ChatSession;
 use Escalated\Symfony\Entity\Department;
+use Escalated\Symfony\Security\UserKeyResolver;
 
 class ChatRoutingService
 {
@@ -27,7 +28,7 @@ class ChatRoutingService
      * first agent ID that passes concurrent-chat limits, or null if no
      * agent is available.
      */
-    public function findAvailableAgent(?Department $department = null, ?\Escalated\Symfony\Entity\Ticket $ticket = null): ?int
+    public function findAvailableAgent(?Department $department = null, ?\Escalated\Symfony\Entity\Ticket $ticket = null): int|string|null
     {
         $rules = $this->getActiveRules($department);
 
@@ -44,7 +45,7 @@ class ChatRoutingService
     /**
      * Count active chat sessions for a given agent.
      */
-    public function getAgentActiveChatCount(int $agentId): int
+    public function getAgentActiveChatCount(int|string $agentId): int
     {
         return (int) $this->em->getRepository(ChatSession::class)
             ->createQueryBuilder('s')
@@ -75,15 +76,18 @@ class ChatRoutingService
         return $qb->getQuery()->getResult();
     }
 
-    private function evaluateRule(ChatRoutingRule $rule, ?\Escalated\Symfony\Entity\Ticket $ticket = null): ?int
+    private function evaluateRule(ChatRoutingRule $rule, ?\Escalated\Symfony\Entity\Ticket $ticket = null): int|string|null
     {
-        $agentIds = $rule->getAgentIds();
+        // UUID/string host keys must keep their shape (intval() made them 0).
+        $agentIds = array_values(array_filter(
+            array_map(UserKeyResolver::normalize(...), $rule->getAgentIds() ?? []),
+            static fn ($id) => null !== $id,
+        ));
         if ($this->access?->restricted()) {
             if (null === $ticket) {
                 return null;
             }
             $agentIds = array_values(array_filter($agentIds, fn ($id) => $this->access->canAssign($ticket, $id)));
-            $agentIds = array_map(intval(...), $agentIds);
         }
         if (empty($agentIds)) {
             return null;
@@ -98,7 +102,7 @@ class ChatRoutingService
         };
     }
 
-    private function roundRobin(ChatRoutingRule $rule, array $agentIds, int $maxChats): ?int
+    private function roundRobin(ChatRoutingRule $rule, array $agentIds, int $maxChats): int|string|null
     {
         $ruleId = $rule->getId() ?? 0;
         $index = $this->roundRobinIndex[$ruleId] ?? 0;
@@ -115,7 +119,7 @@ class ChatRoutingService
         return null;
     }
 
-    private function leastActive(array $agentIds, int $maxChats): ?int
+    private function leastActive(array $agentIds, int $maxChats): int|string|null
     {
         $bestAgent = null;
         $bestCount = PHP_INT_MAX;

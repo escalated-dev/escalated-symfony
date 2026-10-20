@@ -20,7 +20,7 @@ final class Version20260407000001 extends BundleMigration
             return;
         }
 
-        $table = $schema->getTable('escalated_tickets');
+        $table = $schema->getTable($this->table('tickets'));
         $table->addColumn('snoozed_until', 'datetime_immutable', ['notnull' => false]);
         $table->addColumn('snoozed_by', 'integer', ['notnull' => false]);
         $table->addColumn('status_before_snooze', 'string', ['length' => 32, 'notnull' => false]);
@@ -29,7 +29,7 @@ final class Version20260407000001 extends BundleMigration
 
     public function down(Schema $schema): void
     {
-        $table = $schema->getTable('escalated_tickets');
+        $table = $schema->getTable($this->table('tickets'));
         $table->dropIndex('idx_ticket_snoozed_until');
         $table->dropColumn('snoozed_until');
         $table->dropColumn('snoozed_by');

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Escalated\Symfony\Doctrine\Migration;
 
 use Doctrine\DBAL\Schema\Schema;
-use Doctrine\Migrations\AbstractMigration;
 
 /**
  * Base class for the bundle migrations that used to ship in the global
@@ -27,7 +26,7 @@ use Doctrine\Migrations\AbstractMigration;
  * column `version`). A host that renamed it adds the new versions by hand; see
  * the README's upgrade notes.
  */
-abstract class BundleMigration extends AbstractMigration
+abstract class BundleMigration extends PrefixedMigration
 {
     private const LEGACY_NAMESPACE = 'DoctrineMigrations';
 

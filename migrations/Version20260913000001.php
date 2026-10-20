@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace Escalated\Symfony\Migrations;
 
 use Doctrine\DBAL\Schema\Schema;
-use Doctrine\Migrations\AbstractMigration;
+use Escalated\Symfony\Doctrine\Migration\PrefixedMigration;
 
 /**
  * The Automation, Macro and SavedView entities shipped without a migration, so
  * a migrated install had no table behind them. Hosts that created the tables
  * with doctrine:schema:update already have them; those are left alone.
  */
-final class Version20260913000001 extends AbstractMigration
+final class Version20260913000001 extends PrefixedMigration
 {
     public function getDescription(): string
     {
@@ -21,8 +21,8 @@ final class Version20260913000001 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        if (!$schema->hasTable('escalated_automations')) {
-            $automations = $schema->createTable('escalated_automations');
+        if (!$schema->hasTable($this->table('automations'))) {
+            $automations = $schema->createTable($this->table('automations'));
             $automations->addColumn('id', 'integer', ['autoincrement' => true]);
             $automations->addColumn('name', 'string', ['length' => 255]);
             $automations->addColumn('description', 'text', ['notnull' => false]);
@@ -36,8 +36,8 @@ final class Version20260913000001 extends AbstractMigration
             $automations->setPrimaryKey(['id']);
         }
 
-        if (!$schema->hasTable('escalated_macros')) {
-            $macros = $schema->createTable('escalated_macros');
+        if (!$schema->hasTable($this->table('macros'))) {
+            $macros = $schema->createTable($this->table('macros'));
             $macros->addColumn('id', 'integer', ['autoincrement' => true]);
             $macros->addColumn('name', 'string', ['length' => 255]);
             $macros->addColumn('description', 'text', ['notnull' => false]);
@@ -49,8 +49,8 @@ final class Version20260913000001 extends AbstractMigration
             $macros->setPrimaryKey(['id']);
         }
 
-        if (!$schema->hasTable('escalated_saved_views')) {
-            $views = $schema->createTable('escalated_saved_views');
+        if (!$schema->hasTable($this->table('saved_views'))) {
+            $views = $schema->createTable($this->table('saved_views'));
             $views->addColumn('id', 'integer', ['autoincrement' => true]);
             $views->addColumn('name', 'string', ['length' => 255]);
             $views->addColumn('user_id', 'integer');
@@ -72,8 +72,8 @@ final class Version20260913000001 extends AbstractMigration
 
     public function down(Schema $schema): void
     {
-        $schema->dropTable('escalated_saved_views');
-        $schema->dropTable('escalated_macros');
-        $schema->dropTable('escalated_automations');
+        $schema->dropTable($this->table('saved_views'));
+        $schema->dropTable($this->table('macros'));
+        $schema->dropTable($this->table('automations'));
     }
 }

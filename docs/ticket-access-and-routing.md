@@ -68,6 +68,6 @@ When restrictions are enabled, legacy broadcasters are suppressed. Implement `Au
 
 ## Separate databases and prefixes
 
-Set `entity_manager` to the package's named Doctrine manager. Host user resolution uses the manager that maps `user_class`; visibility subqueries stay entirely on the package connection. Set `table_prefix` consistently with the existing package tables. The new migration factory passes it to this migration, and ORM metadata plus the workflow/mention/skill-routing helpers honor it.
+Set `entity_manager` to the package's named Doctrine manager. Host user resolution uses the manager that maps `user_class`; visibility subqueries stay entirely on the package connection. Set `table_prefix` consistently with the existing package tables. The migration factory passes it to every bundle migration, so a fresh `doctrine:migrations:migrate` creates the prefixed tables, and ORM metadata plus the workflow/mention/skill-routing helpers honor it.
 
 Older historical migrations still use their original table names. Hosts with an existing custom-prefix schema can apply the new migration directly or generate their own Doctrine migration; do not replay the old default-prefix history against that schema. Arbitrary host SQL and other legacy raw helpers remain the host's responsibility.

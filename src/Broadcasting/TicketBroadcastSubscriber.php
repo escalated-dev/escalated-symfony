@@ -70,8 +70,8 @@ class TicketBroadcastSubscriber implements EventSubscriberInterface
     /**
      * Build a channel name for an agent.
      */
-    public static function channelForAgent(int $agentId): string
+    public static function channelForAgent(int|string $agentId): string
     {
-        return sprintf('agent.%d', $agentId);
+        return sprintf('agent.%s', $agentId);
     }
 }

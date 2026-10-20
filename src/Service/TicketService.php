@@ -246,7 +246,7 @@ class TicketService
         $reply = new Reply();
         $reply->setTicket($ticket);
         $reply->setAuthorId($authorId);
-        $reply->setAuthorClass(null !== $authorId ? $authorClass : 'inbound_email');
+        $reply->setAuthorClass(null !== $authorId ? $authorClass : Reply::AUTHOR_INBOUND_EMAIL);
         $reply->setBody($body);
         $reply->setIsInternalNote(false);
         $reply->setType('reply');

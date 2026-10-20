@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Escalated\Symfony\Controller\Agent;
 
+use Escalated\Symfony\Security\UserKeyResolver;
 use Escalated\Symfony\Service\ChatSessionService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -16,6 +17,7 @@ class ChatController extends AbstractController
 {
     public function __construct(
         private readonly ChatSessionService $chatSessionService,
+        private readonly UserKeyResolver $userKeys,
     ) {
     }
 
@@ -56,7 +58,10 @@ class ChatController extends AbstractController
             return $this->json(['error' => 'Session is not waiting for an agent.'], Response::HTTP_CONFLICT);
         }
 
-        $agentId = $this->getUser()->getUserIdentifier();
+        $agentId = $this->currentUserKey();
+        if (null === $agentId) {
+            throw $this->createAccessDeniedException();
+        }
         $this->chatSessionService->assignAgent($session, $agentId);
 
         return $this->json(['data' => ['status' => 'accepted']]);
@@ -80,7 +85,10 @@ class ChatController extends AbstractController
             );
         }
 
-        $agentId = $this->getUser()->getUserIdentifier();
+        $agentId = $this->currentUserKey();
+        if (null === $agentId) {
+            throw $this->createAccessDeniedException();
+        }
         $this->chatSessionService->sendMessage(
             $session,
             $data['body'],
@@ -101,9 +109,19 @@ class ChatController extends AbstractController
             return $this->json(['error' => 'Session not found.'], Response::HTTP_NOT_FOUND);
         }
 
-        $agentId = $this->getUser()->getUserIdentifier();
-        $this->chatSessionService->endSession($session, $agentId);
+        $this->chatSessionService->endSession($session, $this->currentUserKey());
 
         return $this->json(['data' => ['status' => 'ended']]);
+    }
+
+    /**
+     * The signed-in agent's host user key -- not getUserIdentifier(), which
+     * is usually the email.
+     */
+    private function currentUserKey(): int|string|null
+    {
+        $user = $this->getUser();
+
+        return null === $user ? null : $this->userKeys->resolve($user);
     }
 }

@@ -26,7 +26,7 @@ final class Version20260517000001 extends BundleMigration
         // Built as standalone tables and emitted through the platform instead
         // of on $schema, so the proficiency CHECK can follow the CREATE TABLE:
         // Doctrine Migrations runs addSql() statements before the schema diff.
-        $skills = new Table('escalated_skills');
+        $skills = new Table($this->table('skills'));
         $skills->addColumn('id', 'integer', ['autoincrement' => true]);
         $skills->addColumn('name', 'string', ['length' => 100]);
         $skills->addColumn('slug', 'string', ['length' => 100]);
@@ -37,7 +37,7 @@ final class Version20260517000001 extends BundleMigration
         $skills->addUniqueIndex(['slug'], 'UNIQ_escalated_skills_slug');
         $skills->addUniqueIndex(['name'], 'UNIQ_escalated_skills_name');
 
-        $routingTags = new Table('escalated_skill_routing_tags');
+        $routingTags = new Table($this->table('skill_routing_tags'));
         $routingTags->addColumn('id', 'integer', ['autoincrement' => true]);
         $routingTags->addColumn('skill_id', 'integer');
         $routingTags->addColumn('tag_id', 'integer');
@@ -45,10 +45,10 @@ final class Version20260517000001 extends BundleMigration
         $routingTags->addIndex(['skill_id'], 'IDX_skill_routing_tag_skill');
         $routingTags->addIndex(['tag_id'], 'IDX_skill_routing_tag_tag');
         $routingTags->addUniqueIndex(['skill_id', 'tag_id'], 'UNIQ_skill_routing_tag');
-        $routingTags->addForeignKeyConstraint('escalated_skills', ['skill_id'], ['id'], ['onDelete' => 'CASCADE'], 'FK_skill_routing_tag_skill');
-        $routingTags->addForeignKeyConstraint('escalated_tags', ['tag_id'], ['id'], ['onDelete' => 'CASCADE'], 'FK_skill_routing_tag_tag');
+        $routingTags->addForeignKeyConstraint($this->table('skills'), ['skill_id'], ['id'], ['onDelete' => 'CASCADE'], 'FK_skill_routing_tag_skill');
+        $routingTags->addForeignKeyConstraint($this->table('tags'), ['tag_id'], ['id'], ['onDelete' => 'CASCADE'], 'FK_skill_routing_tag_tag');
 
-        $routingDepartments = new Table('escalated_skill_routing_departments');
+        $routingDepartments = new Table($this->table('skill_routing_departments'));
         $routingDepartments->addColumn('id', 'integer', ['autoincrement' => true]);
         $routingDepartments->addColumn('skill_id', 'integer');
         $routingDepartments->addColumn('department_id', 'integer');
@@ -56,10 +56,10 @@ final class Version20260517000001 extends BundleMigration
         $routingDepartments->addIndex(['skill_id'], 'IDX_skill_routing_dept_skill');
         $routingDepartments->addIndex(['department_id'], 'IDX_skill_routing_dept_dept');
         $routingDepartments->addUniqueIndex(['skill_id', 'department_id'], 'UNIQ_skill_routing_dept');
-        $routingDepartments->addForeignKeyConstraint('escalated_skills', ['skill_id'], ['id'], ['onDelete' => 'CASCADE'], 'FK_skill_routing_dept_skill');
-        $routingDepartments->addForeignKeyConstraint('escalated_departments', ['department_id'], ['id'], ['onDelete' => 'CASCADE'], 'FK_skill_routing_dept_dept');
+        $routingDepartments->addForeignKeyConstraint($this->table('skills'), ['skill_id'], ['id'], ['onDelete' => 'CASCADE'], 'FK_skill_routing_dept_skill');
+        $routingDepartments->addForeignKeyConstraint($this->table('departments'), ['department_id'], ['id'], ['onDelete' => 'CASCADE'], 'FK_skill_routing_dept_dept');
 
-        $agentSkills = new Table('escalated_agent_skills');
+        $agentSkills = new Table($this->table('agent_skills'));
         $agentSkills->addColumn('id', 'integer', ['autoincrement' => true]);
         $agentSkills->addColumn('user_id', 'integer');
         $agentSkills->addColumn('skill_id', 'integer');
@@ -70,7 +70,7 @@ final class Version20260517000001 extends BundleMigration
         $agentSkills->addIndex(['skill_id'], 'IDX_agent_skills_skill');
         $agentSkills->addIndex(['user_id'], 'IDX_agent_skills_user');
         $agentSkills->addUniqueIndex(['user_id', 'skill_id'], 'UNIQ_agent_skills_user_skill');
-        $agentSkills->addForeignKeyConstraint('escalated_skills', ['skill_id'], ['id'], ['onDelete' => 'CASCADE'], 'FK_agent_skills_skill');
+        $agentSkills->addForeignKeyConstraint($this->table('skills'), ['skill_id'], ['id'], ['onDelete' => 'CASCADE'], 'FK_agent_skills_skill');
 
         foreach ($this->platform->getCreateTablesSQL([$skills, $routingTags, $routingDepartments, $agentSkills]) as $sql) {
             $this->addSql($sql);
@@ -79,15 +79,15 @@ final class Version20260517000001 extends BundleMigration
         // SQLite only accepts CHECK inside CREATE TABLE; the entity validates
         // the range on every platform.
         if ($this->platform instanceof AbstractMySQLPlatform || $this->platform instanceof PostgreSQLPlatform) {
-            $this->addSql('ALTER TABLE escalated_agent_skills ADD CONSTRAINT CHK_agent_skills_proficiency CHECK (proficiency >= 1 AND proficiency <= 5)');
+            $this->addSql('ALTER TABLE '.$this->table('agent_skills').' ADD CONSTRAINT CHK_agent_skills_proficiency CHECK (proficiency >= 1 AND proficiency <= 5)');
         }
     }
 
     public function down(Schema $schema): void
     {
-        $schema->dropTable('escalated_agent_skills');
-        $schema->dropTable('escalated_skill_routing_departments');
-        $schema->dropTable('escalated_skill_routing_tags');
-        $schema->dropTable('escalated_skills');
+        $schema->dropTable($this->table('agent_skills'));
+        $schema->dropTable($this->table('skill_routing_departments'));
+        $schema->dropTable($this->table('skill_routing_tags'));
+        $schema->dropTable($this->table('skills'));
     }
 }

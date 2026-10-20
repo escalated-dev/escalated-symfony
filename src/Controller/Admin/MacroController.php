@@ -7,6 +7,7 @@ namespace Escalated\Symfony\Controller\Admin;
 use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Entity\Macro;
 use Escalated\Symfony\Rendering\UiRendererInterface;
+use Escalated\Symfony\Security\UserKeyResolver;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -25,6 +26,7 @@ class MacroController extends AbstractController
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly UiRendererInterface $renderer,
+        private readonly UserKeyResolver $userKeys,
     ) {
     }
 
@@ -128,15 +130,15 @@ class MacroController extends AbstractController
         }
     }
 
-    private function currentUserId(): ?int
+    /**
+     * The signed-in user's host user key -- not getUserIdentifier(), which
+     * is usually the email.
+     */
+    private function currentUserId(): int|string|null
     {
         $user = $this->getUser();
-        if (null === $user) {
-            return null;
-        }
-        $id = $user->getUserIdentifier();
 
-        return is_numeric($id) ? (int) $id : null;
+        return null === $user ? null : $this->userKeys->resolve($user);
     }
 
     /** @return array<string, mixed> */

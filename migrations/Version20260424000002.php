@@ -20,7 +20,7 @@ final class Version20260424000002 extends BundleMigration
             return;
         }
 
-        $settings = $schema->createTable('escalated_settings');
+        $settings = $schema->createTable($this->table('settings'));
         // `key` is reserved on MySQL; backticks make DBAL quote it for the
         // platform, matching the entity's mapping.
         $settings->addColumn('`key`', 'string', ['length' => 191]);
@@ -31,6 +31,6 @@ final class Version20260424000002 extends BundleMigration
 
     public function down(Schema $schema): void
     {
-        $schema->dropTable('escalated_settings');
+        $schema->dropTable($this->table('settings'));
     }
 }

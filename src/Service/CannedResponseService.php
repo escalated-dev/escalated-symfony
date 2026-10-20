@@ -40,7 +40,7 @@ class CannedResponseService
      *
      * @return CannedResponse[]
      */
-    public function listForAgent(int $agentId): array
+    public function listForAgent(int|string|null $agentId): array
     {
         return $this->em->createQueryBuilder()
             ->select('c')

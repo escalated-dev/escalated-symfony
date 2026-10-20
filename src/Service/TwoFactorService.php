@@ -14,7 +14,7 @@ class TwoFactorService
     ) {
     }
 
-    public function enable(int $userId, string $method = 'totp'): TwoFactor
+    public function enable(int|string $userId, string $method = 'totp'): TwoFactor
     {
         $twoFactor = new TwoFactor();
         $twoFactor->setUserId($userId);
@@ -64,7 +64,7 @@ class TwoFactorService
         $this->em->flush();
     }
 
-    public function findByUser(int $userId): ?TwoFactor
+    public function findByUser(int|string $userId): ?TwoFactor
     {
         return $this->em->getRepository(TwoFactor::class)->findOneBy(['userId' => $userId, 'isEnabled' => true]);
     }

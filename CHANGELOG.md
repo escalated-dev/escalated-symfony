@@ -2,8 +2,16 @@
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-10-20
+
 ### Changed
 - The bundled widget is now `@escalated-dev/escalated` 0.12.3. It keeps its script settings when `embed.js` is placed in the page `<head>`, and Enter no longer picks a stale mention suggestion.
+
+### Fixed
+- Agent live chat accept, message and end no longer answer 500. The agent's primary key is resolved with `UserKeyResolver`, and chat sessions and routing keep UUID and string agent ids.
+- Personal macros and canned responses list and apply for agents whose identifier is an email, and macro replies are authored by the real agent instead of user 0. Macros, canned responses, mentions, 2FA, agent broadcast channels and skill assignments accept `int|string` user keys.
+- A custom `table_prefix` now applies to every bundle migration, including generated index and foreign key names, so a fresh migrate and `doctrine:schema:validate` work with a prefix.
+- The widget no longer shows a requester's email reply as written by support. `is_agent` is true only for replies an agent wrote.
 
 ## [0.3.1] - 2026-10-19
 

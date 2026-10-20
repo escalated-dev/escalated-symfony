@@ -20,7 +20,7 @@ final class Version20260424000001 extends BundleMigration
             return;
         }
 
-        $contacts = $schema->createTable('escalated_contacts');
+        $contacts = $schema->createTable($this->table('contacts'));
         $contacts->addColumn('id', 'integer', ['autoincrement' => true]);
         $contacts->addColumn('email', 'string', ['length' => 320]);
         $contacts->addColumn('name', 'string', ['length' => 255, 'notnull' => false]);
@@ -32,19 +32,19 @@ final class Version20260424000001 extends BundleMigration
         $contacts->addIndex(['user_id'], 'idx_contact_user');
         $contacts->addUniqueIndex(['email'], 'UNIQ_contact_email');
 
-        $tickets = $schema->getTable('escalated_tickets');
+        $tickets = $schema->getTable($this->table('tickets'));
         $tickets->addColumn('contact_id', 'integer', ['notnull' => false]);
         $tickets->addIndex(['contact_id'], 'idx_ticket_contact');
-        $tickets->addForeignKeyConstraint('escalated_contacts', ['contact_id'], ['id'], ['onDelete' => 'SET NULL'], 'fk_ticket_contact');
+        $tickets->addForeignKeyConstraint($this->table('contacts'), ['contact_id'], ['id'], ['onDelete' => 'SET NULL'], 'fk_ticket_contact');
     }
 
     public function down(Schema $schema): void
     {
-        $tickets = $schema->getTable('escalated_tickets');
+        $tickets = $schema->getTable($this->table('tickets'));
         $tickets->dropForeignKey('fk_ticket_contact');
         $tickets->dropIndex('idx_ticket_contact');
         $tickets->dropColumn('contact_id');
 
-        $schema->dropTable('escalated_contacts');
+        $schema->dropTable($this->table('contacts'));
     }
 }

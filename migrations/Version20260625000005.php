@@ -20,7 +20,7 @@ final class Version20260625000005 extends BundleMigration
             return;
         }
 
-        $conversations = $schema->createTable('escalated_side_conversations');
+        $conversations = $schema->createTable($this->table('side_conversations'));
         $conversations->addColumn('id', 'integer', ['autoincrement' => true]);
         $conversations->addColumn('ticket_id', 'integer');
         $conversations->addColumn('subject', 'string', ['length' => 255]);
@@ -31,9 +31,9 @@ final class Version20260625000005 extends BundleMigration
         $conversations->addColumn('updated_at', 'datetime_immutable');
         $conversations->setPrimaryKey(['id']);
         $conversations->addIndex(['ticket_id'], 'idx_side_conversation_ticket');
-        $conversations->addForeignKeyConstraint('escalated_tickets', ['ticket_id'], ['id'], ['onDelete' => 'CASCADE'], 'FK_escalated_side_conversations_ticket');
+        $conversations->addForeignKeyConstraint($this->table('tickets'), ['ticket_id'], ['id'], ['onDelete' => 'CASCADE'], 'FK_escalated_side_conversations_ticket');
 
-        $replies = $schema->createTable('escalated_side_conversation_replies');
+        $replies = $schema->createTable($this->table('side_conversation_replies'));
         $replies->addColumn('id', 'integer', ['autoincrement' => true]);
         $replies->addColumn('side_conversation_id', 'integer');
         $replies->addColumn('body', 'text');
@@ -42,12 +42,12 @@ final class Version20260625000005 extends BundleMigration
         $replies->addColumn('updated_at', 'datetime_immutable');
         $replies->setPrimaryKey(['id']);
         $replies->addIndex(['side_conversation_id'], 'idx_side_conversation_reply_conversation');
-        $replies->addForeignKeyConstraint('escalated_side_conversations', ['side_conversation_id'], ['id'], ['onDelete' => 'CASCADE'], 'FK_escalated_side_conversation_replies_conversation');
+        $replies->addForeignKeyConstraint($this->table('side_conversations'), ['side_conversation_id'], ['id'], ['onDelete' => 'CASCADE'], 'FK_escalated_side_conversation_replies_conversation');
     }
 
     public function down(Schema $schema): void
     {
-        $schema->dropTable('escalated_side_conversation_replies');
-        $schema->dropTable('escalated_side_conversations');
+        $schema->dropTable($this->table('side_conversation_replies'));
+        $schema->dropTable($this->table('side_conversations'));
     }
 }

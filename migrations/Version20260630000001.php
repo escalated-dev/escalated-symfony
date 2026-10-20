@@ -20,7 +20,7 @@ final class Version20260630000001 extends BundleMigration
             return;
         }
 
-        $followers = $schema->createTable('escalated_ticket_followers');
+        $followers = $schema->createTable($this->table('ticket_followers'));
         $followers->addColumn('id', 'integer', ['autoincrement' => true]);
         $followers->addColumn('ticket_id', 'integer');
         // The host user's key, declared like every other user reference in
@@ -34,6 +34,6 @@ final class Version20260630000001 extends BundleMigration
 
     public function down(Schema $schema): void
     {
-        $schema->dropTable('escalated_ticket_followers');
+        $schema->dropTable($this->table('ticket_followers'));
     }
 }

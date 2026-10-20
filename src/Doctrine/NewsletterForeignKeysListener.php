@@ -42,15 +42,26 @@ final class NewsletterForeignKeysListener
         ],
     ];
 
+    public function __construct(private readonly string $tablePrefix = 'escalated_')
+    {
+    }
+
     public function postGenerateSchemaTable(GenerateSchemaTableEventArgs $args): void
     {
         $table = $args->getClassTable();
-        $foreignKeys = self::FOREIGN_KEYS[$table->getName()] ?? null;
+        $foreignKeys = null;
+        foreach (self::FOREIGN_KEYS as $name => $keys) {
+            if ($this->prefixed($name) === $table->getName()) {
+                $foreignKeys = $keys;
+                break;
+            }
+        }
         if (null === $foreignKeys) {
             return;
         }
 
         foreach ($foreignKeys as [$column, $foreignTable, $onDelete, $name]) {
+            $foreignTable = $this->prefixed($foreignTable);
             if ($table->hasForeignKey($name)) {
                 continue;
             }
@@ -63,5 +74,13 @@ final class NewsletterForeignKeysListener
                 $name,
             );
         }
+    }
+
+    /**
+     * The table's real name under the configured `table_prefix`.
+     */
+    private function prefixed(string $table): string
+    {
+        return $this->tablePrefix.substr($table, \strlen('escalated_'));
     }
 }

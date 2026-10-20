@@ -20,7 +20,7 @@ final class Version20260802000001 extends BundleMigration
             return;
         }
 
-        $tokens = $schema->createTable('escalated_api_tokens');
+        $tokens = $schema->createTable($this->table('api_tokens'));
         $tokens->addColumn('id', 'integer', ['autoincrement' => true]);
         $tokens->addColumn('user_id', 'string', ['length' => 255]);
         $tokens->addColumn('name', 'string', ['length' => 255]);
@@ -38,6 +38,6 @@ final class Version20260802000001 extends BundleMigration
 
     public function down(Schema $schema): void
     {
-        $schema->dropTable('escalated_api_tokens');
+        $schema->dropTable($this->table('api_tokens'));
     }
 }

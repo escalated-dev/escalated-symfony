@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Escalated\Symfony\Migrations;
 
 use Doctrine\DBAL\Schema\Schema;
-use Doctrine\Migrations\AbstractMigration;
+use Escalated\Symfony\Doctrine\Migration\PrefixedMigration;
 
 /**
  * First half of aligning escalated_workflow_logs with the WorkflowLog entity
@@ -14,7 +14,7 @@ use Doctrine\Migrations\AbstractMigration;
  * and drops it; the two are separate because a migration's own SQL runs
  * before its schema changes.
  */
-final class Version20260913000003 extends AbstractMigration
+final class Version20260913000003 extends PrefixedMigration
 {
     public function getDescription(): string
     {
@@ -23,7 +23,7 @@ final class Version20260913000003 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        $logs = $schema->getTable('escalated_workflow_logs');
+        $logs = $schema->getTable($this->table('workflow_logs'));
         $logs->addColumn('conditions_matched', 'boolean', ['default' => true]);
         $logs->addColumn('started_at', 'datetime_immutable', ['notnull' => false]);
         $logs->addColumn('completed_at', 'datetime_immutable', ['notnull' => false]);
@@ -31,7 +31,7 @@ final class Version20260913000003 extends AbstractMigration
 
     public function down(Schema $schema): void
     {
-        $logs = $schema->getTable('escalated_workflow_logs');
+        $logs = $schema->getTable($this->table('workflow_logs'));
         $logs->dropColumn('completed_at');
         $logs->dropColumn('started_at');
         $logs->dropColumn('conditions_matched');

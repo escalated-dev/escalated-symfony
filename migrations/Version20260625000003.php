@@ -20,7 +20,7 @@ final class Version20260625000003 extends BundleMigration
             return;
         }
 
-        $capacity = $schema->createTable('escalated_agent_capacity');
+        $capacity = $schema->createTable($this->table('agent_capacity'));
         $capacity->addColumn('id', 'integer', ['autoincrement' => true]);
         $capacity->addColumn('user_id', 'string', ['length' => 255]);
         $capacity->addColumn('channel', 'string', ['length' => 64]);
@@ -34,6 +34,6 @@ final class Version20260625000003 extends BundleMigration
 
     public function down(Schema $schema): void
     {
-        $schema->dropTable('escalated_agent_capacity');
+        $schema->dropTable($this->table('agent_capacity'));
     }
 }

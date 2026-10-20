@@ -20,7 +20,7 @@ final class Version20260731000001 extends BundleMigration
             return;
         }
 
-        $webhooks = $schema->createTable('escalated_webhooks');
+        $webhooks = $schema->createTable($this->table('webhooks'));
         $webhooks->addColumn('id', 'integer', ['autoincrement' => true]);
         $webhooks->addColumn('url', 'string', ['length' => 500]);
         $webhooks->addColumn('events', 'json');
@@ -30,7 +30,7 @@ final class Version20260731000001 extends BundleMigration
         $webhooks->addColumn('updated_at', 'datetime_immutable');
         $webhooks->setPrimaryKey(['id']);
 
-        $deliveries = $schema->createTable('escalated_webhook_deliveries');
+        $deliveries = $schema->createTable($this->table('webhook_deliveries'));
         $deliveries->addColumn('id', 'integer', ['autoincrement' => true]);
         $deliveries->addColumn('webhook_id', 'integer');
         $deliveries->addColumn('event', 'string', ['length' => 255]);
@@ -43,12 +43,12 @@ final class Version20260731000001 extends BundleMigration
         $deliveries->addColumn('updated_at', 'datetime_immutable');
         $deliveries->setPrimaryKey(['id']);
         $deliveries->addIndex(['webhook_id', 'event'], 'idx_webhook_delivery_webhook_event');
-        $deliveries->addForeignKeyConstraint('escalated_webhooks', ['webhook_id'], ['id'], ['onDelete' => 'CASCADE'], 'FK_webhook_delivery_webhook');
+        $deliveries->addForeignKeyConstraint($this->table('webhooks'), ['webhook_id'], ['id'], ['onDelete' => 'CASCADE'], 'FK_webhook_delivery_webhook');
     }
 
     public function down(Schema $schema): void
     {
-        $schema->dropTable('escalated_webhook_deliveries');
-        $schema->dropTable('escalated_webhooks');
+        $schema->dropTable($this->table('webhook_deliveries'));
+        $schema->dropTable($this->table('webhooks'));
     }
 }

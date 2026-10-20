@@ -7,6 +7,9 @@ namespace Escalated\Symfony\Doctrine\Migration;
 use Doctrine\Migrations\AbstractMigration;
 use Doctrine\Migrations\Version\MigrationFactory;
 
+/**
+ * Hands the configured `table_prefix` to every bundle migration.
+ */
 final class TicketAccessMigrationFactory implements MigrationFactory
 {
     public function __construct(private readonly MigrationFactory $inner, private readonly string $tablePrefix = 'escalated_')
@@ -16,8 +19,8 @@ final class TicketAccessMigrationFactory implements MigrationFactory
     public function createVersion(string $migrationClassName): AbstractMigration
     {
         $migration = $this->inner->createVersion($migrationClassName);
-        if ($migration instanceof \Escalated\Symfony\Migrations\Version20261013000001) {
-            $migration->configureTicketAccessPrefix($this->tablePrefix);
+        if ($migration instanceof PrefixedMigration) {
+            $migration->configureTablePrefix($this->tablePrefix);
         }
 
         return $migration;

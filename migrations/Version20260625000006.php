@@ -20,7 +20,7 @@ final class Version20260625000006 extends BundleMigration
             return;
         }
 
-        $categories = $schema->createTable('escalated_article_categories');
+        $categories = $schema->createTable($this->table('article_categories'));
         $categories->addColumn('id', 'integer', ['autoincrement' => true]);
         $categories->addColumn('name', 'string', ['length' => 255]);
         $categories->addColumn('slug', 'string', ['length' => 255]);
@@ -32,9 +32,9 @@ final class Version20260625000006 extends BundleMigration
         $categories->setPrimaryKey(['id']);
         $categories->addUniqueIndex(['slug'], 'escalated_article_categories_slug_unique');
         $categories->addIndex(['parent_id'], 'idx_article_category_parent');
-        $categories->addForeignKeyConstraint('escalated_article_categories', ['parent_id'], ['id'], ['onDelete' => 'SET NULL'], 'FK_escalated_article_categories_parent');
+        $categories->addForeignKeyConstraint($this->table('article_categories'), ['parent_id'], ['id'], ['onDelete' => 'SET NULL'], 'FK_escalated_article_categories_parent');
 
-        $articles = $schema->createTable('escalated_articles');
+        $articles = $schema->createTable($this->table('articles'));
         $articles->addColumn('id', 'integer', ['autoincrement' => true]);
         $articles->addColumn('category_id', 'integer', ['notnull' => false]);
         $articles->addColumn('title', 'string', ['length' => 255]);
@@ -52,12 +52,12 @@ final class Version20260625000006 extends BundleMigration
         $articles->addUniqueIndex(['slug'], 'escalated_articles_slug_unique');
         $articles->addIndex(['status'], 'idx_article_status');
         $articles->addIndex(['category_id'], 'idx_article_category');
-        $articles->addForeignKeyConstraint('escalated_article_categories', ['category_id'], ['id'], ['onDelete' => 'SET NULL'], 'FK_escalated_articles_category');
+        $articles->addForeignKeyConstraint($this->table('article_categories'), ['category_id'], ['id'], ['onDelete' => 'SET NULL'], 'FK_escalated_articles_category');
     }
 
     public function down(Schema $schema): void
     {
-        $schema->dropTable('escalated_articles');
-        $schema->dropTable('escalated_article_categories');
+        $schema->dropTable($this->table('articles'));
+        $schema->dropTable($this->table('article_categories'));
     }
 }

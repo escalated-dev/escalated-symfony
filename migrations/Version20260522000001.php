@@ -20,7 +20,7 @@ final class Version20260522000001 extends BundleMigration
             return;
         }
 
-        $lists = $schema->createTable('escalated_newsletter_lists');
+        $lists = $schema->createTable($this->table('newsletter_lists'));
         $lists->addColumn('id', 'integer', ['autoincrement' => true]);
         $lists->addColumn('name', 'string', ['length' => 255]);
         $lists->addColumn('description', 'text', ['notnull' => false]);
@@ -33,7 +33,7 @@ final class Version20260522000001 extends BundleMigration
         $lists->addIndex(['kind'], 'idx_nl_kind');
         $lists->addIndex(['created_by'], 'idx_nl_created_by');
 
-        $members = $schema->createTable('escalated_newsletter_list_members');
+        $members = $schema->createTable($this->table('newsletter_list_members'));
         $members->addColumn('id', 'integer', ['autoincrement' => true]);
         $members->addColumn('list_id', 'integer');
         $members->addColumn('contact_id', 'integer');
@@ -42,10 +42,10 @@ final class Version20260522000001 extends BundleMigration
         $members->setPrimaryKey(['id']);
         $members->addUniqueIndex(['list_id', 'contact_id'], 'uniq_nl_list_contact');
         $members->addIndex(['contact_id'], 'idx_nlm_contact');
-        $members->addForeignKeyConstraint('escalated_newsletter_lists', ['list_id'], ['id'], ['onDelete' => 'CASCADE'], 'fk_nlm_list');
-        $members->addForeignKeyConstraint('escalated_contacts', ['contact_id'], ['id'], ['onDelete' => 'CASCADE'], 'fk_nlm_contact');
+        $members->addForeignKeyConstraint($this->table('newsletter_lists'), ['list_id'], ['id'], ['onDelete' => 'CASCADE'], 'fk_nlm_list');
+        $members->addForeignKeyConstraint($this->table('contacts'), ['contact_id'], ['id'], ['onDelete' => 'CASCADE'], 'fk_nlm_contact');
 
-        $templates = $schema->createTable('escalated_newsletter_templates');
+        $templates = $schema->createTable($this->table('newsletter_templates'));
         $templates->addColumn('id', 'integer', ['autoincrement' => true]);
         $templates->addColumn('name', 'string', ['length' => 255]);
         $templates->addColumn('theme', 'string', ['length' => 64, 'default' => 'default']);
@@ -59,7 +59,7 @@ final class Version20260522000001 extends BundleMigration
         $templates->addIndex(['theme'], 'idx_nlt_theme');
         $templates->addIndex(['created_by'], 'idx_nlt_created_by');
 
-        $newsletters = $schema->createTable('escalated_newsletters');
+        $newsletters = $schema->createTable($this->table('newsletters'));
         $newsletters->addColumn('id', 'integer', ['autoincrement' => true]);
         $newsletters->addColumn('subject', 'string', ['length' => 998]);
         $newsletters->addColumn('from_email', 'string', ['length' => 320]);
@@ -84,10 +84,10 @@ final class Version20260522000001 extends BundleMigration
         $newsletters->addIndex(['scheduled_at'], 'idx_n_scheduled_at');
         $newsletters->addIndex(['status', 'scheduled_at'], 'idx_n_status_sched');
         $newsletters->addIndex(['created_by'], 'idx_n_created_by');
-        $newsletters->addForeignKeyConstraint('escalated_newsletter_lists', ['target_list_id'], ['id'], [], 'fk_n_list');
-        $newsletters->addForeignKeyConstraint('escalated_newsletter_templates', ['template_id'], ['id'], ['onDelete' => 'SET NULL'], 'fk_n_template');
+        $newsletters->addForeignKeyConstraint($this->table('newsletter_lists'), ['target_list_id'], ['id'], [], 'fk_n_list');
+        $newsletters->addForeignKeyConstraint($this->table('newsletter_templates'), ['template_id'], ['id'], ['onDelete' => 'SET NULL'], 'fk_n_template');
 
-        $deliveries = $schema->createTable('escalated_newsletter_deliveries');
+        $deliveries = $schema->createTable($this->table('newsletter_deliveries'));
         $deliveries->addColumn('id', 'bigint', ['autoincrement' => true]);
         $deliveries->addColumn('newsletter_id', 'integer');
         $deliveries->addColumn('contact_id', 'integer');
@@ -109,24 +109,24 @@ final class Version20260522000001 extends BundleMigration
         $deliveries->addIndex(['newsletter_id', 'status'], 'idx_nd_nl_status');
         $deliveries->addIndex(['contact_id'], 'idx_nd_contact');
         $deliveries->addIndex(['status', 'claimed_at'], 'idx_nd_status_claimed');
-        $deliveries->addForeignKeyConstraint('escalated_newsletters', ['newsletter_id'], ['id'], ['onDelete' => 'CASCADE'], 'fk_nd_newsletter');
-        $deliveries->addForeignKeyConstraint('escalated_contacts', ['contact_id'], ['id'], ['onDelete' => 'CASCADE'], 'fk_nd_contact');
+        $deliveries->addForeignKeyConstraint($this->table('newsletters'), ['newsletter_id'], ['id'], ['onDelete' => 'CASCADE'], 'fk_nd_newsletter');
+        $deliveries->addForeignKeyConstraint($this->table('contacts'), ['contact_id'], ['id'], ['onDelete' => 'CASCADE'], 'fk_nd_contact');
 
-        $contacts = $schema->getTable('escalated_contacts');
+        $contacts = $schema->getTable($this->table('contacts'));
         $contacts->addColumn('marketing_opt_out_at', 'datetime', ['notnull' => false]);
         $contacts->addIndex(['marketing_opt_out_at'], 'idx_contact_opt_out');
     }
 
     public function down(Schema $schema): void
     {
-        $contacts = $schema->getTable('escalated_contacts');
+        $contacts = $schema->getTable($this->table('contacts'));
         $contacts->dropIndex('idx_contact_opt_out');
         $contacts->dropColumn('marketing_opt_out_at');
 
-        $schema->dropTable('escalated_newsletter_deliveries');
-        $schema->dropTable('escalated_newsletters');
-        $schema->dropTable('escalated_newsletter_templates');
-        $schema->dropTable('escalated_newsletter_list_members');
-        $schema->dropTable('escalated_newsletter_lists');
+        $schema->dropTable($this->table('newsletter_deliveries'));
+        $schema->dropTable($this->table('newsletters'));
+        $schema->dropTable($this->table('newsletter_templates'));
+        $schema->dropTable($this->table('newsletter_list_members'));
+        $schema->dropTable($this->table('newsletter_lists'));
     }
 }

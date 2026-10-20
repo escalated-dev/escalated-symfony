@@ -20,7 +20,7 @@ final class Version20260625000002 extends BundleMigration
             return;
         }
 
-        $ratings = $schema->createTable('escalated_satisfaction_ratings');
+        $ratings = $schema->createTable($this->table('satisfaction_ratings'));
         $ratings->addColumn('id', 'integer', ['autoincrement' => true]);
         $ratings->addColumn('ticket_id', 'integer');
         $ratings->addColumn('rating', 'smallint');
@@ -30,11 +30,11 @@ final class Version20260625000002 extends BundleMigration
         $ratings->addColumn('created_at', 'datetime_immutable');
         $ratings->setPrimaryKey(['id']);
         $ratings->addUniqueIndex(['ticket_id'], 'escalated_satisfaction_rating_ticket_unique');
-        $ratings->addForeignKeyConstraint('escalated_tickets', ['ticket_id'], ['id'], ['onDelete' => 'CASCADE'], 'FK_escalated_satisfaction_ratings_ticket');
+        $ratings->addForeignKeyConstraint($this->table('tickets'), ['ticket_id'], ['id'], ['onDelete' => 'CASCADE'], 'FK_escalated_satisfaction_ratings_ticket');
     }
 
     public function down(Schema $schema): void
     {
-        $schema->dropTable('escalated_satisfaction_ratings');
+        $schema->dropTable($this->table('satisfaction_ratings'));
     }
 }

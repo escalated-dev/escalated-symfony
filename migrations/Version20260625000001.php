@@ -20,7 +20,7 @@ final class Version20260625000001 extends BundleMigration
             return;
         }
 
-        $rules = $schema->createTable('escalated_escalation_rules');
+        $rules = $schema->createTable($this->table('escalation_rules'));
         $rules->addColumn('id', 'integer', ['autoincrement' => true]);
         $rules->addColumn('name', 'string', ['length' => 255]);
         $rules->addColumn('description', 'text', ['notnull' => false]);
@@ -37,6 +37,6 @@ final class Version20260625000001 extends BundleMigration
 
     public function down(Schema $schema): void
     {
-        $schema->dropTable('escalated_escalation_rules');
+        $schema->dropTable($this->table('escalation_rules'));
     }
 }

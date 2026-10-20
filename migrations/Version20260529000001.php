@@ -20,7 +20,7 @@ final class Version20260529000001 extends BundleMigration
             return;
         }
 
-        $subjects = $schema->createTable('escalated_ticket_subjects');
+        $subjects = $schema->createTable($this->table('ticket_subjects'));
         $subjects->addColumn('id', 'integer', ['autoincrement' => true]);
         $subjects->addColumn('ticket_id', 'integer');
         $subjects->addColumn('subject_type', 'string', ['length' => 255]);
@@ -33,11 +33,11 @@ final class Version20260529000001 extends BundleMigration
         $subjects->addIndex(['subject_type', 'subject_id'], 'idx_ticket_subject_polymorphic');
         $subjects->addUniqueIndex(['ticket_id', 'subject_type', 'subject_id'], 'escalated_ticket_subject_unique');
         $subjects->addIndex(['ticket_id'], 'IDX_escalated_ticket_subjects_ticket');
-        $subjects->addForeignKeyConstraint('escalated_tickets', ['ticket_id'], ['id'], ['onDelete' => 'CASCADE'], 'FK_escalated_ticket_subjects_ticket');
+        $subjects->addForeignKeyConstraint($this->table('tickets'), ['ticket_id'], ['id'], ['onDelete' => 'CASCADE'], 'FK_escalated_ticket_subjects_ticket');
     }
 
     public function down(Schema $schema): void
     {
-        $schema->dropTable('escalated_ticket_subjects');
+        $schema->dropTable($this->table('ticket_subjects'));
     }
 }

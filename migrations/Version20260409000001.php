@@ -21,7 +21,7 @@ final class Version20260409000001 extends BundleMigration
         }
 
         // Email Channels
-        $emailChannels = $schema->createTable('escalated_email_channels');
+        $emailChannels = $schema->createTable($this->table('email_channels'));
         $emailChannels->addColumn('id', 'integer', ['autoincrement' => true]);
         $emailChannels->addColumn('email_address', 'string', ['length' => 255]);
         $emailChannels->addColumn('display_name', 'string', ['length' => 255, 'notnull' => false]);
@@ -43,10 +43,10 @@ final class Version20260409000001 extends BundleMigration
         $emailChannels->setPrimaryKey(['id']);
         $emailChannels->addIndex(['department_id'], 'idx_email_channel_dept');
         $emailChannels->addIndex(['is_active'], 'idx_email_channel_active');
-        $emailChannels->addForeignKeyConstraint('escalated_departments', ['department_id'], ['id'], ['onDelete' => 'SET NULL']);
+        $emailChannels->addForeignKeyConstraint($this->table('departments'), ['department_id'], ['id'], ['onDelete' => 'SET NULL']);
 
         // Custom Fields
-        $customFields = $schema->createTable('escalated_custom_fields');
+        $customFields = $schema->createTable($this->table('custom_fields'));
         $customFields->addColumn('id', 'integer', ['autoincrement' => true]);
         $customFields->addColumn('name', 'string', ['length' => 255]);
         $customFields->addColumn('slug', 'string', ['length' => 255]);
@@ -65,7 +65,7 @@ final class Version20260409000001 extends BundleMigration
         $customFields->addIndex(['entity_type'], 'idx_custom_field_entity_type');
 
         // Custom Field Values
-        $cfv = $schema->createTable('escalated_custom_field_values');
+        $cfv = $schema->createTable($this->table('custom_field_values'));
         $cfv->addColumn('id', 'integer', ['autoincrement' => true]);
         $cfv->addColumn('custom_field_id', 'integer');
         $cfv->addColumn('entity_type', 'string', ['length' => 50, 'default' => 'ticket']);
@@ -75,10 +75,10 @@ final class Version20260409000001 extends BundleMigration
         $cfv->addColumn('updated_at', 'datetime_immutable');
         $cfv->setPrimaryKey(['id']);
         $cfv->addUniqueIndex(['custom_field_id', 'entity_type', 'entity_id'], 'unique_field_entity');
-        $cfv->addForeignKeyConstraint('escalated_custom_fields', ['custom_field_id'], ['id'], ['onDelete' => 'CASCADE']);
+        $cfv->addForeignKeyConstraint($this->table('custom_fields'), ['custom_field_id'], ['id'], ['onDelete' => 'CASCADE']);
 
         // Custom Objects
-        $co = $schema->createTable('escalated_custom_objects');
+        $co = $schema->createTable($this->table('custom_objects'));
         $co->addColumn('id', 'integer', ['autoincrement' => true]);
         $co->addColumn('name', 'string', ['length' => 255]);
         $co->addColumn('slug', 'string', ['length' => 255]);
@@ -91,7 +91,7 @@ final class Version20260409000001 extends BundleMigration
         $co->addUniqueIndex(['slug'], 'uniq_custom_object_slug');
 
         // Custom Object Records
-        $cor = $schema->createTable('escalated_custom_object_records');
+        $cor = $schema->createTable($this->table('custom_object_records'));
         $cor->addColumn('id', 'integer', ['autoincrement' => true]);
         $cor->addColumn('custom_object_id', 'integer');
         $cor->addColumn('title', 'string', ['length' => 255, 'notnull' => false]);
@@ -103,10 +103,10 @@ final class Version20260409000001 extends BundleMigration
         $cor->setPrimaryKey(['id']);
         $cor->addIndex(['custom_object_id'], 'idx_cor_object');
         $cor->addIndex(['linked_entity_type', 'linked_entity_id'], 'idx_cor_linked');
-        $cor->addForeignKeyConstraint('escalated_custom_objects', ['custom_object_id'], ['id'], ['onDelete' => 'CASCADE']);
+        $cor->addForeignKeyConstraint($this->table('custom_objects'), ['custom_object_id'], ['id'], ['onDelete' => 'CASCADE']);
 
         // Audit Logs
-        $al = $schema->createTable('escalated_audit_logs');
+        $al = $schema->createTable($this->table('audit_logs'));
         $al->addColumn('id', 'integer', ['autoincrement' => true]);
         $al->addColumn('action', 'string', ['length' => 255]);
         $al->addColumn('entity_type', 'string', ['length' => 50]);
@@ -124,7 +124,7 @@ final class Version20260409000001 extends BundleMigration
         $al->addIndex(['created_at'], 'idx_audit_created');
 
         // Business Schedules
-        $bs = $schema->createTable('escalated_business_schedules');
+        $bs = $schema->createTable($this->table('business_schedules'));
         $bs->addColumn('id', 'integer', ['autoincrement' => true]);
         $bs->addColumn('name', 'string', ['length' => 255]);
         $bs->addColumn('timezone', 'string', ['length' => 64, 'default' => 'UTC']);
@@ -136,7 +136,7 @@ final class Version20260409000001 extends BundleMigration
         $bs->setPrimaryKey(['id']);
 
         // Holidays
-        $h = $schema->createTable('escalated_holidays');
+        $h = $schema->createTable($this->table('holidays'));
         $h->addColumn('id', 'integer', ['autoincrement' => true]);
         $h->addColumn('business_schedule_id', 'integer');
         $h->addColumn('name', 'string', ['length' => 255]);
@@ -145,10 +145,10 @@ final class Version20260409000001 extends BundleMigration
         $h->addColumn('created_at', 'datetime_immutable');
         $h->setPrimaryKey(['id']);
         $h->addIndex(['business_schedule_id'], 'idx_holiday_schedule');
-        $h->addForeignKeyConstraint('escalated_business_schedules', ['business_schedule_id'], ['id'], ['onDelete' => 'CASCADE']);
+        $h->addForeignKeyConstraint($this->table('business_schedules'), ['business_schedule_id'], ['id'], ['onDelete' => 'CASCADE']);
 
         // Two Factors
-        $tf = $schema->createTable('escalated_two_factors');
+        $tf = $schema->createTable($this->table('two_factors'));
         $tf->addColumn('id', 'integer', ['autoincrement' => true]);
         $tf->addColumn('user_id', 'integer');
         $tf->addColumn('method', 'string', ['length' => 32, 'default' => 'totp']);
@@ -162,7 +162,7 @@ final class Version20260409000001 extends BundleMigration
         $tf->addIndex(['user_id'], 'idx_two_factor_user');
 
         // Workflows
-        $wf = $schema->createTable('escalated_workflows');
+        $wf = $schema->createTable($this->table('workflows'));
         $wf->addColumn('id', 'integer', ['autoincrement' => true]);
         $wf->addColumn('name', 'string', ['length' => 255]);
         $wf->addColumn('description', 'text', ['notnull' => false]);
@@ -179,7 +179,7 @@ final class Version20260409000001 extends BundleMigration
         $wf->addIndex(['is_active'], 'idx_workflow_active');
 
         // Workflow Logs
-        $wl = $schema->createTable('escalated_workflow_logs');
+        $wl = $schema->createTable($this->table('workflow_logs'));
         $wl->addColumn('id', 'integer', ['autoincrement' => true]);
         $wl->addColumn('workflow_id', 'integer');
         $wl->addColumn('ticket_id', 'integer');
@@ -193,7 +193,7 @@ final class Version20260409000001 extends BundleMigration
         $wl->addIndex(['ticket_id'], 'idx_wflog_ticket');
 
         // Delayed Actions
-        $da = $schema->createTable('escalated_delayed_actions');
+        $da = $schema->createTable($this->table('delayed_actions'));
         $da->addColumn('id', 'integer', ['autoincrement' => true]);
         $da->addColumn('workflow_id', 'integer');
         $da->addColumn('ticket_id', 'integer');
@@ -207,17 +207,17 @@ final class Version20260409000001 extends BundleMigration
 
     public function down(Schema $schema): void
     {
-        $schema->dropTable('escalated_delayed_actions');
-        $schema->dropTable('escalated_workflow_logs');
-        $schema->dropTable('escalated_workflows');
-        $schema->dropTable('escalated_two_factors');
-        $schema->dropTable('escalated_holidays');
-        $schema->dropTable('escalated_business_schedules');
-        $schema->dropTable('escalated_audit_logs');
-        $schema->dropTable('escalated_custom_object_records');
-        $schema->dropTable('escalated_custom_objects');
-        $schema->dropTable('escalated_custom_field_values');
-        $schema->dropTable('escalated_custom_fields');
-        $schema->dropTable('escalated_email_channels');
+        $schema->dropTable($this->table('delayed_actions'));
+        $schema->dropTable($this->table('workflow_logs'));
+        $schema->dropTable($this->table('workflows'));
+        $schema->dropTable($this->table('two_factors'));
+        $schema->dropTable($this->table('holidays'));
+        $schema->dropTable($this->table('business_schedules'));
+        $schema->dropTable($this->table('audit_logs'));
+        $schema->dropTable($this->table('custom_object_records'));
+        $schema->dropTable($this->table('custom_objects'));
+        $schema->dropTable($this->table('custom_field_values'));
+        $schema->dropTable($this->table('custom_fields'));
+        $schema->dropTable($this->table('email_channels'));
     }
 }

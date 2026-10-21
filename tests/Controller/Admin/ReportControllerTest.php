@@ -187,7 +187,12 @@ class ReportControllerTest extends TestCase
             }
         }
 
+        // Under the class prefix `escalated.admin.`, as the shared report
+        // pages call them (`escalated.admin.reports`, `...reports.dashboard`).
         foreach ($expected as $name) {
+            $this->assertContains('reports.'.$name, $found, 'Missing route name reports.'.$name);
+        }
+        foreach (['reports', 'reports.dashboard', 'reports.agents', 'reports.sla', 'reports.csat', 'reports.comparison'] as $name) {
             $this->assertContains($name, $found, 'Missing route name '.$name);
         }
     }
@@ -201,7 +206,7 @@ class ReportControllerTest extends TestCase
         /** @var Route $route */
         $route = $attrs[0]->newInstance();
         $this->assertSame('/admin/reports', $route->path);
-        $this->assertSame('escalated.admin.reports.', $route->name);
+        $this->assertSame('escalated.admin.', $route->name);
     }
 
     /** @return array<string, mixed> */

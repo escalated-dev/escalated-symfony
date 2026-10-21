@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Escalated\Symfony\Controller\Admin;
 
+use Escalated\Symfony\Rendering\ReportPages;
 use Escalated\Symfony\Rendering\UiRendererInterface;
 use Escalated\Symfony\Service\AdvancedReportingService;
 use Escalated\Symfony\Service\ExportService;
@@ -24,7 +25,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * already lives in the services; this controller only translates the
  * `period` (days) query param into a date range and shapes the response.
  */
-#[Route('/admin/reports', name: 'escalated.admin.reports.')]
+#[Route('/admin/reports', name: 'escalated.admin.')]
 class ReportController extends AbstractController
 {
     /** Upper bound on the reporting window; AdvancedReportingService clamps its date series to 90 days. */
@@ -36,15 +37,18 @@ class ReportController extends AbstractController
         private readonly AdvancedReportingService $reporting,
         private readonly ExportService $exportService,
         private readonly UiRendererInterface $renderer,
+        private readonly ?ReportPages $pages = null,
     ) {
     }
 
     /**
-     * Landing dashboard. Renders the Inertia page the reference host uses,
-     * pre-loaded with an overview (period comparison, SLA breach trends,
-     * agent ranking) plus the list of exportable report types.
+     * Escalated/Admin/Reports, the overview the Reports link opens, with
+     * escalated-laravel's props. The earlier overview keys (`comparison`,
+     * `sla_trends`, `agent_ranking`, `exportable_reports`) are still sent for
+     * hosts that read them.
      */
-    #[Route('', name: 'index', methods: ['GET'])]
+    #[Route('', name: 'reports', methods: ['GET'])]
+    #[Route('', name: 'reports.index', methods: ['GET'])]
     public function index(Request $request): Response
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
@@ -52,7 +56,7 @@ class ReportController extends AbstractController
         [$from, $to, $days] = $this->range($request);
 
         return $this->renderer->render('Escalated/Admin/Reports', [
-            'period_days' => $days,
+            ...($this->pages?->overview($days) ?? ['period_days' => $days]),
             'comparison' => $this->reporting->periodComparison($from, $to),
             'sla_trends' => $this->reporting->slaBreachTrends($from, $to),
             'agent_ranking' => $this->reporting->agentPerformanceRanking($from, $to),
@@ -60,10 +64,55 @@ class ReportController extends AbstractController
         ]);
     }
 
+    #[Route('/dashboard', name: 'reports.dashboard', methods: ['GET'])]
+    public function dashboard(Request $request): Response
+    {
+        $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
+
+        return $this->renderer->render('Escalated/Admin/Reports/Dashboard', $this->pages()->dashboard($this->range($request)[2]));
+    }
+
+    #[Route('/agents', name: 'reports.agents', methods: ['GET'])]
+    public function agents(Request $request): Response
+    {
+        $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
+
+        return $this->renderer->render('Escalated/Admin/Reports/AgentMetrics', $this->pages()->agents($this->range($request)[2]));
+    }
+
+    #[Route('/sla', name: 'reports.sla', methods: ['GET'])]
+    public function sla(Request $request): Response
+    {
+        $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
+
+        return $this->renderer->render('Escalated/Admin/Reports/SlaReport', $this->pages()->sla($this->range($request)[2]));
+    }
+
+    #[Route('/csat', name: 'reports.csat', methods: ['GET'])]
+    public function csat(Request $request): Response
+    {
+        $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
+
+        return $this->renderer->render('Escalated/Admin/Reports/CsatReport', $this->pages()->csat($this->range($request)[2]));
+    }
+
+    #[Route('/comparison', name: 'reports.comparison', methods: ['GET'])]
+    public function comparison(Request $request): Response
+    {
+        $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
+
+        return $this->renderer->render('Escalated/Admin/Reports/Comparison', $this->pages()->comparison($this->range($request)[2]));
+    }
+
+    private function pages(): ReportPages
+    {
+        return $this->pages ?? throw new \LogicException('ReportPages is not available.');
+    }
+
     /**
      * SLA breach trends over time (first-response vs resolution breaches).
      */
-    #[Route('/sla-trends', name: 'sla_trends', methods: ['GET'])]
+    #[Route('/sla-trends', name: 'reports.sla_trends', methods: ['GET'])]
     public function slaTrends(Request $request): JsonResponse
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
@@ -80,7 +129,7 @@ class ReportController extends AbstractController
      * First response time analytics: distribution histogram, daily trend,
      * and per-agent breakdown.
      */
-    #[Route('/first-response-time', name: 'first_response_time', methods: ['GET'])]
+    #[Route('/first-response-time', name: 'reports.first_response_time', methods: ['GET'])]
     public function firstResponseTime(Request $request): JsonResponse
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
@@ -98,7 +147,7 @@ class ReportController extends AbstractController
     /**
      * Resolution time analytics: distribution histogram + daily trend.
      */
-    #[Route('/resolution-time', name: 'resolution_time', methods: ['GET'])]
+    #[Route('/resolution-time', name: 'reports.resolution_time', methods: ['GET'])]
     public function resolutionTime(Request $request): JsonResponse
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
@@ -115,7 +164,7 @@ class ReportController extends AbstractController
     /**
      * Agent performance ranking (composite score).
      */
-    #[Route('/agent-ranking', name: 'agent_ranking', methods: ['GET'])]
+    #[Route('/agent-ranking', name: 'reports.agent_ranking', methods: ['GET'])]
     public function agentRanking(Request $request): JsonResponse
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
@@ -131,7 +180,7 @@ class ReportController extends AbstractController
     /**
      * Cohort analysis by department, channel, or ticket type.
      */
-    #[Route('/cohort', name: 'cohort', methods: ['GET'])]
+    #[Route('/cohort', name: 'reports.cohort', methods: ['GET'])]
     public function cohort(Request $request): JsonResponse
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
@@ -149,7 +198,7 @@ class ReportController extends AbstractController
     /**
      * Current period vs previous period comparison for the key metrics.
      */
-    #[Route('/period-comparison', name: 'period_comparison', methods: ['GET'])]
+    #[Route('/period-comparison', name: 'reports.period_comparison', methods: ['GET'])]
     public function periodComparison(Request $request): JsonResponse
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
@@ -167,7 +216,7 @@ class ReportController extends AbstractController
      * ExportService::EXPORTABLE_REPORTS, or the special value `cohort`
      * (which reads an extra `dimension` query param).
      */
-    #[Route('/export/{type}', name: 'export', methods: ['GET'], requirements: ['type' => '[a-zA-Z_]+'])]
+    #[Route('/export/{type}', name: 'reports.export', methods: ['GET'], requirements: ['type' => '[a-zA-Z_]+'])]
     public function export(string $type, Request $request): Response
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');

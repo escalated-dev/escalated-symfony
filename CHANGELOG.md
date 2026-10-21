@@ -19,6 +19,8 @@
 - Ticket writes read Inertia's JSON bodies (they read only form fields before) and go back to the page with the errors flashed under `errors` when input is invalid.
 
 ### Added
+- Report screens, with escalated-laravel's props (`Rendering\ReportPages`): `Escalated/Admin/Reports/Dashboard`, `AgentMetrics`, `SlaReport`, `CsatReport` and `Comparison` under `{route_prefix}/admin/reports/` `dashboard`, `agents`, `sla`, `csat`, `comparison` (`escalated.admin.reports.*`). They take `days` (or `period`; 1 to 90, default 30). The overview `Escalated/Admin/Reports` now also gets the figures its page reads (`total_tickets`, `resolved_tickets`, `avg_first_response_hours`, `sla_breach_count`, `by_status`, `by_priority`, `csat`); the earlier keys are still sent. It is also named `escalated.admin.reports`, the name the pages link it by.
+- Upgrade note: `ReportController`'s routes are declared under the class name prefix `escalated.admin.` with `reports.` method names, so every existing name (`escalated.admin.reports.index`, `reports.sla_trends`, ...) is unchanged.
 - Knowledge base pages:
   - `Escalated/Admin/KnowledgeBase/Articles/Form` (`escalated.admin.kb-articles.create`, `edit`). Article writes validate as Laravel's: title required, status `draft` or `published`, an existing category, a unique slug. The author is the admin's user key.
   - `Articles/Index` now gets Laravel's paginator (`articles.data`, `links`, ...). It got a plain list before, so the table was empty. Rows carry `category`.

@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-10-21
+
+### Upgrading
+- Run the migrations (`Version20261021000001`: four nullable `tickets` columns and the `guest_verifications` table; `Version20261021000002`: `tickets.merged_into_id` for ticket merge).
+- Configure `symfony/mailer` with a From address (`framework.mailer.headers.From` or `escalated.guest_access.from_address`), and keep `kernel.secret` the same on every server.
+- Embedders need the code step: the bundled widget (`@escalated-dev/escalated` 0.12.3) does it. Custom clients must call `/verification` first.
+- Permanent guest tokens of existing tickets keep working on the widget's ticket routes while `guest_access.accept_legacy_tokens` is `true` (default), until a grant is issued for the ticket. Set it to `false` to require grants everywhere.
+- **Behaviour change:** a workflow saved as `ticket.tagged` used to run when tags were added *and* removed. It is now read as `ticket.tag_added`, as the ADR says, and runs on additions only. Re-save it as `ticket.tag_removed` (or add a second workflow) if it should also run on removals.
+- Host listeners for `TicketWorkflowEvent` that matched `triggerName === 'ticket.tagged'` should match `ticket.tag_added` / `ticket.tag_removed`, or use `EventNames::forEvent($event)`.
+- `ChatSessionService` takes an optional event dispatcher as its last constructor argument; autowired hosts need no change.
+
 ### Added
 - Ticket merge, like escalated-laravel's `TicketMergeService`, for the shared `TicketMergeDialog`:
   - `POST {route_prefix}/admin/tickets/{reference}/merge` with `target_reference` (`escalated.admin.tickets.merge`).
@@ -10,33 +21,17 @@
   - `Service\TicketMergeService::merge()` moves the source's replies and notes to the target in one transaction, adds a system note to both tickets, and closes the source with the new `tickets.merged_into_id`. It announces the close as `ticket.status_changed` / `ticket.closed` to webhooks and workflows.
   - A ticket cannot be merged into itself, merged twice, or merged into a merged ticket.
 - Upgrade note: run the migrations (`Version20261021000002` adds the nullable `merged_into_id` column and its index).
-
-### Added
 - Verified guest access for the widget, after escalated-laravel `docs/guest-access.md` (see `docs/guest-access.md`):
   - `POST {route_prefix}/widget/api/verification` emails an eight-digit code (purpose `ticket`, `chat` or `lookup`). Codes expire after 10 minutes, allow 5 guesses, are used once, and are bound to the normalised email and purpose. They are stored as keyed digests in the new `guest_verifications` table.
   - Code delivery is budgeted per mailbox and client IP and per mailbox (`guest_access.codes_per_client_per_hour`, `codes_per_mailbox_per_hour`), with 429 and `Retry-After`.
   - `POST /widget/api/lookup` returns `{data: [{reference, subject, guest_access_token, expires_at}]}` for the verified guest's tickets with that reference, rotating their grants.
   - `Security\GuestAccess` issues expiring, encrypted grants (`guest_access.ttl_minutes`, default 24 h). The ticket stores only a nonce digest. Changing the guest email, issuing a new grant or `GuestAccess::revoke()` invalidates earlier grants.
   - `/config` returns `guest_verification_required: true` and `status_lookup_enabled: true`.
-
-### Changed
-- **Behaviour change (security):** `POST /widget/api/tickets` and `POST /widget/api/chat/start` need `verification_id` and `verification_code`. Without them the answer is 422. A ticket answers with an expiring grant as `guest_access_token` (and `data.guest_token`) plus `expires_at`, instead of the permanent guest token. `GET /tickets/{reference}` and replies accept the grant. Guest responses send `Cache-Control: no-store` and `Referrer-Policy: no-referrer`.
-
-### Upgrade notes
-- Run the migrations (`Version20261021000001`: four nullable `tickets` columns and the `guest_verifications` table).
-- Configure `symfony/mailer` with a From address (`framework.mailer.headers.From` or `escalated.guest_access.from_address`), and keep `kernel.secret` the same on every server.
-- Embedders need the code step: the bundled widget (`@escalated-dev/escalated` 0.12.3) does it. Custom clients must call `/verification` first.
-- Permanent guest tokens of existing tickets keep working on the widget's ticket routes while `guest_access.accept_legacy_tokens` is `true` (default), until a grant is issued for the ticket. Set it to `false` to require grants everywhere.
-
-### Added
 - Workflow admin, per escalated-developer-context `domain-model/workflow-admin-contract.md`: `{route_prefix}/admin/workflows` routes (`escalated.admin.workflows.index`, `create`, `store`, `edit`, `update`, `destroy`, `toggle`, `reorder`, `logs`) rendering the shared `Escalated/Admin/Workflows/Index`, `Form` and `Logs` pages. Create and update accept the shared builder's body (top-level `trigger_event`, conditions `{all|any: [...]}`, actions `[{type, value}]`), store a legacy trigger name as its canonical name, and on a validation failure redirect back with the errors flashed under `errors` (a request without `X-Inertia` that asks for JSON gets a 422). The Form page gets `trigger_events`, `action_types` and `operators` listing exactly what the engine fires, runs and evaluates.
 - Workflow conditions on `ticket_type`, `channel`, `tags`, `hours_since_created` and `hours_since_updated`.
 
-### Fixed
-- Workflow actions `add_tag`, `remove_tag`, `set_department` and `insert_canned_reply` did nothing: a workflow built with the core action catalog ran, logged success and left the ticket unchanged. They now act (`add_tag` creates a missing tag; `insert_canned_reply` posts an authorless public reply that does not re-trigger reply workflows). `delay` now holds back the actions after it until `escalated:process-delayed-actions` runs them; before, it was skipped and the later actions ran at once. Unknown action types are logged as `skipped` instead of `executed`, and failed actions carry their error in the log.
-- `WorkflowEngine::ACTION_TYPES` is deprecated: it listed `send_webhook` and `send_notification`, which the engine never ran. Use `OFFERED_ACTIONS` or `HANDLED_ACTIONS`.
-
 ### Changed
+- **Behaviour change (security):** `POST /widget/api/tickets` and `POST /widget/api/chat/start` need `verification_id` and `verification_code`. Without them the answer is 422. A ticket answers with an expiring grant as `guest_access_token` (and `data.guest_token`) plus `expires_at`, instead of the permanent guest token. `GET /tickets/{reference}` and replies accept the grant. Guest responses send `Cache-Control: no-store` and `Referrer-Policy: no-referrer`.
 - Webhooks and workflows use the shared event vocabulary (escalated-developer-context `decisions/2026-10-21-event-vocabulary.md`), defined once in `Escalated\Symfony\Event\EventNames`:
   - Tags are dispatched as `ticket.tag_added` and `ticket.tag_removed` (was `ticket.tagged` with an `action` context). A `ticket.tag_added` or `ticket.tag_removed` workflow now runs; before, only `ticket.tagged` did.
   - Workflows also fire on `ticket.resolved`, `ticket.closed`, `ticket.escalated` and `ticket.unassigned`, the events webhooks already received.
@@ -44,10 +39,9 @@
   - The webhook admin offers exactly the canonical names the bundle emits, and stores a legacy name posted by an older form as its canonical name.
 - Legacy names keep working on read: a webhook subscribed to `internal_note.added`, `ticket.tagged`, `ticket.replied`, `chat.session_started` and the like receives the canonical event, and a workflow saved as `ticket.replied`, `ticket.tagged` or `chat.session_started` still fires.
 
-### Upgrade notes
-- **Behaviour change:** a workflow saved as `ticket.tagged` used to run when tags were added *and* removed. It is now read as `ticket.tag_added`, as the ADR says, and runs on additions only. Re-save it as `ticket.tag_removed` (or add a second workflow) if it should also run on removals.
-- Host listeners for `TicketWorkflowEvent` that matched `triggerName === 'ticket.tagged'` should match `ticket.tag_added` / `ticket.tag_removed`, or use `EventNames::forEvent($event)`.
-- `ChatSessionService` takes an optional event dispatcher as its last constructor argument; autowired hosts need no change.
+### Fixed
+- Workflow actions `add_tag`, `remove_tag`, `set_department` and `insert_canned_reply` did nothing: a workflow built with the core action catalog ran, logged success and left the ticket unchanged. They now act (`add_tag` creates a missing tag; `insert_canned_reply` posts an authorless public reply that does not re-trigger reply workflows). `delay` now holds back the actions after it until `escalated:process-delayed-actions` runs them; before, it was skipped and the later actions ran at once. Unknown action types are logged as `skipped` instead of `executed`, and failed actions carry their error in the log.
+- `WorkflowEngine::ACTION_TYPES` is deprecated: it listed `send_webhook` and `send_notification`, which the engine never ran. Use `OFFERED_ACTIONS` or `HANDLED_ACTIONS`.
 
 ## [0.3.2] - 2026-10-20
 

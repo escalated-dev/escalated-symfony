@@ -122,6 +122,7 @@ class WebhookController extends AbstractController
         return $this->redirectToRoute('escalated.admin.webhooks.index');
     }
 
+    #[Route('/{id}', name: 'destroy', methods: ['DELETE'], requirements: ['id' => '\d+'])]
     #[Route('/{id}', name: 'delete', methods: ['DELETE'], requirements: ['id' => '\d+'])]
     public function delete(int $id): Response
     {

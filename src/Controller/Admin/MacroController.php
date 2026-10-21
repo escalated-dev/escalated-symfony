@@ -7,6 +7,7 @@ namespace Escalated\Symfony\Controller\Admin;
 use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Entity\Macro;
 use Escalated\Symfony\Rendering\UiRendererInterface;
+use Escalated\Symfony\Rendering\UserDirectory;
 use Escalated\Symfony\Security\UserKeyResolver;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -27,6 +28,7 @@ class MacroController extends AbstractController
         private readonly EntityManagerInterface $em,
         private readonly UiRendererInterface $renderer,
         private readonly UserKeyResolver $userKeys,
+        private readonly ?UserDirectory $users = null,
     ) {
     }
 
@@ -77,6 +79,7 @@ class MacroController extends AbstractController
         return $this->redirectToRoute('escalated.admin.macros.index');
     }
 
+    #[Route('/{id}', name: 'destroy', methods: ['DELETE'])]
     #[Route('/{id}', name: 'delete', methods: ['DELETE'])]
     public function delete(int $id): Response
     {
@@ -151,8 +154,21 @@ class MacroController extends AbstractController
             'actions' => $m->getActions(),
             'is_shared' => $m->isShared(),
             'created_by' => $m->getCreatedBy(),
+            'creator' => $this->creator($m->getCreatedBy()),
             'created_at' => $m->getCreatedAt()->format(\DateTimeInterface::ATOM),
             'updated_at' => $m->getUpdatedAt()->format(\DateTimeInterface::ATOM),
         ];
+    }
+
+    /**
+     * Who made it, as the page shows them: `{id, name}`.
+     *
+     * @return array{id: int|string, name: string}|null
+     */
+    private function creator(int|string|null $id): ?array
+    {
+        $user = $this->users?->find($id);
+
+        return null === $user ? null : ['id' => $user['id'], 'name' => $user['name']];
     }
 }

@@ -20,7 +20,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * (evaluated by `escalated:escalations:run`), distinct from event-driven
  * Workflows and the general Automation runner.
  */
-#[Route('/admin/escalation-rules', name: 'escalated.admin.escalation_rules.')]
+#[Route('/admin/escalation-rules', name: 'escalated.admin.')]
 class EscalationRuleController extends AbstractController
 {
     public function __construct(
@@ -30,7 +30,8 @@ class EscalationRuleController extends AbstractController
     ) {
     }
 
-    #[Route('', name: 'index', methods: ['GET'])]
+    #[Route('', name: 'escalation-rules.index', methods: ['GET'])]
+    #[Route('', name: 'escalation_rules.index', methods: ['GET'])]
     public function index(): Response
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
@@ -43,7 +44,29 @@ class EscalationRuleController extends AbstractController
         ]);
     }
 
-    #[Route('', name: 'store', methods: ['POST'])]
+    #[Route('/create', name: 'escalation-rules.create', methods: ['GET'])]
+    public function create(): Response
+    {
+        $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
+
+        return $this->renderer->render('Escalated/Admin/EscalationRules/Form', ['rule' => null]);
+    }
+
+    #[Route('/{id}/edit', name: 'escalation-rules.edit', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function edit(int $id): Response
+    {
+        $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
+
+        $rule = $this->em->getRepository(EscalationRule::class)->find($id);
+        if (null === $rule) {
+            throw $this->createNotFoundException('Escalation rule not found.');
+        }
+
+        return $this->renderer->render('Escalated/Admin/EscalationRules/Form', ['rule' => $this->serialize($rule)]);
+    }
+
+    #[Route('', name: 'escalation-rules.store', methods: ['POST'])]
+    #[Route('', name: 'escalation_rules.store', methods: ['POST'])]
     public function store(Request $request): Response
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
@@ -56,10 +79,11 @@ class EscalationRuleController extends AbstractController
 
         $this->addFlash('success', 'Escalation rule created.');
 
-        return $this->redirectToRoute('escalated.admin.escalation_rules.index');
+        return $this->redirectToRoute('escalated.admin.escalation-rules.index', [], Response::HTTP_SEE_OTHER);
     }
 
-    #[Route('/{id}', name: 'update', methods: ['PATCH', 'PUT'])]
+    #[Route('/{id}', name: 'escalation-rules.update', requirements: ['id' => '\d+'], methods: ['PATCH', 'PUT'])]
+    #[Route('/{id}', name: 'escalation_rules.update', requirements: ['id' => '\d+'], methods: ['PATCH', 'PUT'])]
     public function update(int $id, Request $request): Response
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
@@ -74,10 +98,11 @@ class EscalationRuleController extends AbstractController
 
         $this->addFlash('success', 'Escalation rule updated.');
 
-        return $this->redirectToRoute('escalated.admin.escalation_rules.index');
+        return $this->redirectToRoute('escalated.admin.escalation-rules.index', [], Response::HTTP_SEE_OTHER);
     }
 
-    #[Route('/{id}', name: 'delete', methods: ['DELETE'])]
+    #[Route('/{id}', name: 'escalation-rules.destroy', requirements: ['id' => '\d+'], methods: ['DELETE'])]
+    #[Route('/{id}', name: 'escalation_rules.delete', requirements: ['id' => '\d+'], methods: ['DELETE'])]
     public function delete(int $id): Response
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
@@ -92,13 +117,14 @@ class EscalationRuleController extends AbstractController
 
         $this->addFlash('success', 'Escalation rule deleted.');
 
-        return $this->redirectToRoute('escalated.admin.escalation_rules.index');
+        return $this->redirectToRoute('escalated.admin.escalation-rules.index', [], Response::HTTP_SEE_OTHER);
     }
 
     /**
      * Manually trigger the evaluator (admin smoke-test).
      */
-    #[Route('/run', name: 'run', methods: ['POST'])]
+    #[Route('/run', name: 'escalation-rules.run', methods: ['POST'])]
+    #[Route('/run', name: 'escalation_rules.run', methods: ['POST'])]
     public function run(): JsonResponse
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');

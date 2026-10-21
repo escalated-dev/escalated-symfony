@@ -17,6 +17,13 @@
 - Ticket writes read Inertia's JSON bodies (they read only form fields before) and go back to the page with the errors flashed under `errors` when input is invalid.
 
 ### Added
+- Admin configuration pages, against what the shared pages read and post:
+  - `Escalated/Admin/SlaPolicies/Index` and `Form`: a new SLA policy admin under `{route_prefix}/admin/sla-policies` (`escalated.admin.sla-policies.index`, `create`, `store`, `edit`, `update`, `destroy`), with hours per priority, `business_hours_only`, `is_default`, `is_active`, and the targeting fields. Deleting a policy detaches its tickets.
+  - `Escalated/Admin/Departments/Form` (`escalated.admin.departments.create`, `edit`), and `Departments/Index` rows with `tickets_count` and `agents_count`. It rendered the entities before.
+  - `Escalated/Admin/EscalationRules/Form` (`escalated.admin.escalation-rules.create`, `edit`).
+  - `Tags/Index` rows with `tickets_count` (it rendered the entities before). `Macros/Index` and `CannedResponses/Index` rows name their `creator`.
+  - Department and tag writes read Inertia's JSON bodies and go back with `errors`.
+- The route names the shared pages call: `escalated.admin.escalation-rules.*`, `escalated.admin.canned-responses.*`, and `destroy` for departments, tags, macros and webhooks. The previous names (`escalation_rules.*`, `canned_responses.*`, `*.delete`) are kept, so host links keep working.
 - The browser guest portal: `Escalated/Guest/Create` and `Escalated/Guest/Show` under `{route_prefix}/guest` (`escalated.guest.verification`, `lookup`, `tickets.create`, `tickets.store`, `tickets.show`, `tickets.reply`, `tickets.rate`), on the verified guest access of 0.3.3. A guest proves the mailbox with an emailed code before a ticket is opened or looked up; the ticket page's address is an expiring grant, never the permanent token; the page gets the requester-facing allowlist plus `guest_access_expires_at`. See `docs/guest-access.md`.
 - Upgrade note: with `ui_enabled`, the portal is public while guest tickets are allowed (`WidgetSettings::isAllowGuestTickets()`, default `true`); turn that off to keep it closed. Guest replies are stored with no author (`TicketService::addReply()` now takes a null author id).
 - The ticket writes the shared pages post, on both desks (`escalated.agent.tickets.*` and `escalated.admin.tickets.*`): `reply`, `note`, `status`, `priority`, `assign`, `tags`, `department`, `macro`, `follow`, `presence`, `pin` (`/replies/{id}/pin`), `snooze`, `unsnooze` and `bulk` (status, priority, assign, tags, department, and delete for admins; a ticket an action cannot apply to is skipped). The admin desk also gets `reply` and `note`, which it lacked.

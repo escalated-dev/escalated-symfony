@@ -17,7 +17,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * Admin CRUD over knowledge-base article categories. Mirrors the Laravel
  * Admin\ArticleCategoryController.
  */
-#[Route('/admin/kb-categories', name: 'escalated.admin.kb_categories.')]
+#[Route('/admin/kb-categories', name: 'escalated.admin.')]
 class ArticleCategoryController extends AbstractController
 {
     public function __construct(
@@ -27,7 +27,8 @@ class ArticleCategoryController extends AbstractController
     ) {
     }
 
-    #[Route('', name: 'index', methods: ['GET'])]
+    #[Route('', name: 'kb-categories.index', methods: ['GET'])]
+    #[Route('', name: 'kb_categories.index', methods: ['GET'])]
     public function index(): Response
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
@@ -37,7 +38,8 @@ class ArticleCategoryController extends AbstractController
         ]);
     }
 
-    #[Route('', name: 'store', methods: ['POST'])]
+    #[Route('', name: 'kb-categories.store', methods: ['POST'])]
+    #[Route('', name: 'kb_categories.store', methods: ['POST'])]
     public function store(Request $request): Response
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
@@ -50,10 +52,11 @@ class ArticleCategoryController extends AbstractController
 
         $this->addFlash('success', 'Category created.');
 
-        return $this->redirectToRoute('escalated.admin.kb_categories.index');
+        return $this->redirectToRoute('escalated.admin.kb-categories.index', [], Response::HTTP_SEE_OTHER);
     }
 
-    #[Route('/{id}', name: 'update', methods: ['PATCH', 'PUT'])]
+    #[Route('/{id}', name: 'kb-categories.update', methods: ['PATCH', 'PUT'])]
+    #[Route('/{id}', name: 'kb_categories.update', methods: ['PATCH', 'PUT'])]
     public function update(int $id, Request $request): Response
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
@@ -68,10 +71,11 @@ class ArticleCategoryController extends AbstractController
 
         $this->addFlash('success', 'Category updated.');
 
-        return $this->redirectToRoute('escalated.admin.kb_categories.index');
+        return $this->redirectToRoute('escalated.admin.kb-categories.index', [], Response::HTTP_SEE_OTHER);
     }
 
-    #[Route('/{id}', name: 'delete', methods: ['DELETE'])]
+    #[Route('/{id}', name: 'kb-categories.destroy', methods: ['DELETE'])]
+    #[Route('/{id}', name: 'kb_categories.delete', methods: ['DELETE'])]
     public function delete(int $id): Response
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
@@ -86,7 +90,7 @@ class ArticleCategoryController extends AbstractController
 
         $this->addFlash('success', 'Category deleted.');
 
-        return $this->redirectToRoute('escalated.admin.kb_categories.index');
+        return $this->redirectToRoute('escalated.admin.kb-categories.index', [], Response::HTTP_SEE_OTHER);
     }
 
     /** @param array<string, mixed> $payload */

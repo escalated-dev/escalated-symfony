@@ -18,6 +18,11 @@
 - Ticket writes read Inertia's JSON bodies (they read only form fields before) and go back to the page with the errors flashed under `errors` when input is invalid.
 
 ### Added
+- Knowledge base pages:
+  - `Escalated/Admin/KnowledgeBase/Articles/Form` (`escalated.admin.kb-articles.create`, `edit`). Article writes validate as Laravel's: title required, status `draft` or `published`, an existing category, a unique slug. The author is the admin's user key.
+  - `Articles/Index` now gets Laravel's paginator (`articles.data`, `links`, ...). It got a plain list before, so the table was empty. Rows carry `category`.
+  - Reader pages `Escalated/Customer/KnowledgeBase/Index` and `Article` under `{route_prefix}/kb` (`escalated.customer.kb.index`, `show`, `feedback`): published articles only, categories with `articles_count`, search and category filters, related articles, view counts and helpful votes. A disabled knowledge base answers 404; a non-public one needs a signed-in user.
+  - The admin pages' route names `escalated.admin.kb-articles.*` and `kb-categories.*`; the `kb_articles.*` / `kb_categories.*` names are kept.
 - `Escalated/Admin/ApiTokens/Index` gets what the page reads: `users` (the agents, for the owner picker), `api_enabled` (always `true`; the JSON API is always mounted) and each token's `user_name` and `user_email`.
 - Admin configuration pages, against what the shared pages read and post:
   - `Escalated/Admin/SlaPolicies/Index` and `Form`: a new SLA policy admin under `{route_prefix}/admin/sla-policies` (`escalated.admin.sla-policies.index`, `create`, `store`, `edit`, `update`, `destroy`), with hours per priority, `business_hours_only`, `is_default`, `is_active`, and the targeting fields. Deleting a policy detaches its tickets.

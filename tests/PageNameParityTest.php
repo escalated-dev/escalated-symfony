@@ -48,7 +48,6 @@ final class PageNameParityTest extends TestCase
         'Escalated/Admin/Import/Mapping',
         'Escalated/Admin/Import/Progress',
         'Escalated/Admin/Import/Review',
-        'Escalated/Admin/KnowledgeBase/Articles/Form',
         'Escalated/Admin/Plugins/Index',
         'Escalated/Admin/Reports/AgentDetail',
         'Escalated/Admin/Reports/AgentMetrics',
@@ -74,8 +73,6 @@ final class PageNameParityTest extends TestCase
         'Escalated/Admin/Statuses/Index',
         'Escalated/Admin/Workflows/Builder',
         'Escalated/Auth/TwoFactorChallenge',
-        'Escalated/Customer/KnowledgeBase/Article',
-        'Escalated/Customer/KnowledgeBase/Index',
         'Escalated/Error',
         'Escalated/Plugin/Page',
     ];

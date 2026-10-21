@@ -62,6 +62,7 @@ class EscalatedBundle extends AbstractBundle
         $this->setNewsletterParameters($builder, $config['newsletters']);
 
         self::setGuestRateLimit($builder, $config['guest_rate_limit']);
+        self::setGuestAccess($builder, $config['guest_access']);
 
         // Custom ticket actions (host-defined buttons)
         $builder->setParameter('escalated.ticket_actions', $config['ticket_actions'] ?? []);
@@ -165,6 +166,18 @@ class EscalatedBundle extends AbstractBundle
      * Parameters for Service\GuestRateLimiter, and the alias its cache pool is
      * injected through.
      */
+    /**
+     * Parameters for Security\GuestAccess and Security\GuestEmailVerification.
+     *
+     * @param array<string, mixed> $guestAccess
+     */
+    public static function setGuestAccess(ContainerBuilder $builder, array $guestAccess): void
+    {
+        foreach (['ttl_minutes', 'accept_legacy_tokens', 'codes_per_client_per_hour', 'codes_per_mailbox_per_hour', 'from_address'] as $key) {
+            $builder->setParameter('escalated.guest_access.'.$key, $guestAccess[$key]);
+        }
+    }
+
     public static function setGuestRateLimit(ContainerBuilder $builder, array $guestRateLimit): void
     {
         $builder->setParameter('escalated.guest_rate_limit.enabled', $guestRateLimit['enabled']);

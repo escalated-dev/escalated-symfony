@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Escalated\Symfony\Tests\Kernel;
 
+use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
@@ -34,6 +35,12 @@ abstract class EscalatedWebTestCase extends WebTestCase
         $client->disableReboot();
 
         static::createSchema();
+
+        // Guest rate limits and verification-code budgets live in cache.app,
+        // which outlives the kernel: start every test with none spent.
+        $pool = static::getContainer()->get('cache.app');
+        \assert($pool instanceof CacheItemPoolInterface);
+        $pool->clear();
 
         return $client;
     }

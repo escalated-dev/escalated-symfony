@@ -166,6 +166,21 @@ class Ticket
     #[ORM\Column(type: Types::STRING, length: 64, nullable: true)]
     private ?string $guestToken = null;
 
+    // Verified guest access (Security\GuestAccess): the normalised email a
+    // guest proved, and the SHA-256 of the current grant's nonce with its
+    // expiry. Changing the guest email clears all four.
+    #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
+    private ?string $guestVerifiedEmail = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $guestEmailVerifiedAt = null;
+
+    #[ORM\Column(type: Types::STRING, length: 64, nullable: true)]
+    private ?string $guestAccessHash = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $guestAccessExpiresAt = null;
+
     // First-class Contact FK (Pattern B convergence). Nullable; on
     // delete SET NULL. Populated for new public submissions and
     // backfilled for existing guest-email tickets.
@@ -539,9 +554,54 @@ class Ticket
         return $this->guestEmail;
     }
 
+    /**
+     * A different address revokes the verified-email proof and every guest
+     * grant issued for the old one.
+     */
     public function setGuestEmail(?string $guestEmail): self
     {
+        $normalise = static fn (?string $email): string => mb_strtolower(trim((string) $email));
+        if (null !== $this->guestVerifiedEmail && $normalise($guestEmail) !== $this->guestVerifiedEmail) {
+            $this->guestVerifiedEmail = null;
+            $this->guestEmailVerifiedAt = null;
+            $this->guestAccessHash = null;
+            $this->guestAccessExpiresAt = null;
+        }
         $this->guestEmail = $guestEmail;
+
+        return $this;
+    }
+
+    public function getGuestVerifiedEmail(): ?string
+    {
+        return $this->guestVerifiedEmail;
+    }
+
+    public function getGuestEmailVerifiedAt(): ?\DateTimeImmutable
+    {
+        return $this->guestEmailVerifiedAt;
+    }
+
+    public function getGuestAccessHash(): ?string
+    {
+        return $this->guestAccessHash;
+    }
+
+    public function getGuestAccessExpiresAt(): ?\DateTimeImmutable
+    {
+        return $this->guestAccessExpiresAt;
+    }
+
+    /**
+     * Records a verified email and the current guest grant. Called by
+     * {@see \Escalated\Symfony\Security\GuestAccess}; pass nulls to revoke.
+     */
+    public function setGuestAccess(?string $verifiedEmail, ?\DateTimeImmutable $verifiedAt, ?string $accessHash, ?\DateTimeImmutable $expiresAt): self
+    {
+        $this->guestVerifiedEmail = $verifiedEmail;
+        $this->guestEmailVerifiedAt = $verifiedAt;
+        $this->guestAccessHash = $accessHash;
+        $this->guestAccessExpiresAt = $expiresAt;
 
         return $this;
     }

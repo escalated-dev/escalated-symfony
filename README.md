@@ -123,6 +123,10 @@ escalated:
 
 Load the widget on another site with `<script src="https://help.example.com/support/widget/api/embed.js" async></script>` after listing that site's origin, either in the `WidgetSettings` service's `$allowedOrigins` argument (for example `'%env(csv:ESCALATED_WIDGET_ALLOWED_ORIGINS)%'`) or in the admin setting `widget_allowed_origins`. An empty list allows no other site. See [docs/embedding-the-widget.md](docs/embedding-the-widget.md).
 
+### Verified guest access
+
+Widget tickets, live chats and status lookups need an eight-digit code emailed to the guest (`POST {route_prefix}/widget/api/verification`), and tickets are read with expiring grants. Configure `symfony/mailer` with a From address, and run the migrations. See [docs/guest-access.md](docs/guest-access.md).
+
 ### Guest widget rate limits
 
 The unauthenticated widget endpoints are limited per client IP: 5 guest tickets a minute (new tickets and live chat starts share this counter) and 10 guest replies a minute (ticket replies, chat messages and chat ratings), each with its own counter. Over the limit a request gets `429` with `Retry-After`. A reply is counted before its guest token is checked, so wrong-token guesses count too.

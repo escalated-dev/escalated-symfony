@@ -130,7 +130,9 @@ final class EscalatedTestKernel extends Kernel
             'handle_all_throwables' => true,
             'php_errors' => ['log' => true],
             'serializer' => ['enabled' => true],
-            'mailer' => ['dsn' => 'null://null'],
+            // A host's default From, which guest verification codes use when
+            // escalated.guest_access.from_address is unset.
+            'mailer' => ['dsn' => 'null://null', 'headers' => ['From' => 'support@example.test']],
             'session' => ['storage_factory_id' => 'session.storage.factory.mock_file'],
         ]);
 

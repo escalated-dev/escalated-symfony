@@ -13,6 +13,7 @@ use Escalated\Symfony\Service\ChatSessionService;
 use Escalated\Symfony\Service\TicketService;
 use Escalated\Symfony\Tests\Kernel\EscalatedWebTestCase;
 use Escalated\Symfony\Tests\Kernel\Fixtures\Entity\TestUser;
+use Escalated\Symfony\Tests\Kernel\ObtainsGuestProof;
 use Escalated\Symfony\Widget\WidgetSettings;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Component\HttpFoundation\Response;
@@ -25,6 +26,8 @@ use Symfony\Component\HttpFoundation\Response;
  */
 final class WidgetApiContractTest extends EscalatedWebTestCase
 {
+    use ObtainsGuestProof;
+
     private const API = '/support/widget/api';
 
     private string $ip;
@@ -56,6 +59,7 @@ final class WidgetApiContractTest extends EscalatedWebTestCase
      */
     private function api(KernelBrowser $client, string $method, string $path, ?array $body = null, ?string $token = null): array
     {
+        $body = self::withGuestProof($client, $method, self::API.$path, $body);
         $client->request($method, self::API.$path, server: array_filter([
             'REMOTE_ADDR' => $this->ip,
             'CONTENT_TYPE' => 'application/json',
@@ -101,10 +105,10 @@ final class WidgetApiContractTest extends EscalatedWebTestCase
         self::assertSame([['id' => $sales->getId(), 'name' => 'Sales']], $config['departments']);
         self::assertTrue($config['kb_enabled']);
         self::assertTrue($config['accepts_metadata']);
-        // No /verification + /lookup here, so the widget must not ask for codes.
-        self::assertArrayNotHasKey('guest_verification_required', $config);
-        // Nor reference + email status lookup (guest policy): the Status tab is hidden.
-        self::assertFalse($config['status_lookup_enabled']);
+        // Guests prove their mailbox with an emailed code (POST /verification),
+        // which also makes reference + email status lookup safe (POST /lookup).
+        self::assertTrue($config['guest_verification_required']);
+        self::assertTrue($config['status_lookup_enabled']);
         // The original envelope is still there for existing clients.
         self::assertSame('#4F46E5', $config['data']['primary_color']);
     }
@@ -341,7 +345,7 @@ final class WidgetApiContractTest extends EscalatedWebTestCase
         $client->request('POST', self::API.'/chat/start', server: [
             'REMOTE_ADDR' => $this->ip,
             'CONTENT_TYPE' => 'application/json',
-        ], content: (string) json_encode(['guest_name' => 'Old', 'guest_email' => 'old@example.com']));
+        ], content: (string) json_encode(['guest_name' => 'Old', 'guest_email' => 'old@example.com'] + self::guestProof($client, 'old@example.com', 'chat')));
         self::assertSame(201, $this->code($client));
         $data = json_decode((string) $client->getResponse()->getContent(), true)['data'];
 

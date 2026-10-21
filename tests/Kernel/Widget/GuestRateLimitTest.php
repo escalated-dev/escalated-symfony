@@ -8,6 +8,7 @@ use Escalated\Symfony\Entity\Reply;
 use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Service\GuestRateLimiter;
 use Escalated\Symfony\Tests\Kernel\EscalatedWebTestCase;
+use Escalated\Symfony\Tests\Kernel\ObtainsGuestProof;
 use Escalated\Symfony\Widget\WidgetSettings;
 use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -21,6 +22,8 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
  */
 final class GuestRateLimitTest extends EscalatedWebTestCase
 {
+    use ObtainsGuestProof;
+
     private const TICKETS = '/support/widget/api/tickets';
     private const CHAT_START = '/support/widget/api/chat/start';
 
@@ -61,12 +64,12 @@ final class GuestRateLimitTest extends EscalatedWebTestCase
         $client->request('POST', self::TICKETS, server: [
             'REMOTE_ADDR' => $this->ip,
             'CONTENT_TYPE' => 'application/json',
-        ], content: (string) json_encode([
+        ], content: (string) json_encode(self::withGuestProof($client, 'POST', self::TICKETS, [
             'subject' => 'Help '.$n,
             'description' => 'Something broke.',
             'guest_name' => 'Guest '.$n,
             'guest_email' => 'guest'.$n.'@example.com',
-        ]));
+        ])));
 
         return $client->getResponse()->getStatusCode();
     }
@@ -76,11 +79,11 @@ final class GuestRateLimitTest extends EscalatedWebTestCase
         $client->request('POST', self::CHAT_START, server: [
             'REMOTE_ADDR' => $this->ip,
             'CONTENT_TYPE' => 'application/json',
-        ], content: (string) json_encode([
+        ], content: (string) json_encode(self::withGuestProof($client, 'POST', self::CHAT_START, [
             'name' => 'Guest '.$n,
             'email' => 'chat'.$n.'@example.com',
             'message' => 'Hello',
-        ]));
+        ])));
 
         return $client->getResponse()->getStatusCode();
     }

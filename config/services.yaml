@@ -38,6 +38,8 @@ services:
             - '../src/Support/ArrayTicketAction.php'
             # Plain security identity built by ApiTokenAuthenticator — not a service.
             - '../src/Security/ApiTokenUser.php'
+            - '../src/Security/GuestVerificationException.php'
+            - '../src/Security/GuestCodeBudgetException.php'
             - '../src/Doctrine/TicketVisibilityFilter.php'
 
     # Route loader behind @EscalatedBundle/config/routes.yaml. Applies ui_enabled,
@@ -83,6 +85,22 @@ services:
         arguments:
             $routePrefix: '%escalated.route_prefix%'
             $uiEnabled: '%escalated.ui_enabled%'
+
+    # Verified guest access: emailed codes (budgets kept in the guest rate
+    # limit's cache pool) and expiring grants, both keyed from kernel.secret.
+    Escalated\Symfony\Security\GuestEmailVerification:
+        arguments:
+            $cache: '@escalated.guest_rate_limit.cache'
+            $secret: '%kernel.secret%'
+            $codesPerClientPerHour: '%escalated.guest_access.codes_per_client_per_hour%'
+            $codesPerMailboxPerHour: '%escalated.guest_access.codes_per_mailbox_per_hour%'
+            $fromAddress: '%escalated.guest_access.from_address%'
+
+    Escalated\Symfony\Security\GuestAccess:
+        arguments:
+            $secret: '%kernel.secret%'
+            $ttlMinutes: '%escalated.guest_access.ttl_minutes%'
+            $acceptLegacyTokens: '%escalated.guest_access.accept_legacy_tokens%'
 
     Escalated\Symfony\Service\TicketService:
         arguments:

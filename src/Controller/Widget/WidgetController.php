@@ -7,7 +7,12 @@ namespace Escalated\Symfony\Controller\Widget;
 use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Entity\Article;
 use Escalated\Symfony\Entity\Department;
+use Escalated\Symfony\Entity\GuestVerification;
 use Escalated\Symfony\Entity\Ticket;
+use Escalated\Symfony\Security\GuestAccess;
+use Escalated\Symfony\Security\GuestCodeBudgetException;
+use Escalated\Symfony\Security\GuestEmailVerification;
+use Escalated\Symfony\Security\GuestVerificationException;
 use Escalated\Symfony\Service\GuestRateLimiter;
 use Escalated\Symfony\Service\KnowledgeBaseService;
 use Escalated\Symfony\Service\TicketService;
@@ -30,7 +35,107 @@ class WidgetController extends AbstractController
         private readonly GuestRateLimiter $guestRateLimiter,
         private readonly EntityManagerInterface $em,
         private readonly KnowledgeBaseService $knowledgeBase,
+        private readonly GuestEmailVerification $verification,
+        private readonly GuestAccess $guestAccess,
     ) {
+    }
+
+    /**
+     * Emails an eight-digit code proving the guest controls the address.
+     * Body: `{email, purpose}` with purpose `ticket`, `chat` or `lookup`.
+     */
+    #[Route('/verification', name: 'verification', methods: ['POST'])]
+    public function requestVerification(Request $request): JsonResponse
+    {
+        if (!$this->widgetSettings->isEnabled()) {
+            return WidgetRequest::error('Widget is disabled.', Response::HTTP_NOT_FOUND);
+        }
+        if (null !== $limited = $this->throttle(GuestRateLimiter::REPLY, $request)) {
+            return $limited;
+        }
+
+        $data = WidgetRequest::body($request);
+        $purpose = \is_string($data['purpose'] ?? null) ? $data['purpose'] : '';
+        if (GuestVerification::PURPOSE_CHAT !== $purpose && !$this->widgetSettings->isAllowGuestTickets()) {
+            return WidgetRequest::error('Guest tickets are disabled.', Response::HTTP_FORBIDDEN);
+        }
+
+        try {
+            $id = $this->verification->challenge(
+                \is_string($data['email'] ?? null) ? $data['email'] : '',
+                $purpose,
+                $request->getClientIp() ?? 'unknown',
+            );
+        } catch (GuestVerificationException $e) {
+            return self::invalid($e);
+        } catch (GuestCodeBudgetException $e) {
+            return self::noStore(WidgetRequest::error($e->getMessage(), Response::HTTP_TOO_MANY_REQUESTS, ['Retry-After' => (string) $e->retryAfter]));
+        }
+
+        return self::noStore($this->json([
+            'verification_id' => $id,
+            'expires_in' => GuestEmailVerification::CODE_TTL_SECONDS,
+            'message' => 'If that address can receive email, a verification code is on its way.',
+        ], Response::HTTP_ACCEPTED));
+    }
+
+    /**
+     * Finds the guest's tickets by reference after a `lookup` proof, and
+     * issues a fresh grant for each (rotating any earlier one).
+     */
+    #[Route('/lookup', name: 'lookup', methods: ['POST'])]
+    public function lookup(Request $request): JsonResponse
+    {
+        if (!$this->widgetSettings->isEnabled()) {
+            return WidgetRequest::error('Widget is disabled.', Response::HTTP_NOT_FOUND);
+        }
+        if (null !== $limited = $this->throttle(GuestRateLimiter::REPLY, $request)) {
+            return $limited;
+        }
+        if (!$this->widgetSettings->isAllowGuestTickets()) {
+            return WidgetRequest::error('Guest tickets are disabled.', Response::HTTP_FORBIDDEN);
+        }
+
+        $data = WidgetRequest::body($request);
+        $email = WidgetRequest::guestEmail($data);
+        $reference = \is_scalar($data['reference'] ?? null) ? trim((string) $data['reference']) : '';
+        if (null === $email || '' === $reference || mb_strlen($reference) > 191) {
+            return self::invalid(new GuestVerificationException(null === $email ? 'email' : 'reference', 'Email and reference are required.'));
+        }
+        if (null !== $missing = self::missingProof($data)) {
+            return $missing;
+        }
+
+        try {
+            $matches = $this->verification->consume(
+                $data['verification_id'],
+                $data['verification_code'],
+                $email,
+                GuestVerification::PURPOSE_LOOKUP,
+                function () use ($email, $reference): array {
+                    $normalized = GuestEmailVerification::normalize($email);
+                    $found = [];
+                    foreach ($this->em->getRepository(Ticket::class)->findBy(['reference' => $reference], ['id' => 'ASC'], 20) as $ticket) {
+                        if (null === $ticket->getGuestEmail() || GuestEmailVerification::normalize($ticket->getGuestEmail()) !== $normalized) {
+                            continue;
+                        }
+                        $grant = $this->guestAccess->issue($ticket, $email);
+                        $found[] = [
+                            'reference' => $ticket->getReference(),
+                            'subject' => $ticket->getSubject(),
+                            'guest_access_token' => $grant['token'],
+                            'expires_at' => $grant['expires_at']->format(\DateTimeInterface::ATOM),
+                        ];
+                    }
+
+                    return $found;
+                },
+            );
+        } catch (GuestVerificationException $e) {
+            return self::invalid($e);
+        }
+
+        return self::noStore($this->json(['data' => $matches]));
     }
 
     #[Route('/config', name: 'config', methods: ['GET'])]
@@ -56,13 +161,11 @@ class WidgetController extends AbstractController
             ),
             'kb_enabled' => $this->widgetSettings->isShowArticles(),
             'guest_tickets_enabled' => $this->widgetSettings->isAllowGuestTickets(),
-            // No `guest_verification_required`: this backend has no
-            // /verification or /lookup, so the widget must not ask for codes.
+            // Tickets, chats and status lookups need an emailed code
+            // (POST /verification); lookup (POST /lookup) returns grants.
+            'guest_verification_required' => true,
             'accepts_metadata' => true,
-            // Status lookup by reference + email is not offered: without
-            // mailbox verification it would hand correspondence to anyone
-            // who claims the address. The widget hides its Status tab.
-            'status_lookup_enabled' => false,
+            'status_lookup_enabled' => true,
             'data' => $this->widgetSettings->toPublicConfig(),
         ]);
     }
@@ -152,31 +255,52 @@ class WidgetController extends AbstractController
         $metadata = WidgetMetadata::sanitize($data['metadata'] ?? null, \is_string($origin) ? $origin : null) ?? [];
         $metadata['source'] = 'widget';
 
+        if (null !== $missing = self::missingProof($data)) {
+            return $missing;
+        }
+
+        // The code is consumed in the transaction that creates the ticket: a
+        // failed create hands the code back.
         try {
-            $ticket = $this->ticketService->create(array_filter([
-                'subject' => $data['subject'],
-                'description' => $data['description'] ?? null,
-                'guest_name' => $name,
-                'guest_email' => $email,
-                'department_id' => $department?->getId(),
-                'metadata' => $metadata,
-            ], static fn ($v): bool => null !== $v));
+            [$ticket, $grant] = $this->verification->consume(
+                $data['verification_id'],
+                $data['verification_code'],
+                $email,
+                GuestVerification::PURPOSE_TICKET,
+                function () use ($data, $name, $email, $department, $metadata): array {
+                    $ticket = $this->ticketService->create(array_filter([
+                        'subject' => $data['subject'],
+                        'description' => $data['description'] ?? null,
+                        'guest_name' => $name,
+                        'guest_email' => $email,
+                        'department_id' => $department?->getId(),
+                        'metadata' => $metadata,
+                    ], static fn ($v): bool => null !== $v));
+
+                    return [$ticket, $this->guestAccess->issue($ticket, $email)];
+                },
+            );
+        } catch (GuestVerificationException $e) {
+            return self::invalid($e);
         } catch (\Exception $e) {
             return WidgetRequest::error('Failed to create ticket.', Response::HTTP_INTERNAL_SERVER_ERROR);
         }
 
-        $response = $this->json([
+        $expiresAt = $grant['expires_at']->format(\DateTimeInterface::ATOM);
+
+        return self::noStore($this->json([
             'message' => 'Ticket created successfully.',
             'reference' => $ticket->getReference(),
-            // The widget's name for the guest token (`Authorization: Bearer`).
-            'guest_access_token' => $ticket->getGuestToken(),
+            // An expiring grant, sent back as `Authorization: Bearer`. Opaque:
+            // do not parse it or assume a length.
+            'guest_access_token' => $grant['token'],
+            'expires_at' => $expiresAt,
             'data' => [
                 'reference' => $ticket->getReference(),
-                'guest_token' => $ticket->getGuestToken(),
+                'guest_token' => $grant['token'],
+                'guest_access_expires_at' => $expiresAt,
             ],
-        ], Response::HTTP_CREATED);
-
-        return $response;
+        ], Response::HTTP_CREATED));
     }
 
     #[Route('/tickets/{reference}', name: 'tickets.show', methods: ['GET'])]
@@ -188,12 +312,12 @@ class WidgetController extends AbstractController
 
         $guestToken = WidgetRequest::guestToken($request);
         if (null === $guestToken) {
-            return WidgetRequest::error('Guest token required.', Response::HTTP_UNAUTHORIZED);
+            return self::noStore(WidgetRequest::error('Guest token required.', Response::HTTP_UNAUTHORIZED));
         }
 
-        $ticket = $this->ticketService->find($reference);
-        if (null === $ticket || !hash_equals((string) $ticket->getGuestToken(), $guestToken)) {
-            return WidgetRequest::error('Ticket not found.', Response::HTTP_NOT_FOUND);
+        $ticket = $this->guestTicket($reference, $guestToken);
+        if (null === $ticket) {
+            return self::noStore(WidgetRequest::error('Ticket not found.', Response::HTTP_NOT_FOUND));
         }
 
         $repliesArray = [];
@@ -228,7 +352,7 @@ class WidgetController extends AbstractController
             'replies' => $repliesArray,
         ];
 
-        $response = $this->json($status + [
+        return self::noStore($this->json($status + [
             'data' => [
                 'reference' => $ticket->getReference(),
                 'subject' => $ticket->getSubject(),
@@ -237,9 +361,7 @@ class WidgetController extends AbstractController
                 'replies' => $repliesArray,
                 'attachments' => $ticketAttachments,
             ],
-        ]);
-
-        return $response;
+        ]));
     }
 
     #[Route('/tickets/{reference}/replies', name: 'tickets.reply', methods: ['POST'])]
@@ -257,12 +379,12 @@ class WidgetController extends AbstractController
 
         $guestToken = WidgetRequest::guestToken($request);
         if (null === $guestToken) {
-            return WidgetRequest::error('Guest token required.', Response::HTTP_UNAUTHORIZED);
+            return self::noStore(WidgetRequest::error('Guest token required.', Response::HTTP_UNAUTHORIZED));
         }
 
-        $ticket = $this->ticketService->find($reference);
-        if (null === $ticket || !hash_equals((string) $ticket->getGuestToken(), $guestToken)) {
-            return WidgetRequest::error('Ticket not found.', Response::HTTP_NOT_FOUND);
+        $ticket = $this->guestTicket($reference, $guestToken);
+        if (null === $ticket) {
+            return self::noStore(WidgetRequest::error('Ticket not found.', Response::HTTP_NOT_FOUND));
         }
 
         $data = json_decode($request->getContent(), true) ?? [];
@@ -278,6 +400,57 @@ class WidgetController extends AbstractController
                 'created_at' => $reply->getCreatedAt()->format(\DateTimeInterface::ATOM),
             ],
         ], Response::HTTP_CREATED);
+
+        return $response;
+    }
+
+    /**
+     * The ticket a guest grant (or, while accepted, a legacy guest token)
+     * opens for this reference, seen through the caller's ticket visibility.
+     */
+    private function guestTicket(string $reference, string $token): ?Ticket
+    {
+        $ticket = $this->guestAccess->ticketFor($reference, $token);
+        if (null === $ticket) {
+            return null;
+        }
+
+        return $this->ticketService->find($reference) === $ticket ? $ticket : null;
+    }
+
+    /**
+     * 422 with `errors.verification_code` when the proof fields are missing.
+     *
+     * @param array<string, mixed> $data
+     */
+    public static function missingProof(array $data): ?JsonResponse
+    {
+        $id = $data['verification_id'] ?? null;
+        $code = $data['verification_code'] ?? null;
+        if (\is_string($id) && '' !== $id && \is_scalar($code) && '' !== (string) $code) {
+            return null;
+        }
+
+        return self::invalid(new GuestVerificationException('verification_code', 'Verify your email: request a code and enter it.'));
+    }
+
+    public static function invalid(GuestVerificationException $e): JsonResponse
+    {
+        return self::noStore(new JsonResponse([
+            'error' => $e->getMessage(),
+            'message' => $e->getMessage(),
+            'errors' => [$e->field => [$e->getMessage()]],
+        ], Response::HTTP_UNPROCESSABLE_ENTITY));
+    }
+
+    /**
+     * Guest responses carry grants and correspondence: never cached, and no
+     * referrer leaks a grant to another site.
+     */
+    public static function noStore(JsonResponse $response): JsonResponse
+    {
+        $response->headers->set('Cache-Control', 'no-store, private');
+        $response->headers->set('Referrer-Policy', 'no-referrer');
 
         return $response;
     }

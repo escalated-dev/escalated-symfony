@@ -11,6 +11,7 @@ use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Service\SettingsService;
 use Escalated\Symfony\Tests\Kernel\EscalatedWebTestCase;
 use Escalated\Symfony\Tests\Kernel\Fixtures\Entity\TestUser;
+use Escalated\Symfony\Tests\Kernel\ObtainsGuestProof;
 use Escalated\Symfony\Widget\WidgetOrigins;
 use Escalated\Symfony\Widget\WidgetSettings;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -25,6 +26,8 @@ use Symfony\Component\HttpFoundation\Response;
  */
 final class WidgetEmbeddingTest extends EscalatedWebTestCase
 {
+    use ObtainsGuestProof;
+
     private const SHOP = 'https://shop.example.com';
 
     private const API = '/support/widget/api';
@@ -61,6 +64,7 @@ final class WidgetEmbeddingTest extends EscalatedWebTestCase
      */
     private function post(KernelBrowser $client, string $path, array $body, ?string $origin = self::SHOP, array $server = []): Response
     {
+        $body = self::withGuestProof($client, 'POST', self::API.$path, $body) ?? $body;
         $client->request('POST', self::API.$path, server: array_filter([
             'REMOTE_ADDR' => $this->ip,
             'CONTENT_TYPE' => 'application/json',

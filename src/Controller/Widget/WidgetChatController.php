@@ -6,7 +6,10 @@ namespace Escalated\Symfony\Controller\Widget;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Entity\ChatSession;
+use Escalated\Symfony\Entity\GuestVerification;
 use Escalated\Symfony\Entity\Ticket;
+use Escalated\Symfony\Security\GuestEmailVerification;
+use Escalated\Symfony\Security\GuestVerificationException;
 use Escalated\Symfony\Service\ChatAvailabilityService;
 use Escalated\Symfony\Service\ChatSessionService;
 use Escalated\Symfony\Service\GuestRateLimiter;
@@ -40,6 +43,7 @@ class WidgetChatController extends AbstractController
         private readonly ChatAvailabilityService $availabilityService,
         private readonly EntityManagerInterface $em,
         private readonly GuestRateLimiter $guestRateLimiter,
+        private readonly GuestEmailVerification $verification,
     ) {
     }
 
@@ -91,18 +95,31 @@ class WidgetChatController extends AbstractController
         $metadata = WidgetMetadata::sanitize($data['metadata'] ?? null, \is_string($origin) ? $origin : null);
         $pageUrl = $metadata['page_url'] ?? (WidgetMetadata::isWebUrl($data['page_url'] ?? null) ? $data['page_url'] : null);
 
+        if (null !== $missing = WidgetController::missingProof($data)) {
+            return $missing;
+        }
+
+        // A `chat` proof for this email, consumed with the chat start.
         try {
-            $result = $this->chatSessionService->startSession([
-                'subject' => self::text($data['subject'] ?? null),
-                'message' => self::text($data['message'] ?? null),
-                'guest_name' => $name,
-                'guest_email' => $email,
-                'department' => $department,
-                'page_url' => \is_string($pageUrl) ? $pageUrl : null,
-                'metadata' => $metadata,
-                'visitor_ip' => $request->getClientIp(),
-                'visitor_user_agent' => $request->headers->get('User-Agent'),
-            ]);
+            $result = $this->verification->consume(
+                $data['verification_id'],
+                $data['verification_code'],
+                $email,
+                GuestVerification::PURPOSE_CHAT,
+                fn (): array => $this->chatSessionService->startSession([
+                    'subject' => self::text($data['subject'] ?? null),
+                    'message' => self::text($data['message'] ?? null),
+                    'guest_name' => $name,
+                    'guest_email' => $email,
+                    'department' => $department,
+                    'page_url' => \is_string($pageUrl) ? $pageUrl : null,
+                    'metadata' => $metadata,
+                    'visitor_ip' => $request->getClientIp(),
+                    'visitor_user_agent' => $request->headers->get('User-Agent'),
+                ]),
+            );
+        } catch (GuestVerificationException $e) {
+            return WidgetController::invalid($e);
         } catch (\Exception $e) {
             return WidgetRequest::error('Failed to start chat session.', Response::HTTP_INTERNAL_SERVER_ERROR);
         }

@@ -39,6 +39,7 @@ class EscalatedExtension extends Extension implements PrependExtensionInterface
             $container->setParameter('escalated.newsletters.'.$key, $value);
         }
         EscalatedBundle::setGuestRateLimit($container, $config['guest_rate_limit']);
+        EscalatedBundle::setGuestAccess($container, $config['guest_access']);
         $container->setParameter('escalated.sla.enabled', $config['sla']['enabled']);
         $container->setParameter('escalated.sla.business_hours_only', $config['sla']['business_hours_only']);
         $container->setParameter('escalated.sla.business_hours', $config['sla']['business_hours']);

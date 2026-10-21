@@ -16,6 +16,7 @@ use Escalated\Symfony\Service\WebhookDispatcher;
 use Escalated\Symfony\Service\WorkflowEngine;
 use Escalated\Symfony\Tests\Kernel\EscalatedWebTestCase;
 use Escalated\Symfony\Tests\Kernel\Fixtures\Entity\TestUser;
+use Escalated\Symfony\Tests\Kernel\ObtainsGuestProof;
 use Escalated\Symfony\Tests\Service\RecordingWebhookHttpClient;
 use Escalated\Symfony\Widget\WidgetSettings;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -32,6 +33,8 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
  */
 final class EventVocabularyTest extends EscalatedWebTestCase
 {
+    use ObtainsGuestProof;
+
     private KernelBrowser $client;
 
     private RecordingWebhookHttpClient $http;
@@ -149,7 +152,7 @@ final class EventVocabularyTest extends EscalatedWebTestCase
             'REMOTE_ADDR' => '2001:db8::77',
             'CONTENT_TYPE' => 'application/json',
             'HTTP_ACCEPT' => 'application/json',
-        ], content: (string) json_encode(['name' => 'Ada', 'email' => 'ada@example.com', 'message' => 'Hello']));
+        ], content: (string) json_encode(['name' => 'Ada', 'email' => 'ada@example.com', 'message' => 'Hello'] + self::guestProof($this->client, 'ada@example.com', 'chat')));
         self::assertResponseStatusCodeSame(201);
         $started = json_decode((string) $this->client->getResponse()->getContent(), true);
         $token = (string) $started['id'];

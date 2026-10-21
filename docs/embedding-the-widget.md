@@ -95,10 +95,11 @@ The bundled widget calls, under `{route_prefix}/widget/api`: `GET /config`,
 `GET /articles?q=`, `GET /articles/{slug}`, `POST /tickets`,
 `GET /chat/availability`, `POST /chat/start`, and `GET`/`POST
 /chat/{id}/messages`, `POST /chat/{id}/typing`, `/end` and `/rate`, where
-`{id}` is the random guest token `/chat/start` returns as `id`. `/config`
-returns `status_lookup_enabled: false`: this backend has no mailbox
-verification, so it does not offer status lookup by reference and email and
-the widget hides its Status tab. The original routes and response envelopes
+`{id}` is the random guest token `/chat/start` returns as `id`, plus
+`POST /verification` and `POST /lookup`. `/config` returns
+`guest_verification_required: true` and `status_lookup_enabled: true`: tickets,
+chats and status lookups need an emailed code. See
+[guest-access.md](guest-access.md). The original routes and response envelopes
 (`data`, `/chat/sessions/{reference}/...` with `X-Guest-Token`) still work.
 
 ### The script

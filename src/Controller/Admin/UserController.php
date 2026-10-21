@@ -90,7 +90,7 @@ class UserController extends AbstractController
 
         $qb->orderBy('u.id', 'ASC');
 
-        $total = (int) (clone $qb)->select('COUNT(u.id)')->getQuery()->getSingleScalarResult();
+        $total = (int) (clone $qb)->select('COUNT(u.id)')->resetDQLPart('orderBy')->getQuery()->getSingleScalarResult();
 
         /** @var list<object> $rows */
         $rows = $qb

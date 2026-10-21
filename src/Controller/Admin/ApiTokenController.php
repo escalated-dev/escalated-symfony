@@ -7,6 +7,8 @@ namespace Escalated\Symfony\Controller\Admin;
 use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Entity\ApiToken;
 use Escalated\Symfony\Rendering\UiRendererInterface;
+use Escalated\Symfony\Rendering\UserDirectory;
+use Escalated\Symfony\Security\UserKeyResolver;
 use Escalated\Symfony\Service\ApiTokenService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -27,6 +29,8 @@ class ApiTokenController extends AbstractController
         private readonly EntityManagerInterface $em,
         private readonly UiRendererInterface $renderer,
         private readonly ApiTokenService $service,
+        private readonly ?UserDirectory $users = null,
+        private readonly ?UserKeyResolver $userKeys = null,
     ) {
     }
 
@@ -40,6 +44,10 @@ class ApiTokenController extends AbstractController
 
         return $this->renderer->render('Escalated/Admin/ApiTokens/Index', [
             'tokens' => array_map([$this, 'serialize'], $tokens),
+            // Token owners the page offers: the agents.
+            'users' => null === $this->users ? [] : $this->users->agents(),
+            // The JSON API is always mounted by this bundle.
+            'api_enabled' => true,
         ]);
     }
 
@@ -172,11 +180,20 @@ class ApiTokenController extends AbstractController
         return new \DateTimeImmutable(sprintf('+%d days', $days));
     }
 
+    /**
+     * The signed-in admin's user key: what ApiTokenAuthenticator hands back as
+     * the token owner. getUserIdentifier() is the login name (usually the
+     * email), not the key.
+     */
     private function currentUserId(): ?string
     {
         $user = $this->getUser();
+        if (null === $user) {
+            return null;
+        }
+        $key = $this->userKeys?->resolve($user);
 
-        return null === $user ? null : $user->getUserIdentifier();
+        return null === $key ? $user->getUserIdentifier() : (string) $key;
     }
 
     /** @return array<string, mixed> */
@@ -186,6 +203,8 @@ class ApiTokenController extends AbstractController
             'id' => $token->getId(),
             'name' => $token->getName(),
             'user_id' => $token->getUserId(),
+            'user_name' => $this->users?->name($token->getUserId()),
+            'user_email' => $this->users?->find($token->getUserId())['email'] ?? null,
             'abilities' => $token->getAbilities(),
             'last_used_at' => $token->getLastUsedAt()?->format(\DateTimeInterface::ATOM),
             'last_used_ip' => $token->getLastUsedIp(),

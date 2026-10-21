@@ -4,28 +4,43 @@ declare(strict_types=1);
 
 namespace Escalated\Symfony\Controller\Agent;
 
+use Escalated\Symfony\Controller\TicketDeskController;
 use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Event\TicketCustomActionTriggeredEvent;
-use Escalated\Symfony\Rendering\UiRendererInterface;
-use Escalated\Symfony\Service\AssignmentService;
 use Escalated\Symfony\Service\TicketActionRegistry;
-use Escalated\Symfony\Service\TicketService;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Contracts\Service\Attribute\Required;
 
+/**
+ * The agent ticket desk: Escalated/Agent/TicketIndex and TicketShow, and the
+ * writes those pages post (escalated-laravel's Agent\TicketController and
+ * BulkActionController).
+ */
 #[Route('/agent/tickets', name: 'escalated.agent.tickets.')]
-class TicketController extends AbstractController
+class TicketController extends TicketDeskController
 {
-    public function __construct(
-        private readonly TicketService $ticketService,
-        private readonly AssignmentService $assignmentService,
-        private readonly UiRendererInterface $renderer,
-        private readonly TicketActionRegistry $ticketActions,
-        private readonly EventDispatcherInterface $dispatcher,
-    ) {
+    private TicketActionRegistry $ticketActions;
+    private EventDispatcherInterface $dispatcher;
+
+    #[Required]
+    public function setCustomActions(TicketActionRegistry $ticketActions, EventDispatcherInterface $dispatcher): void
+    {
+        $this->ticketActions = $ticketActions;
+        $this->dispatcher = $dispatcher;
+    }
+
+    protected function gate(): string
+    {
+        return 'ESCALATED_AGENT';
+    }
+
+    protected function routes(): string
+    {
+        return 'escalated.agent.tickets';
     }
 
     /**
@@ -50,28 +65,28 @@ class TicketController extends AbstractController
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): Response
     {
-        $this->denyAccessUnlessGranted('ESCALATED_AGENT');
+        $this->denyAccessUnlessGranted($this->gate());
 
-        $tickets = $this->ticketService->list($request->query->all());
+        return $this->renderer->render('Escalated/Agent/TicketIndex', $this->indexProps($request));
+    }
 
-        return $this->renderer->render('Escalated/Agent/TicketIndex', [
-            'tickets' => $tickets,
-            'filters' => $request->query->all(),
-        ]);
+    #[Route('/bulk', name: 'bulk', methods: ['POST'], priority: 10)]
+    public function bulk(Request $request): Response
+    {
+        $this->denyAccessUnlessGranted($this->gate());
+
+        return $this->doBulk($request, $this->isGranted('ESCALATED_ADMIN'));
     }
 
     #[Route('/{reference}', name: 'show', methods: ['GET'])]
     public function show(string $reference): Response
     {
-        $this->denyAccessUnlessGranted('ESCALATED_AGENT');
+        $this->denyAccessUnlessGranted($this->gate());
 
-        $ticket = $this->ticketService->find($reference);
-        if (null === $ticket) {
-            throw $this->createNotFoundException('Ticket not found.');
-        }
+        $ticket = $this->ticketOr404($reference);
 
         return $this->renderer->render('Escalated/Agent/TicketShow', [
-            'ticket' => $ticket,
+            ...$this->showProps($ticket),
             'customActions' => $this->customActionsForTicket($ticket, $this->getUser()),
         ]);
     }
@@ -81,10 +96,7 @@ class TicketController extends AbstractController
     {
         $this->denyAccessUnlessGranted('ESCALATED_AGENT');
 
-        $ticket = $this->ticketService->find($reference);
-        if (null === $ticket) {
-            throw $this->createNotFoundException('Ticket not found.');
-        }
+        $ticket = $this->ticketOr404($reference);
 
         $user = $this->getUser();
         $action = $this->ticketActions->find($actionKey);
@@ -96,7 +108,8 @@ class TicketController extends AbstractController
             throw $this->createAccessDeniedException('Custom action is not enabled.');
         }
 
-        $payload = $request->request->all('payload');
+        $payload = $this->payload($request)['payload'] ?? [];
+        $payload = \is_array($payload) ? $payload : [];
 
         $this->dispatcher->dispatch(new TicketCustomActionTriggeredEvent(
             $ticket,
@@ -116,75 +129,105 @@ class TicketController extends AbstractController
     #[Route('/{reference}/reply', name: 'reply', methods: ['POST'])]
     public function reply(string $reference, Request $request): Response
     {
-        $this->denyAccessUnlessGranted('ESCALATED_AGENT');
+        $this->denyAccessUnlessGranted($this->gate());
+        $note = (bool) ($this->payload($request)['is_internal_note'] ?? false);
 
-        $ticket = $this->ticketService->find($reference);
-        if (null === $ticket) {
-            throw $this->createNotFoundException('Ticket not found.');
-        }
+        return $this->doReply($reference, $request, $note);
+    }
 
-        $isNote = (bool) $request->request->get('is_internal_note', false);
+    #[Route('/{reference}/note', name: 'note', methods: ['POST'])]
+    public function note(string $reference, Request $request): Response
+    {
+        $this->denyAccessUnlessGranted($this->gate());
 
-        $this->ticketService->addReply(
-            $ticket,
-            $this->getUser()->getUserIdentifier(),
-            $request->request->get('body', ''),
-            $isNote,
-            get_class($this->getUser()),
-        );
-
-        $this->addFlash('success', $isNote ? 'Internal note added.' : 'Reply sent.');
-
-        return $this->redirectToRoute('escalated.agent.tickets.show', [
-            'reference' => $ticket->getReference(),
-        ]);
+        return $this->doReply($reference, $request, true);
     }
 
     #[Route('/{reference}/assign', name: 'assign', methods: ['POST'])]
     public function assign(string $reference, Request $request): Response
     {
-        $this->denyAccessUnlessGranted('ESCALATED_AGENT');
+        $this->denyAccessUnlessGranted($this->gate());
 
-        $ticket = $this->ticketService->find($reference);
-        if (null === $ticket) {
-            throw $this->createNotFoundException('Ticket not found.');
-        }
-
-        $agentId = $request->request->get('agent_id');
-        $this->assignmentService->assign(
-            $ticket,
-            $agentId,
-            $this->getUser()->getUserIdentifier()
-        );
-
-        $this->addFlash('success', 'Ticket assigned.');
-
-        return $this->redirectToRoute('escalated.agent.tickets.show', [
-            'reference' => $ticket->getReference(),
-        ]);
+        return $this->doAssign($reference, $request);
     }
 
     #[Route('/{reference}/status', name: 'status', methods: ['POST'])]
     public function changeStatus(string $reference, Request $request): Response
     {
-        $this->denyAccessUnlessGranted('ESCALATED_AGENT');
+        $this->denyAccessUnlessGranted($this->gate());
 
-        $ticket = $this->ticketService->find($reference);
-        if (null === $ticket) {
-            throw $this->createNotFoundException('Ticket not found.');
-        }
+        return $this->doStatus($reference, $request);
+    }
 
-        $newStatus = $request->request->get('status');
-        $this->ticketService->changeStatus(
-            $ticket,
-            $newStatus,
-            $this->getUser()->getUserIdentifier()
-        );
+    #[Route('/{reference}/priority', name: 'priority', methods: ['POST'])]
+    public function priority(string $reference, Request $request): Response
+    {
+        $this->denyAccessUnlessGranted($this->gate());
 
-        $this->addFlash('success', 'Ticket status updated.');
+        return $this->doPriority($reference, $request);
+    }
 
-        return $this->redirectToRoute('escalated.agent.tickets.show', [
-            'reference' => $ticket->getReference(),
-        ]);
+    #[Route('/{reference}/tags', name: 'tags', methods: ['POST'])]
+    public function tags(string $reference, Request $request): Response
+    {
+        $this->denyAccessUnlessGranted($this->gate());
+
+        return $this->doTags($reference, $request);
+    }
+
+    #[Route('/{reference}/department', name: 'department', methods: ['POST'])]
+    public function department(string $reference, Request $request): Response
+    {
+        $this->denyAccessUnlessGranted($this->gate());
+
+        return $this->doDepartment($reference, $request);
+    }
+
+    #[Route('/{reference}/macro', name: 'macro', methods: ['POST'])]
+    public function macro(string $reference, Request $request): Response
+    {
+        $this->denyAccessUnlessGranted($this->gate());
+
+        return $this->doMacro($reference, $request);
+    }
+
+    #[Route('/{reference}/follow', name: 'follow', methods: ['POST'])]
+    public function follow(string $reference, Request $request): Response
+    {
+        $this->denyAccessUnlessGranted($this->gate());
+
+        return $this->doFollow($reference, $request);
+    }
+
+    #[Route('/{reference}/presence', name: 'presence', methods: ['POST'])]
+    public function presence(string $reference): JsonResponse
+    {
+        $this->denyAccessUnlessGranted($this->gate());
+
+        return $this->doPresence($reference);
+    }
+
+    #[Route('/{reference}/replies/{replyId}/pin', name: 'pin', requirements: ['replyId' => '\d+'], methods: ['POST'])]
+    public function pin(string $reference, int $replyId, Request $request): Response
+    {
+        $this->denyAccessUnlessGranted($this->gate());
+
+        return $this->doPin($reference, $replyId, $request);
+    }
+
+    #[Route('/{reference}/snooze', name: 'snooze', methods: ['POST'])]
+    public function snooze(string $reference, Request $request): Response
+    {
+        $this->denyAccessUnlessGranted($this->gate());
+
+        return $this->doSnooze($reference, $request);
+    }
+
+    #[Route('/{reference}/unsnooze', name: 'unsnooze', methods: ['POST'])]
+    public function unsnooze(string $reference, Request $request): Response
+    {
+        $this->denyAccessUnlessGranted($this->gate());
+
+        return $this->doUnsnooze($reference, $request);
     }
 }

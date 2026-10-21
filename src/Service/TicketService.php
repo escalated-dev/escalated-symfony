@@ -149,6 +149,62 @@ class TicketService
     }
 
     /**
+     * Change the priority, recording who did it.
+     */
+    public function changePriority(Ticket $ticket, string $priority, int|string|null $causerId = null): Ticket
+    {
+        $old = $ticket->getPriority();
+        if ($old === $priority) {
+            return $ticket;
+        }
+
+        $this->update($ticket, ['priority' => $priority]);
+        $this->logActivity($ticket, TicketActivity::TYPE_PRIORITY_CHANGED, $causerId, [
+            'old_priority' => $old,
+            'new_priority' => $priority,
+        ]);
+
+        return $ticket;
+    }
+
+    /**
+     * Move the ticket to another department (or none), recording who did it.
+     */
+    public function changeDepartment(Ticket $ticket, ?int $departmentId, int|string|null $causerId = null): Ticket
+    {
+        $this->access?->assertVisible($ticket);
+
+        $department = null;
+        if (null !== $departmentId) {
+            $department = $this->em->getRepository(\Escalated\Symfony\Entity\Department::class)->find($departmentId);
+            if (null === $department) {
+                throw new \InvalidArgumentException(sprintf('Department %d does not exist.', $departmentId));
+            }
+        }
+
+        $oldId = $ticket->getDepartment()?->getId();
+        if ($oldId === $departmentId) {
+            return $ticket;
+        }
+
+        $ticket->setDepartment($department);
+        $this->em->flush();
+
+        $this->logActivity($ticket, TicketActivity::TYPE_DEPARTMENT_CHANGED, $causerId, [
+            'old_department_id' => $oldId,
+            'new_department_id' => $departmentId,
+        ]);
+
+        $this->dispatcher->dispatch(new TicketWorkflowEvent(
+            EventNames::DEPARTMENT_CHANGED,
+            $ticket,
+            ['old_department_id' => $oldId, 'new_department_id' => $departmentId, 'causer_id' => $causerId],
+        ));
+
+        return $ticket;
+    }
+
+    /**
      * Transition a ticket to a new status.
      */
     public function changeStatus(Ticket $ticket, string $newStatus, int|string|null $causerId = null): Ticket

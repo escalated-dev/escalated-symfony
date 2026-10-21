@@ -53,7 +53,8 @@ final class WorkflowAdminTest extends EscalatedWebTestCase
         self::assertSame('Route refunds to billing', $workflow->getName());
         self::assertNull($workflow->getDescription());
         self::assertSame('ticket.created', $workflow->getTriggerEvent());
-        self::assertSame(['all' => [['field' => 'subject', 'operator' => 'contains', 'value' => 'refund']]], $workflow->getConditions());
+        // Equal, not identical: MySQL's JSON type reorders object keys.
+        self::assertEquals(['all' => [['field' => 'subject', 'operator' => 'contains', 'value' => 'refund']]], $workflow->getConditions());
         self::assertSame([
             ['type' => 'change_priority', 'value' => 'high'],
             ['type' => 'set_department', 'value' => (string) $department->getId()],
@@ -210,7 +211,8 @@ final class WorkflowAdminTest extends EscalatedWebTestCase
         self::assertSame('Renamed', $workflow->getName());
         self::assertSame('Now on replies', $workflow->getDescription());
         self::assertSame('reply.created', $workflow->getTriggerEvent());
-        self::assertSame(['any' => [['field' => 'priority', 'operator' => 'equals', 'value' => 'high']]], $workflow->getConditions());
+        // Equal, not identical: MySQL's JSON type reorders object keys.
+        self::assertEquals(['any' => [['field' => 'priority', 'operator' => 'equals', 'value' => 'high']]], $workflow->getConditions());
         self::assertSame([['type' => 'add_tag', 'value' => 'escalate']], $workflow->getActions());
         self::assertFalse($workflow->isActive());
     }
@@ -263,7 +265,7 @@ final class WorkflowAdminTest extends EscalatedWebTestCase
         self::assertSame($workflow->getId(), $object['id']);
         self::assertSame('Stored', $object['name']);
         self::assertSame('reply.created', $object['trigger_event'], 'a legacy trigger is shown under its canonical name');
-        self::assertSame(['all' => [['field' => 'subject', 'operator' => 'contains', 'value' => 'refund']]], $object['conditions']);
+        self::assertEquals(['all' => [['field' => 'subject', 'operator' => 'contains', 'value' => 'refund']]], $object['conditions']);
         self::assertSame([['type' => 'add_note', 'value' => 'hi']], $object['actions']);
         self::assertTrue($object['is_active']);
         self::assertIsInt($object['position']);

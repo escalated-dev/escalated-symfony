@@ -9,7 +9,10 @@ use Escalated\Symfony\Broadcasting\BroadcastableEvent;
 use Escalated\Symfony\Broadcasting\BroadcasterInterface;
 use Escalated\Symfony\Entity\ChatSession;
 use Escalated\Symfony\Entity\Ticket;
+use Escalated\Symfony\Event\EventNames;
+use Escalated\Symfony\Event\TicketWorkflowEvent;
 use Symfony\Component\Uid\Uuid;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class ChatSessionService
 {
@@ -20,6 +23,7 @@ class ChatSessionService
         private readonly BroadcasterInterface $broadcaster,
         private readonly ?\Escalated\Symfony\Security\TicketAccess $access = null,
         private readonly ?\Escalated\Symfony\Broadcasting\TicketBroadcastDelivery $delivery = null,
+        private readonly ?EventDispatcherInterface $events = null,
     ) {
     }
 
@@ -67,6 +71,8 @@ class ChatSessionService
         $this->em->persist($session);
         $this->em->flush();
 
+        $this->announce(EventNames::CHAT_STARTED, $session);
+
         // Attempt auto-routing
         $agentId = $this->routingService->findAvailableAgent($ticket->getDepartment(), $ticket);
         if (null !== $agentId) {
@@ -107,6 +113,8 @@ class ChatSessionService
 
         $this->em->flush();
 
+        $this->announce(EventNames::CHAT_ASSIGNED, $session, ['agent_id' => $agentId]);
+
         ($this->delivery ?? $this->broadcaster)->broadcast(new BroadcastableEvent(
             'chat.agent_joined',
             sprintf('ticket.%d', $ticket->getId()),
@@ -137,6 +145,8 @@ class ChatSessionService
 
         $session->setLastActivityAt(new \DateTimeImmutable());
         $this->em->flush();
+
+        $this->announce(EventNames::CHAT_MESSAGE, $session, ['reply_id' => $reply->getId(), 'is_agent' => $isAgent]);
 
         ($this->delivery ?? $this->broadcaster)->broadcast(new BroadcastableEvent(
             'chat.message',
@@ -226,6 +236,8 @@ class ChatSessionService
         $ticket->setChatMetadata($chatMeta);
 
         $this->em->flush();
+
+        $this->announce(EventNames::CHAT_ENDED, $session, ['ended_by' => $causerId]);
 
         ($this->delivery ?? $this->broadcaster)->broadcast(new BroadcastableEvent(
             'chat.session_ended',
@@ -321,6 +333,27 @@ class ChatSessionService
 
         $this->em->flush();
 
+        foreach ($sessions as $session) {
+            $this->announce(EventNames::CHAT_ENDED, $session, ['reason' => 'abandoned']);
+        }
+
         return $count;
+    }
+
+    /**
+     * Announces a chat event to webhooks and workflows through the dispatch
+     * tickets use, under its canonical name (chat.started, chat.assigned,
+     * chat.message, chat.ended). The payload carries the session's id, never
+     * the visitor's chat token. Realtime broadcasts keep their own names.
+     *
+     * @param array<string, mixed> $context
+     */
+    private function announce(string $name, ChatSession $session, array $context = []): void
+    {
+        $this->events?->dispatch(new TicketWorkflowEvent(
+            $name,
+            $session->getTicket(),
+            ['chat_session_id' => $session->getId(), ...$context],
+        ));
     }
 }

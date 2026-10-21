@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+### Changed
+- Webhooks and workflows use the shared event vocabulary (escalated-developer-context `decisions/2026-10-21-event-vocabulary.md`), defined once in `Escalated\Symfony\Event\EventNames`:
+  - Tags are dispatched as `ticket.tag_added` and `ticket.tag_removed` (was `ticket.tagged` with an `action` context). A `ticket.tag_added` or `ticket.tag_removed` workflow now runs; before, only `ticket.tagged` did.
+  - Workflows also fire on `ticket.resolved`, `ticket.closed`, `ticket.escalated` and `ticket.unassigned`, the events webhooks already received.
+  - Live chat emits `chat.started`, `chat.assigned`, `chat.message` and `chat.ended` to webhooks and workflows. The payload carries the ticket and `chat_session_id`, never the visitor's chat token. Realtime broadcast names are unchanged.
+  - The webhook admin offers exactly the canonical names the bundle emits, and stores a legacy name posted by an older form as its canonical name.
+- Legacy names keep working on read: a webhook subscribed to `internal_note.added`, `ticket.tagged`, `ticket.replied`, `chat.session_started` and the like receives the canonical event, and a workflow saved as `ticket.replied`, `ticket.tagged` or `chat.session_started` still fires.
+
+### Upgrade notes
+- **Behaviour change:** a workflow saved as `ticket.tagged` used to run when tags were added *and* removed. It is now read as `ticket.tag_added`, as the ADR says, and runs on additions only. Re-save it as `ticket.tag_removed` (or add a second workflow) if it should also run on removals.
+- Host listeners for `TicketWorkflowEvent` that matched `triggerName === 'ticket.tagged'` should match `ticket.tag_added` / `ticket.tag_removed`, or use `EventNames::forEvent($event)`.
+- `ChatSessionService` takes an optional event dispatcher as its last constructor argument; autowired hosts need no change.
+
 ## [0.3.2] - 2026-10-20
 
 ### Changed

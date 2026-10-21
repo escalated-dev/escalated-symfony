@@ -138,7 +138,7 @@ final class WorkflowTriggersTest extends EscalatedKernelTestCase
 
         $this->tickets()->removeTags($ticket, [(int) $tag->getId()]);
 
-        $event = $this->onlyDispatched('ticket.tagged');
+        $event = $this->onlyDispatched('ticket.tag_removed');
         self::assertSame('removed', $event->context['action'] ?? null);
         self::assertSame([(int) $tag->getId()], $event->context['tag_ids'] ?? null);
     }

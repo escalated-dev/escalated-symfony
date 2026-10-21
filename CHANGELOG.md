@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Added
+- Workflow admin, per escalated-developer-context `domain-model/workflow-admin-contract.md`: `{route_prefix}/admin/workflows` routes (`escalated.admin.workflows.index`, `create`, `store`, `edit`, `update`, `destroy`, `toggle`, `reorder`, `logs`) rendering the shared `Escalated/Admin/Workflows/Index`, `Form` and `Logs` pages. Create and update accept the shared builder's body (top-level `trigger_event`, conditions `{all|any: [...]}`, actions `[{type, value}]`), store a legacy trigger name as its canonical name, and on a validation failure redirect back with the errors flashed under `errors` (a request without `X-Inertia` that asks for JSON gets a 422). The Form page gets `trigger_events`, `action_types` and `operators` listing exactly what the engine fires, runs and evaluates.
+- Workflow conditions on `ticket_type`, `channel`, `tags`, `hours_since_created` and `hours_since_updated`.
+
+### Fixed
+- Workflow actions `add_tag`, `remove_tag`, `set_department` and `insert_canned_reply` did nothing: a workflow built with the core action catalog ran, logged success and left the ticket unchanged. They now act (`add_tag` creates a missing tag; `insert_canned_reply` posts an authorless public reply that does not re-trigger reply workflows). `delay` now holds back the actions after it until `escalated:process-delayed-actions` runs them; before, it was skipped and the later actions ran at once. Unknown action types are logged as `skipped` instead of `executed`, and failed actions carry their error in the log.
+- `WorkflowEngine::ACTION_TYPES` is deprecated: it listed `send_webhook` and `send_notification`, which the engine never ran. Use `OFFERED_ACTIONS` or `HANDLED_ACTIONS`.
+
 ### Changed
 - Webhooks and workflows use the shared event vocabulary (escalated-developer-context `decisions/2026-10-21-event-vocabulary.md`), defined once in `Escalated\Symfony\Event\EventNames`:
   - Tags are dispatched as `ticket.tag_added` and `ticket.tag_removed` (was `ticket.tagged` with an `action` context). A `ticket.tag_added` or `ticket.tag_removed` workflow now runs; before, only `ticket.tagged` did.

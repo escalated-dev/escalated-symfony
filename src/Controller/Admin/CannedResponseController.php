@@ -6,6 +6,7 @@ namespace Escalated\Symfony\Controller\Admin;
 
 use Escalated\Symfony\Entity\CannedResponse;
 use Escalated\Symfony\Rendering\UiRendererInterface;
+use Escalated\Symfony\Rendering\UserDirectory;
 use Escalated\Symfony\Security\UserKeyResolver;
 use Escalated\Symfony\Service\CannedResponseService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -20,17 +21,19 @@ use Symfony\Component\Routing\Attribute\Route;
  * Agent\CannedResponseController. Mirrors the CannedResponse admin surface
  * in escalated-laravel.
  */
-#[Route('/admin/canned-responses', name: 'escalated.admin.canned_responses.')]
+#[Route('/admin/canned-responses', name: 'escalated.admin.')]
 class CannedResponseController extends AbstractController
 {
     public function __construct(
         private readonly CannedResponseService $service,
         private readonly UiRendererInterface $renderer,
         private readonly UserKeyResolver $userKeys,
+        private readonly ?UserDirectory $users = null,
     ) {
     }
 
-    #[Route('', name: 'index', methods: ['GET'])]
+    #[Route('', name: 'canned-responses.index', methods: ['GET'])]
+    #[Route('', name: 'canned_responses.index', methods: ['GET'])]
     public function index(): Response
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
@@ -47,15 +50,17 @@ class CannedResponseController extends AbstractController
      * on a 200 -- so both of these routes take you to the list, where the form
      * actually is.
      */
-    #[Route('/new', name: 'create', methods: ['GET'])]
+    #[Route('/new', name: 'canned-responses.create', methods: ['GET'])]
+    #[Route('/new', name: 'canned_responses.create', methods: ['GET'])]
     public function create(): Response
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
 
-        return $this->redirectToRoute('escalated.admin.canned_responses.index');
+        return $this->redirectToRoute('escalated.admin.canned-responses.index');
     }
 
-    #[Route('', name: 'store', methods: ['POST'])]
+    #[Route('', name: 'canned-responses.store', methods: ['POST'])]
+    #[Route('', name: 'canned_responses.store', methods: ['POST'])]
     public function store(Request $request): Response
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
@@ -67,10 +72,11 @@ class CannedResponseController extends AbstractController
 
         $this->addFlash('success', 'Canned response created.');
 
-        return $this->redirectToRoute('escalated.admin.canned_responses.index');
+        return $this->redirectToRoute('escalated.admin.canned-responses.index');
     }
 
-    #[Route('/{id}/edit', name: 'edit', methods: ['GET'])]
+    #[Route('/{id}/edit', name: 'canned-responses.edit', methods: ['GET'])]
+    #[Route('/{id}/edit', name: 'canned_responses.edit', methods: ['GET'])]
     public function edit(int $id): Response
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
@@ -80,10 +86,11 @@ class CannedResponseController extends AbstractController
             throw $this->createNotFoundException('Canned response not found.');
         }
 
-        return $this->redirectToRoute('escalated.admin.canned_responses.index');
+        return $this->redirectToRoute('escalated.admin.canned-responses.index');
     }
 
-    #[Route('/{id}', name: 'update', methods: ['PATCH', 'PUT'])]
+    #[Route('/{id}', name: 'canned-responses.update', methods: ['PATCH', 'PUT'])]
+    #[Route('/{id}', name: 'canned_responses.update', methods: ['PATCH', 'PUT'])]
     public function update(int $id, Request $request): Response
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
@@ -97,10 +104,11 @@ class CannedResponseController extends AbstractController
 
         $this->addFlash('success', 'Canned response updated.');
 
-        return $this->redirectToRoute('escalated.admin.canned_responses.index');
+        return $this->redirectToRoute('escalated.admin.canned-responses.index');
     }
 
-    #[Route('/{id}', name: 'destroy', methods: ['DELETE'])]
+    #[Route('/{id}', name: 'canned-responses.destroy', methods: ['DELETE'])]
+    #[Route('/{id}', name: 'canned_responses.destroy', methods: ['DELETE'])]
     public function destroy(int $id): Response
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
@@ -114,7 +122,7 @@ class CannedResponseController extends AbstractController
 
         $this->addFlash('success', 'Canned response deleted.');
 
-        return $this->redirectToRoute('escalated.admin.canned_responses.index');
+        return $this->redirectToRoute('escalated.admin.canned-responses.index');
     }
 
     /** @return array<string, mixed> */
@@ -183,8 +191,21 @@ class CannedResponseController extends AbstractController
             'category' => $c->getCategory(),
             'is_shared' => $c->isShared(),
             'created_by' => $c->getCreatedBy(),
+            'creator' => $this->creator($c->getCreatedBy()),
             'created_at' => $c->getCreatedAt()->format(\DateTimeInterface::ATOM),
             'updated_at' => $c->getUpdatedAt()->format(\DateTimeInterface::ATOM),
         ];
+    }
+
+    /**
+     * Who made it, as the page shows them: `{id, name}`.
+     *
+     * @return array{id: int|string, name: string}|null
+     */
+    private function creator(int|string|null $id): ?array
+    {
+        $user = $this->users?->find($id);
+
+        return null === $user ? null : ['id' => $user['id'], 'name' => $user['name']];
     }
 }

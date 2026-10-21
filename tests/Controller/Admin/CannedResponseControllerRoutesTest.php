@@ -24,8 +24,11 @@ class CannedResponseControllerRoutesTest extends TestCase
             }
         }
 
+        // The shared pages call escalated.admin.canned-responses.*; the
+        // earlier canned_responses.* names are kept for host links.
         foreach ($expected as $name) {
-            $this->assertContains($name, $found, 'Missing route name '.$name);
+            $this->assertContains('canned-responses.'.$name, $found, 'Missing route name canned-responses.'.$name);
+            $this->assertContains('canned_responses.'.$name, $found, 'Missing route name canned_responses.'.$name);
         }
     }
 
@@ -38,6 +41,6 @@ class CannedResponseControllerRoutesTest extends TestCase
         /** @var Route $route */
         $route = $attrs[0]->newInstance();
         $this->assertSame('/admin/canned-responses', $route->path);
-        $this->assertSame('escalated.admin.canned_responses.', $route->name);
+        $this->assertSame('escalated.admin.', $route->name);
     }
 }

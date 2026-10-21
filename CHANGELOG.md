@@ -8,6 +8,7 @@
 - Set `escalated.user_class` to the host user entity so pages show names: requesters, assignees, reply authors and the agent picker read `getName()` (else the email) from it.
 
 ### Fixed
+- `Admin/Users/Index` failed on PostgreSQL: the user count kept the listing's `ORDER BY`, which PostgreSQL rejects beside an aggregate.
 - An API token created from the admin page without a `user_id` was owned by the admin's login name (usually the email) instead of their user key, so it authenticated as no one. It is now owned by the key.
 - The ticket pages received the `Ticket` entity itself, which reaches Inertia as `{}` (or camelCase getters including the guest token), so every ticket screen rendered empty. `Agent/TicketIndex`, `Agent/TicketShow`, `Agent/Dashboard`, `Admin/Tickets/Index`, `Admin/Tickets/Show`, `Customer/Index`, `Customer/Show` and `Customer/Create` now get escalated-laravel's props, built from an allowlist by `Rendering\TicketPresenter`:
   - queues are Laravel's paginator (`data`, `links`, `current_page`, `total`, ...) of snake_case rows with `requester`, `assignee`, `department`, `tags` and `latest_reply`;

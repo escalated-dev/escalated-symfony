@@ -3,6 +3,15 @@
 ## [Unreleased]
 
 ### Added
+- Ticket merge, like escalated-laravel's `TicketMergeService`, for the shared `TicketMergeDialog`:
+  - `POST {route_prefix}/admin/tickets/{reference}/merge` with `target_reference` (`escalated.admin.tickets.merge`).
+  - `GET {route_prefix}/admin/tickets/merge-search?q=` (`escalated.admin.tickets.merge-search`) returns up to 10 unmerged tickets by reference or subject.
+  - Both are admin only.
+  - `Service\TicketMergeService::merge()` moves the source's replies and notes to the target in one transaction, adds a system note to both tickets, and closes the source with the new `tickets.merged_into_id`. It announces the close as `ticket.status_changed` / `ticket.closed` to webhooks and workflows.
+  - A ticket cannot be merged into itself, merged twice, or merged into a merged ticket.
+- Upgrade note: run the migrations (`Version20261021000002` adds the nullable `merged_into_id` column and its index).
+
+### Added
 - Verified guest access for the widget, after escalated-laravel `docs/guest-access.md` (see `docs/guest-access.md`):
   - `POST {route_prefix}/widget/api/verification` emails an eight-digit code (purpose `ticket`, `chat` or `lookup`). Codes expire after 10 minutes, allow 5 guesses, are used once, and are bound to the normalised email and purpose. They are stored as keyed digests in the new `guest_verifications` table.
   - Code delivery is budgeted per mailbox and client IP and per mailbox (`guest_access.codes_per_client_per_hour`, `codes_per_mailbox_per_hour`), with 429 and `Retry-After`.

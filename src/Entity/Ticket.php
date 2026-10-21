@@ -22,6 +22,7 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Index(columns: ['priority'], name: 'idx_ticket_priority')]
 #[ORM\Index(columns: ['assigned_to'], name: 'idx_ticket_assigned')]
 #[ORM\Index(columns: ['requester_id'], name: 'idx_ticket_requester')]
+#[ORM\Index(columns: ['merged_into_id'], name: 'idx_ticket_merged_into')]
 #[ORM\HasLifecycleCallbacks]
 class Ticket
 {
@@ -180,6 +181,12 @@ class Ticket
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $guestAccessExpiresAt = null;
+
+    // The ticket this one was merged into (Service\TicketMergeService). A
+    // plain id, not an association, so serialising a ticket never pulls in
+    // its merge target.
+    #[ORM\Column(type: Types::INTEGER, nullable: true)]
+    private ?int $mergedIntoId = null;
 
     // First-class Contact FK (Pattern B convergence). Nullable; on
     // delete SET NULL. Populated for new public submissions and
@@ -585,6 +592,18 @@ class Ticket
     public function getGuestAccessHash(): ?string
     {
         return $this->guestAccessHash;
+    }
+
+    public function getMergedIntoId(): ?int
+    {
+        return $this->mergedIntoId;
+    }
+
+    public function setMergedIntoId(?int $mergedIntoId): self
+    {
+        $this->mergedIntoId = $mergedIntoId;
+
+        return $this;
     }
 
     public function getGuestAccessExpiresAt(): ?\DateTimeImmutable

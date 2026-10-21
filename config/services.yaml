@@ -207,6 +207,11 @@ services:
             $allowedTypes: '%escalated.ticket_subjects.types%'
             $resolver: '@?escalated.ticket_subject_resolver'
 
+    # Host users by key, for the names and agent lists the shared pages show.
+    Escalated\Symfony\Rendering\UserDirectory:
+        arguments:
+            $userClass: '%escalated.user_class%'
+
     # Controllers
     Escalated\Symfony\Controller\Customer\TicketController:
         arguments:

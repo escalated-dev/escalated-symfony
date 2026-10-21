@@ -4,24 +4,43 @@ declare(strict_types=1);
 
 namespace Escalated\Symfony\Controller\Customer;
 
+use Doctrine\ORM\EntityManagerInterface;
+use Escalated\Symfony\Controller\TicketDeskController;
+use Escalated\Symfony\Controller\UiController;
+use Escalated\Symfony\Entity\Department;
 use Escalated\Symfony\Entity\Ticket;
+use Escalated\Symfony\Rendering\TicketPresenter;
 use Escalated\Symfony\Rendering\UiRendererInterface;
-use Escalated\Symfony\Repository\DepartmentRepository;
+use Escalated\Symfony\Security\TicketRequesterVoter;
+use Escalated\Symfony\Security\UserKeyResolver;
 use Escalated\Symfony\Service\SatisfactionRatingService;
 use Escalated\Symfony\Service\TicketService;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Core\User\UserInterface;
 
+/**
+ * The requester's own tickets: Escalated/Customer/Index, Create and Show, as
+ * escalated-laravel's Customer\TicketController.
+ *
+ * Tickets belong to the requester by the host user's primary key (what
+ * UserKeyResolver returns) and class, the same test the
+ * ESCALATED_TICKET_REQUESTER voter applies. The Show page gets the
+ * requester-facing allowlist, never the ticket entity.
+ */
 #[Route('/customer/tickets', name: 'escalated.customer.tickets.')]
-class TicketController extends AbstractController
+class TicketController extends UiController
 {
+    private const FILTERS = ['status', 'priority', 'ticket_type', 'search', 'sort_by', 'sort_dir'];
+
     public function __construct(
         private readonly TicketService $ticketService,
         private readonly UiRendererInterface $renderer,
-        private readonly DepartmentRepository $departmentRepository,
         private readonly SatisfactionRatingService $satisfactionRatings,
+        private readonly TicketPresenter $presenter,
+        private readonly UserKeyResolver $userKeys,
+        private readonly EntityManagerInterface $em,
         private readonly bool $allowCustomerClose,
     ) {
     }
@@ -31,15 +50,35 @@ class TicketController extends AbstractController
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
-        $user = $this->getUser();
-        $filters = $request->query->all();
-        $filters['requester_id'] = $user->getUserIdentifier();
+        $filters = array_filter(
+            array_intersect_key($request->query->all(), array_flip(self::FILTERS)),
+            static fn (mixed $v): bool => \is_scalar($v) && '' !== (string) $v,
+        );
+        $query = $filters;
+        if (isset($query['sort_by'])) {
+            $query['sort_by'] = ['created_at' => 'createdAt', 'updated_at' => 'updatedAt'][$query['sort_by']] ?? $query['sort_by'];
+        }
 
-        $tickets = $this->ticketService->list($filters);
+        $qb = $this->em->getRepository(Ticket::class)->createFilteredQueryBuilder($query);
+        $key = $this->requesterKey();
+        if (null === $key) {
+            $qb->andWhere('1 = 0');
+        } else {
+            $qb->andWhere('t.requesterId = :requesterId AND t.requesterClass = :requesterClass')
+                ->setParameter('requesterId', $key)
+                ->setParameter('requesterClass', $this->user()::class);
+        }
 
         return $this->renderer->render('Escalated/Customer/Index', [
-            'tickets' => $tickets,
-            'filters' => $request->query->all(),
+            'tickets' => $this->presenter->paginate(
+                $qb,
+                $request->query->getInt('page', 1),
+                15,
+                $this->generateUrl('escalated.customer.tickets.index'),
+                fn (Ticket $t): array => $this->presenter->customerRow($t),
+                $filters,
+            ),
+            'filters' => $filters,
         ]);
     }
 
@@ -49,14 +88,8 @@ class TicketController extends AbstractController
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
         return $this->renderer->render('Escalated/Customer/Create', [
-            'departments' => $this->departmentRepository->findActive(),
-            'priorities' => [
-                Ticket::PRIORITY_LOW,
-                Ticket::PRIORITY_MEDIUM,
-                Ticket::PRIORITY_HIGH,
-                Ticket::PRIORITY_URGENT,
-                Ticket::PRIORITY_CRITICAL,
-            ],
+            'departments' => $this->presenter->departments(),
+            'priorities' => TicketDeskController::priorities(),
         ]);
     }
 
@@ -65,10 +98,54 @@ class TicketController extends AbstractController
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
-        $user = $this->getUser();
-        $data = $request->request->all();
-        $data['requester_id'] = $user->getUserIdentifier();
-        $data['requester_class'] = get_class($user);
+        $payload = $this->payload($request);
+        $errors = [];
+        $subject = $payload['subject'] ?? null;
+        if (!\is_string($subject) || '' === trim($subject)) {
+            $errors['subject'] = 'The subject field is required.';
+        } elseif (mb_strlen($subject) > 255) {
+            $errors['subject'] = 'The subject may not be greater than 255 characters.';
+        }
+        $description = $payload['description'] ?? null;
+        if (!\is_string($description) || '' === trim($description)) {
+            $errors['description'] = 'The description field is required.';
+        }
+        $priority = $payload['priority'] ?? null;
+        if (null !== $priority && '' !== $priority && !\in_array($priority, TicketDeskController::priorities(), true)) {
+            $errors['priority'] = 'The selected priority is invalid.';
+        }
+        $departmentId = $payload['department_id'] ?? null;
+        if (null !== $departmentId && '' !== $departmentId
+            && (!is_numeric($departmentId) || null === $this->em->getRepository(Department::class)->find((int) $departmentId))) {
+            $errors['department_id'] = 'The selected department is invalid.';
+        }
+        $type = $payload['ticket_type'] ?? null;
+        if (null !== $type && '' !== $type && !\in_array($type, Ticket::TYPES, true)) {
+            $errors['ticket_type'] = 'The selected ticket type is invalid.';
+        }
+        $key = $this->requesterKey();
+        if (null === $key) {
+            $errors['subject'] ??= 'Your account cannot open tickets.';
+        }
+        if ([] !== $errors) {
+            return $this->invalid($request, $errors, 'escalated.customer.tickets.create');
+        }
+
+        $data = [
+            'subject' => trim($subject),
+            'description' => $description,
+            'requester_id' => $key,
+            'requester_class' => $this->user()::class,
+        ];
+        if (\is_string($priority) && '' !== $priority) {
+            $data['priority'] = $priority;
+        }
+        if (null !== $departmentId && '' !== $departmentId) {
+            $data['department_id'] = (int) $departmentId;
+        }
+        if (\is_string($type) && '' !== $type) {
+            $data['ticket_type'] = $type;
+        }
 
         $ticket = $this->ticketService->create($data);
 
@@ -76,55 +153,38 @@ class TicketController extends AbstractController
 
         return $this->redirectToRoute('escalated.customer.tickets.show', [
             'reference' => $ticket->getReference(),
-        ]);
+        ], Response::HTTP_SEE_OTHER);
     }
 
     #[Route('/{reference}', name: 'show', methods: ['GET'])]
     public function show(string $reference): Response
     {
-        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
-
-        $ticket = $this->ticketService->find($reference);
-        if (null === $ticket) {
-            throw $this->createNotFoundException('Ticket not found.');
-        }
-
-        $this->authorizeCustomer($ticket);
+        $ticket = $this->ownTicket($reference);
 
         return $this->renderer->render('Escalated/Customer/Show', [
-            'ticket' => $ticket,
+            'ticket' => $this->presenter->customer($ticket),
         ]);
     }
 
     #[Route('/{reference}/reply', name: 'reply', methods: ['POST'])]
     public function reply(string $reference, Request $request): Response
     {
-        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        $ticket = $this->ownTicket($reference);
 
-        $ticket = $this->ticketService->find($reference);
-        if (null === $ticket) {
-            throw $this->createNotFoundException('Ticket not found.');
+        $body = $this->payload($request)['body'] ?? null;
+        if (!\is_string($body) || '' === trim($body)) {
+            return $this->invalid($request, ['body' => 'The body field is required.'], ...$this->showRoute($ticket));
         }
 
-        $this->authorizeCustomer($ticket);
-
-        $this->ticketService->addReply(
-            $ticket,
-            $this->getUser()->getUserIdentifier(),
-            $request->request->get('body', ''),
-            false,
-            get_class($this->getUser()),
-        );
+        $this->ticketService->addReply($ticket, $this->requesterKey() ?? $this->user()->getUserIdentifier(), $body, false, $this->user()::class);
 
         $this->addFlash('success', 'Reply sent.');
 
-        return $this->redirectToRoute('escalated.customer.tickets.show', [
-            'reference' => $ticket->getReference(),
-        ]);
+        return $this->back($request, ...$this->showRoute($ticket));
     }
 
     #[Route('/{reference}/close', name: 'close', methods: ['POST'])]
-    public function close(string $reference): Response
+    public function close(string $reference, Request $request): Response
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
@@ -132,89 +192,97 @@ class TicketController extends AbstractController
             throw $this->createAccessDeniedException('Customers cannot close tickets.');
         }
 
-        $ticket = $this->ticketService->find($reference);
-        if (null === $ticket) {
-            throw $this->createNotFoundException('Ticket not found.');
+        $ticket = $this->ownTicket($reference);
+
+        try {
+            $this->ticketService->close($ticket, $this->requesterKey());
+        } catch (\InvalidArgumentException $e) {
+            return $this->invalid($request, ['status' => $e->getMessage()], ...$this->showRoute($ticket));
         }
-
-        $this->authorizeCustomer($ticket);
-
-        $this->ticketService->close($ticket, $this->getUser()->getUserIdentifier());
 
         $this->addFlash('success', 'Ticket closed.');
 
-        return $this->redirectToRoute('escalated.customer.tickets.show', [
-            'reference' => $ticket->getReference(),
-        ]);
+        return $this->back($request, ...$this->showRoute($ticket));
     }
 
     #[Route('/{reference}/reopen', name: 'reopen', methods: ['POST'])]
-    public function reopenTicket(string $reference): Response
+    public function reopenTicket(string $reference, Request $request): Response
     {
-        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        $ticket = $this->ownTicket($reference);
 
-        $ticket = $this->ticketService->find($reference);
-        if (null === $ticket) {
-            throw $this->createNotFoundException('Ticket not found.');
+        try {
+            $this->ticketService->reopen($ticket, $this->requesterKey());
+        } catch (\InvalidArgumentException $e) {
+            return $this->invalid($request, ['status' => $e->getMessage()], ...$this->showRoute($ticket));
         }
-
-        $this->authorizeCustomer($ticket);
-
-        $this->ticketService->reopen($ticket, $this->getUser()->getUserIdentifier());
 
         $this->addFlash('success', 'Ticket reopened.');
 
-        return $this->redirectToRoute('escalated.customer.tickets.show', [
-            'reference' => $ticket->getReference(),
-        ]);
+        return $this->back($request, ...$this->showRoute($ticket));
     }
 
     #[Route('/{reference}/rate', name: 'rate', methods: ['POST'])]
     public function rate(string $reference, Request $request): Response
     {
-        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        $ticket = $this->ownTicket($reference);
 
-        $ticket = $this->ticketService->find($reference);
-        if (null === $ticket) {
-            throw $this->createNotFoundException('Ticket not found.');
-        }
-
-        $this->authorizeCustomer($ticket);
-
-        $user = $this->getUser();
-        $comment = $request->request->get('comment');
+        $payload = $this->payload($request);
+        $comment = $payload['comment'] ?? null;
+        $rating = $payload['rating'] ?? null;
 
         try {
             $this->satisfactionRatings->rate(
                 $ticket,
-                $request->request->getInt('rating'),
-                null === $comment ? null : (string) $comment,
-                $user::class,
-                $user->getUserIdentifier(),
+                is_numeric($rating) ? (int) $rating : 0,
+                \is_string($comment) && '' !== $comment ? $comment : null,
+                $this->user()::class,
+                (string) ($this->requesterKey() ?? $this->user()->getUserIdentifier()),
             );
         } catch (\InvalidArgumentException $e) {
-            $this->addFlash('error', $e->getMessage());
-
-            return $this->redirectToRoute('escalated.customer.tickets.show', [
-                'reference' => $ticket->getReference(),
-            ]);
+            return $this->invalid($request, ['rating' => $e->getMessage()], ...$this->showRoute($ticket));
         }
 
         $this->addFlash('success', 'Thanks for your feedback.');
 
-        return $this->redirectToRoute('escalated.customer.tickets.show', [
-            'reference' => $ticket->getReference(),
-        ]);
+        return $this->back($request, ...$this->showRoute($ticket));
     }
 
-    private function authorizeCustomer(Ticket $ticket): void
+    private function ownTicket(string $reference): Ticket
     {
-        $user = $this->getUser();
-        $userId = $user->getUserIdentifier();
-        $userClass = get_class($user);
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
-        if ($ticket->getRequesterId() !== $userId || $ticket->getRequesterClass() !== $userClass) {
+        $ticket = $this->ticketService->find($reference);
+        if (null === $ticket || null !== $ticket->getDeletedAt()) {
+            throw $this->createNotFoundException('Ticket not found.');
+        }
+
+        if (!$this->isGranted(TicketRequesterVoter::ATTRIBUTE, $ticket)) {
             throw $this->createAccessDeniedException('You do not own this ticket.');
         }
+
+        return $ticket;
+    }
+
+    private function requesterKey(): int|string|null
+    {
+        return $this->userKeys->resolve($this->user());
+    }
+
+    private function user(): UserInterface
+    {
+        $user = $this->getUser();
+        if (!$user instanceof UserInterface) {
+            throw $this->createAccessDeniedException();
+        }
+
+        return $user;
+    }
+
+    /**
+     * @return array{0: string, 1: array<string, string>}
+     */
+    private function showRoute(Ticket $ticket): array
+    {
+        return ['escalated.customer.tickets.show', ['reference' => $ticket->getReference()]];
     }
 }

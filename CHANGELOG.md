@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+### Upgrading
+- **Behaviour change:** the customer portal (`/customer/tickets`) now identifies the requester by the host user's primary key and class, as the `ESCALATED_TICKET_REQUESTER` voter and the API already did. Tickets the portal created before stored `getUserIdentifier()` (usually the email) as `requester_id`; set those rows' `requester_id` to the user's key to keep them visible to their requester. Before, the portal listed every ticket to every signed-in customer, and refused to open any.
+- `Controller\Agent\TicketSnoozeController` is folded into `Controller\Agent\TicketController`; the routes (`escalated.agent.tickets.snooze`, `unsnooze`) are unchanged.
+- Set `escalated.user_class` to the host user entity so pages show names: requesters, assignees, reply authors and the agent picker read `getName()` (else the email) from it.
+
+### Fixed
+- The ticket pages received the `Ticket` entity itself, which reaches Inertia as `{}` (or camelCase getters including the guest token), so every ticket screen rendered empty. `Agent/TicketIndex`, `Agent/TicketShow`, `Agent/Dashboard`, `Admin/Tickets/Index`, `Admin/Tickets/Show`, `Customer/Index`, `Customer/Show` and `Customer/Create` now get escalated-laravel's props, built from an allowlist by `Rendering\TicketPresenter`:
+  - queues are Laravel's paginator (`data`, `links`, `current_page`, `total`, ...) of snake_case rows with `requester`, `assignee`, `department`, `tags` and `latest_reply`;
+  - the staff ticket carries `replies` (latest first, with `author`, `is_internal_note`, `is_pinned`, `attachments`), `pinned_notes`, `activities` (with `description` and `created_at_human`), `satisfaction_rating`, `subjects`, the chat fields, `requester_ticket_count` and `related_tickets`; the pages also get `departments`, `tags`, `cannedResponses`, `macros`, `is_following` and `followers_count`, plus `agents`, `savedViews` and `is_snoozed` on the admin pages;
+  - the requester's ticket is CustomerTicketPayload's allowlist: no internal notes, staff by display name only, no assignee, metadata or guest credentials;
+  - the dashboard gets `stats`, `recentTickets`, `needsAttention` and `myPerformance`.
+- The customer queue showed every ticket, because the `requester_id` filter it passed was ignored. It now lists only the requester's own tickets.
+- Ticket writes read Inertia's JSON bodies (they read only form fields before) and go back to the page with the errors flashed under `errors` when input is invalid.
+
+### Added
+- The ticket writes the shared pages post, on both desks (`escalated.agent.tickets.*` and `escalated.admin.tickets.*`): `reply`, `note`, `status`, `priority`, `assign`, `tags`, `department`, `macro`, `follow`, `presence`, `pin` (`/replies/{id}/pin`), `snooze`, `unsnooze` and `bulk` (status, priority, assign, tags, department, and delete for admins; a ticket an action cannot apply to is skipped). The admin desk also gets `reply` and `note`, which it lacked.
+- `TicketService::changePriority()` and `changeDepartment()`, which record activity; the department change dispatches `ticket.department_changed`.
+- `tests/PageNameParityTest.php` keeps a `NOT_YET_RENDERED` ledger of shipped pages no controller renders yet, and the page manifest fixture is refreshed to `@escalated-dev/escalated` 0.12.3.
+
 ## [0.3.3] - 2026-10-21
 
 ### Upgrading

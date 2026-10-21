@@ -28,6 +28,64 @@ final class PageNameParityTest extends TestCase
     /** Where the manifest says the names came from. */
     private const MANIFEST = __DIR__.'/Fixtures/escalated-pages.json';
 
+    /**
+     * Pages the frontend ships that this bundle does not render yet: the
+     * ledger of what is left. Rendering one means taking it off this list,
+     * and the test below fails until that happens, so the list stays exact.
+     */
+    private const NOT_YET_RENDERED = [
+        'Escalated/Admin/AuditLog/Index',
+        'Escalated/Admin/Automations/Form',
+        'Escalated/Admin/BusinessHours/Form',
+        'Escalated/Admin/BusinessHours/Index',
+        'Escalated/Admin/CustomFields/Form',
+        'Escalated/Admin/CustomFields/Index',
+        'Escalated/Admin/CustomObjects/Form',
+        'Escalated/Admin/CustomObjects/Index',
+        'Escalated/Admin/CustomObjects/Records',
+        'Escalated/Admin/Departments/Form',
+        'Escalated/Admin/EscalationRules/Form',
+        'Escalated/Admin/Import/Connect',
+        'Escalated/Admin/Import/Index',
+        'Escalated/Admin/Import/Mapping',
+        'Escalated/Admin/Import/Progress',
+        'Escalated/Admin/Import/Review',
+        'Escalated/Admin/KnowledgeBase/Articles/Form',
+        'Escalated/Admin/Plugins/Index',
+        'Escalated/Admin/Reports/AgentDetail',
+        'Escalated/Admin/Reports/AgentMetrics',
+        'Escalated/Admin/Reports/AgentRanking',
+        'Escalated/Admin/Reports/Cohorts',
+        'Escalated/Admin/Reports/Comparison',
+        'Escalated/Admin/Reports/CsatReport',
+        'Escalated/Admin/Reports/Dashboard',
+        'Escalated/Admin/Reports/ResolutionTimes',
+        'Escalated/Admin/Reports/ResponseTimes',
+        'Escalated/Admin/Reports/SlaReport',
+        'Escalated/Admin/Reports/SlaTrends',
+        'Escalated/Admin/Roles/Form',
+        'Escalated/Admin/Roles/Index',
+        'Escalated/Admin/Settings/CsatSettings',
+        'Escalated/Admin/Settings/DataRetention',
+        'Escalated/Admin/Settings/DatabaseConnection',
+        'Escalated/Admin/Settings/EmailSettings',
+        'Escalated/Admin/Settings/Sandbox',
+        'Escalated/Admin/Settings/SsoSettings',
+        'Escalated/Admin/Settings/TwoFactor',
+        'Escalated/Admin/SlaPolicies/Form',
+        'Escalated/Admin/SlaPolicies/Index',
+        'Escalated/Admin/Statuses/Form',
+        'Escalated/Admin/Statuses/Index',
+        'Escalated/Admin/Workflows/Builder',
+        'Escalated/Auth/TwoFactorChallenge',
+        'Escalated/Customer/KnowledgeBase/Article',
+        'Escalated/Customer/KnowledgeBase/Index',
+        'Escalated/Error',
+        'Escalated/Guest/Create',
+        'Escalated/Guest/Show',
+        'Escalated/Plugin/Page',
+    ];
+
     public function testEveryRenderedPageNameResolvesToAComponent(): void
     {
         $shipped = $this->shippedPages();
@@ -39,6 +97,16 @@ final class PageNameParityTest extends TestCase
         sort($missing);
 
         self::assertSame([], $missing, $this->explain($missing, $rendered));
+    }
+
+    public function testTheNotYetRenderedListIsExact(): void
+    {
+        $unrendered = array_values(array_diff($this->shippedPages(), array_keys($this->renderedPages())));
+        sort($unrendered);
+        $listed = self::NOT_YET_RENDERED;
+        sort($listed);
+
+        self::assertSame($listed, $unrendered, 'NOT_YET_RENDERED must name exactly the shipped pages no controller renders');
     }
 
     public function testTheManifestIsPresentAndLooksLikeOne(): void

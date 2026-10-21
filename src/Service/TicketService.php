@@ -253,7 +253,7 @@ class TicketService
     /**
      * Add a reply to a ticket.
      */
-    public function addReply(Ticket $ticket, int|string $authorId, string $body, bool $isNote = false, ?string $authorClass = null): Reply
+    public function addReply(Ticket $ticket, int|string|null $authorId, string $body, bool $isNote = false, ?string $authorClass = null): Reply
     {
         $this->access?->assertVisible($ticket);
         $reply = new Reply();

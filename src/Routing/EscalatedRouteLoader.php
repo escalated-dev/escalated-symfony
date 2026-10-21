@@ -17,7 +17,7 @@ use Symfony\Component\Routing\RouteCollection;
  * decides what that import contains:
  *
  *  - the JSON API and the inbound email webhook, always;
- *  - the customer, agent, admin and widget UI, when `ui_enabled` is true;
+ *  - the customer, agent, admin, guest and widget UI, when `ui_enabled` is true;
  *  - the newsletter admin, public and webhook routes, when `ui_enabled` and
  *    `enable_newsletters` are both true.
  *
@@ -32,7 +32,7 @@ final class EscalatedRouteLoader extends Loader
      */
     private const ALWAYS = ['Api/', 'InboundEmailController.php'];
 
-    private const UI = ['Customer/', 'Agent/', 'Admin/', 'Widget/'];
+    private const UI = ['Customer/', 'Agent/', 'Admin/', 'Widget/', 'Guest/'];
 
     private const NEWSLETTER = ['Newsletter/Admin/', 'Newsletter/Public/', 'Newsletter/Webhook/'];
 

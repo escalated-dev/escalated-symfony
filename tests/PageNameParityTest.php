@@ -81,8 +81,6 @@ final class PageNameParityTest extends TestCase
         'Escalated/Customer/KnowledgeBase/Article',
         'Escalated/Customer/KnowledgeBase/Index',
         'Escalated/Error',
-        'Escalated/Guest/Create',
-        'Escalated/Guest/Show',
         'Escalated/Plugin/Page',
     ];
 

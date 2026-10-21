@@ -4,7 +4,8 @@ Guests who open a widget ticket, start a live chat or look up a ticket's status
 first prove they control the email address. This follows escalated-laravel's
 `docs/guest-access.md` and escalated-developer-context
 `domain-model/guest-policy.md`, for the widget API under
-`{route_prefix}/widget/api`.
+`{route_prefix}/widget/api` and the browser guest portal under
+`{route_prefix}/guest`.
 
 ## Host configuration
 
@@ -92,6 +93,28 @@ proof is consumed either way. A reference alone never opens a ticket.
 it returns, as before. A ticket proof cannot start a chat, and a chat proof
 cannot open a ticket.
 
+## Browser guest portal
+
+With `ui_enabled`, the shared `Escalated/Guest/Create` and `Escalated/Guest/Show`
+pages are served under `{route_prefix}/guest` while guest tickets are allowed
+(`WidgetSettings::isAllowGuestTickets()`, default on; off answers 404):
+
+| Route | Name | Does |
+|---|---|---|
+| `GET /guest/create` | `escalated.guest.tickets.create` | the form, with `verification_url` and `lookup_url` |
+| `POST /guest/verification` | `escalated.guest.verification` | emails a code (`ticket` or `lookup`) |
+| `POST /guest/lookup` | `escalated.guest.lookup` | as the widget's lookup |
+| `POST /guest` | `escalated.guest.tickets.store` | opens a ticket with a `ticket` proof, then redirects to its page |
+| `GET /guest/{grant}` | `escalated.guest.tickets.show` | the ticket, requester-facing fields only |
+| `POST /guest/{grant}/reply` | `escalated.guest.tickets.reply` | the guest's reply (not on closed tickets) |
+| `POST /guest/{grant}/rate` | `escalated.guest.tickets.rate` | the satisfaction rating |
+
+The page address carries an expiring grant, never the permanent guest token,
+and a legacy token does not open it. Pages are sent `Cache-Control: no-store`
+and `Referrer-Policy: no-referrer`. Codes, budgets and per-IP limits are the
+widget's. Bad input goes back to the form with the errors flashed under
+`errors`.
+
 ## Legacy tokens
 
 Tickets created before grants carry a permanent guest token. While
@@ -102,8 +125,7 @@ verified grant everywhere; guests then get a new link through lookup.
 
 ## Not covered
 
-- There is no browser guest portal (`/guest` pages) in this bundle. The
-  endpoints are only on the widget prefix.
+- Attachments on guest tickets and replies: the bundle has no upload store.
 - There is no mobile guest API.
 - Live chat keeps its server-issued session token rather than an expiring chat
   grant.

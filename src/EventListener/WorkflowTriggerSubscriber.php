@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Escalated\Symfony\EventListener;
 
+use Escalated\Symfony\Event\EventNames;
 use Escalated\Symfony\Event\TicketWorkflowEvent;
 use Escalated\Symfony\Service\WorkflowEngine;
 use Psr\Log\LoggerInterface;
@@ -34,17 +35,21 @@ final class WorkflowTriggerSubscriber implements EventSubscriberInterface
 
     public function onTrigger(TicketWorkflowEvent $event): void
     {
-        try {
-            $this->engine->processEvent($event->triggerName, $event->ticket);
-        } catch (\Throwable $e) {
-            $this->logger->warning(
-                sprintf(
-                    '[Escalated\\WorkflowTriggerSubscriber] %s workflow failed for ticket #%s: %s',
-                    $event->triggerName,
-                    $event->ticket->getId() ?? '?',
-                    $e->getMessage(),
-                ),
-            );
+        // The canonical names the event is announced as: a status change to
+        // resolved fires both ticket.status_changed and ticket.resolved.
+        foreach (EventNames::forEvent($event) as $name) {
+            try {
+                $this->engine->processEvent($name, $event->ticket);
+            } catch (\Throwable $e) {
+                $this->logger->warning(
+                    sprintf(
+                        '[Escalated\\WorkflowTriggerSubscriber] %s workflow failed for ticket #%s: %s',
+                        $name,
+                        $event->ticket->getId() ?? '?',
+                        $e->getMessage(),
+                    ),
+                );
+            }
         }
     }
 }

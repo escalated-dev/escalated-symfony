@@ -9,6 +9,7 @@ use Escalated\Symfony\Entity\Contact;
 use Escalated\Symfony\Entity\Reply;
 use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Entity\TicketActivity;
+use Escalated\Symfony\Event\EventNames;
 use Escalated\Symfony\Event\TicketWorkflowEvent;
 use Escalated\Symfony\Repository\TicketRepository;
 use Symfony\Component\Uid\Uuid;
@@ -327,7 +328,7 @@ class TicketService
 
         if (!empty($tagIds)) {
             $this->dispatcher->dispatch(new TicketWorkflowEvent(
-                'ticket.tagged',
+                EventNames::TAG_ADDED,
                 $ticket,
                 ['tag_ids' => array_values($tagIds), 'causer_id' => $causerId, 'action' => 'added'],
             ));
@@ -361,7 +362,7 @@ class TicketService
 
         if ([] !== $removed) {
             $this->dispatcher->dispatch(new TicketWorkflowEvent(
-                'ticket.tagged',
+                EventNames::TAG_REMOVED,
                 $ticket,
                 ['tag_ids' => $removed, 'causer_id' => $causerId, 'action' => 'removed'],
             ));

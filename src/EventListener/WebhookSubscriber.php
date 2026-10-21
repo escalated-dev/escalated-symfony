@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Escalated\Symfony\EventListener;
 
+use Escalated\Symfony\Event\EventNames;
 use Escalated\Symfony\Event\TicketWorkflowEvent;
 use Escalated\Symfony\Service\WebhookDispatcher;
 use Escalated\Symfony\Service\WebhookPayloadFactory;
@@ -81,78 +82,68 @@ final class WebhookSubscriber implements EventSubscriberInterface
      */
     private function map(TicketWorkflowEvent $event): iterable
     {
-        $ticket = $event->ticket;
+        foreach (EventNames::forEvent($event) as $name) {
+            yield from $this->payloadsFor($name, $event);
+        }
+    }
+
+    /**
+     * @return iterable<array{0: string, 1: array<string, mixed>}>
+     */
+    private function payloadsFor(string $name, TicketWorkflowEvent $event): iterable
+    {
         $context = $event->context;
-        $base = $this->payloads->ticket($ticket);
+        $base = $this->payloads->ticket($event->ticket);
 
-        switch ($event->triggerName) {
-            case 'ticket.updated':
-                yield ['ticket.updated', $base];
+        switch ($name) {
+            case EventNames::TICKET_UPDATED:
+            case EventNames::PRIORITY_CHANGED:
+            case EventNames::STATUS_CHANGED:
+            case EventNames::TICKET_RESOLVED:
+            case EventNames::TICKET_CLOSED:
+            case EventNames::TICKET_REOPENED:
+            case EventNames::TICKET_ESCALATED:
+            case EventNames::SLA_BREACHED:
+            case EventNames::SLA_WARNING:
+                yield [$name, $base];
                 break;
 
-            case 'ticket.priority_changed':
-                yield ['ticket.priority_changed', $base];
-                break;
-
-            case 'ticket.status_changed':
-                yield ['ticket.status_changed', $base];
-                $derived = match ($context['new_status'] ?? null) {
-                    'resolved' => 'ticket.resolved',
-                    'closed' => 'ticket.closed',
-                    'reopened' => 'ticket.reopened',
-                    'escalated' => 'ticket.escalated',
-                    default => null,
-                };
-                if (null !== $derived) {
-                    yield [$derived, $base];
-                }
-                break;
-
-            case 'ticket.assigned':
+            case EventNames::TICKET_ASSIGNED:
                 $payload = $base;
                 if (\array_key_exists('agent_id', $context)) {
                     $payload['agent_id'] = $context['agent_id'];
                 }
-                yield ['ticket.assigned', $payload];
+                yield [$name, $payload];
                 break;
 
-            case 'reply.created':
-            case 'ticket.replied':
+            case EventNames::REPLY_CREATED:
+            case EventNames::NOTE_CREATED:
                 $payload = $base;
                 $payload['reply'] = [
                     'id' => $context['reply_id'] ?? null,
-                    'is_internal_note' => false,
+                    'is_internal_note' => EventNames::NOTE_CREATED === $name,
                 ];
                 if (\array_key_exists('author_id', $context)) {
                     $payload['agent_id'] = $context['author_id'];
                 }
-                yield ['reply.created', $payload];
+                yield [$name, $payload];
                 break;
 
-            case 'note.created':
-                $payload = $base;
-                $payload['reply'] = [
-                    'id' => $context['reply_id'] ?? null,
-                    'is_internal_note' => true,
-                ];
-                if (\array_key_exists('author_id', $context)) {
-                    $payload['agent_id'] = $context['author_id'];
-                }
-                yield ['note.created', $payload];
-                break;
-            case 'ticket.unassigned':
+            case EventNames::TICKET_UNASSIGNED:
                 $payload = $base;
                 $payload['previous_agent_id'] = $context['previous_agent_id'] ?? null;
-                yield ['ticket.unassigned', $payload];
+                yield [$name, $payload];
                 break;
-            case 'ticket.department_changed':
+
+            case EventNames::DEPARTMENT_CHANGED:
                 $payload = $base;
                 $payload['old_department_id'] = $context['old_department_id'] ?? null;
                 $payload['new_department_id'] = $context['new_department_id'] ?? null;
-                yield ['ticket.department_changed', $payload];
+                yield [$name, $payload];
                 break;
-            case 'ticket.tagged':
-                $name = 'removed' === ($context['action'] ?? 'added') ? 'ticket.tag_removed' : 'ticket.tag_added';
+
+            case EventNames::TAG_ADDED:
+            case EventNames::TAG_REMOVED:
                 foreach ($context['tag_ids'] ?? [] as $tagId) {
                     $payload = $base;
                     $payload['tag'] = $this->payloads->tag((int) $tagId);
@@ -160,16 +151,22 @@ final class WebhookSubscriber implements EventSubscriberInterface
                 }
                 break;
 
-            case 'sla.breached':
-                yield ['sla.breached', $base];
-                break;
-
-            case 'sla.warning':
-                yield ['sla.warning', $base];
+            case EventNames::CHAT_STARTED:
+            case EventNames::CHAT_ASSIGNED:
+            case EventNames::CHAT_MESSAGE:
+            case EventNames::CHAT_ENDED:
+                // The session's id, never the visitor's chat token.
+                $payload = $base;
+                foreach (['chat_session_id', 'agent_id', 'reply_id', 'is_agent', 'ended_by', 'reason'] as $key) {
+                    if (\array_key_exists($key, $context)) {
+                        $payload[$key] = $context[$key];
+                    }
+                }
+                yield [$name, $payload];
                 break;
 
             default:
-                // Unmapped trigger — no webhook.
+                // Not a webhook event.
         }
     }
 }

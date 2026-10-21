@@ -7,6 +7,7 @@ namespace Escalated\Symfony\Controller\Admin;
 use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Entity\Webhook;
 use Escalated\Symfony\Entity\WebhookDelivery;
+use Escalated\Symfony\Event\EventNames;
 use Escalated\Symfony\Http\WebhookUrlGuard;
 use Escalated\Symfony\Rendering\UiRendererInterface;
 use Escalated\Symfony\Service\WebhookDispatcher;
@@ -225,7 +226,9 @@ class WebhookController extends AbstractController
             $webhook->setUrl(trim((string) $payload['url']));
         }
         if (isset($payload['events']) && \is_array($payload['events'])) {
-            $webhook->setEvents(array_values(array_map('strval', $payload['events'])));
+            // Stored under canonical names: a legacy name posted by an older
+            // form is stored as the event it stands for.
+            $webhook->setEvents(EventNames::canonicalList($payload['events']));
         }
         if (\array_key_exists('secret', $payload)) {
             $secret = null === $payload['secret'] ? null : (string) $payload['secret'];
@@ -242,7 +245,7 @@ class WebhookController extends AbstractController
         return [
             'id' => $webhook->getId(),
             'url' => $webhook->getUrl(),
-            'events' => $webhook->getEvents(),
+            'events' => EventNames::canonicalList($webhook->getEvents()),
             'has_secret' => null !== $webhook->getSecret() && '' !== $webhook->getSecret(),
             'active' => $webhook->isActive(),
             'deliveries_count' => $webhook->getDeliveries()->count(),
@@ -266,26 +269,14 @@ class WebhookController extends AbstractController
         ];
     }
 
-    /** @return array<int, string> */
+    /**
+     * Exactly the canonical names this bundle emits, so the form never offers
+     * an event that is not sent, nor a legacy name.
+     *
+     * @return list<string>
+     */
     private function availableEvents(): array
     {
-        return [
-            'ticket.created',
-            'ticket.updated',
-            'ticket.status_changed',
-            'ticket.resolved',
-            'ticket.closed',
-            'ticket.reopened',
-            'ticket.assigned',
-            'ticket.unassigned',
-            'ticket.escalated',
-            'ticket.priority_changed',
-            'ticket.department_changed',
-            'reply.created',
-            'note.created',
-            'sla.breached',
-            'ticket.tag_added',
-            'ticket.tag_removed',
-        ];
+        return EventNames::EMITTED;
     }
 }

@@ -20,10 +20,14 @@ use Symfony\Contracts\EventDispatcher\Event;
  *   - ticket.unassigned
  *   - ticket.priority_changed
  *   - ticket.department_changed  (escalation rules)
- *   - ticket.tagged              (context action: added / removed)
+ *   - ticket.tag_added / ticket.tag_removed  (earlier releases: ticket.tagged)
  *   - reply.created              (earlier releases: ticket.replied)
  *   - note.created
  *   - sla.breached
+ *   - chat.started, chat.assigned, chat.message, chat.ended  (ChatSessionService)
+ *
+ * Webhooks and workflows both announce an event under the canonical names
+ * {@see EventNames::forEvent()} gives it (decisions/2026-10-21-event-vocabulary.md).
  *
  * (ticket.created is emitted by the Doctrine postPersist listener
  * so guest-path submissions that don't go through TicketService

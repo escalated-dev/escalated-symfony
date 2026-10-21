@@ -9,6 +9,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Entity\Reply;
 use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Entity\TicketFollower;
+use Escalated\Symfony\Event\EventNames;
 use Escalated\Symfony\Security\UserKeyResolver;
 
 class WorkflowEngine
@@ -25,23 +26,12 @@ class WorkflowEngine
     ];
 
     /**
-     * The events a workflow can be triggered by. Only events this backend
-     * actually dispatches belong here: a workflow saved against anything else
-     * never runs.
+     * The events a workflow can be triggered by: the canonical names this
+     * backend actually emits. A workflow saved against anything else never
+     * runs. Legacy names on stored workflows (`ticket.replied`,
+     * `ticket.tagged`, ...) still fire; see {@see EventNames::LEGACY}.
      */
-    public const TRIGGER_EVENTS = [
-        'ticket.created', 'ticket.updated', 'ticket.status_changed', 'ticket.assigned',
-        'ticket.priority_changed', 'ticket.tagged', 'ticket.department_changed',
-        'ticket.reopened', 'reply.created', 'sla.breached',
-    ];
-
-    /**
-     * Earlier trigger names still honoured on stored workflows, by the event
-     * that replaced them. Replies used to be dispatched as `ticket.replied`.
-     */
-    private const LEGACY_TRIGGER_NAMES = [
-        'reply.created' => ['ticket.replied'],
-    ];
+    public const TRIGGER_EVENTS = EventNames::EMITTED;
 
     public function __construct(
         private readonly EntityManagerInterface $em,
@@ -53,7 +43,7 @@ class WorkflowEngine
     public function processEvent(string $eventName, Ticket $ticket): void
     {
         $this->access?->assertVisible($ticket);
-        $triggers = [$eventName, ...(self::LEGACY_TRIGGER_NAMES[$eventName] ?? [])];
+        $triggers = EventNames::aliases($eventName);
         $placeholders = implode(', ', array_fill(0, \count($triggers), '?'));
 
         $workflows = $this->em->getConnection()->fetchAllAssociative(

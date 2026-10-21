@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Escalated\Symfony\Event\EventNames;
 
 /**
  * Outbound webhook subscription — an admin-registered HTTP endpoint that
@@ -63,9 +64,14 @@ class Webhook
         $this->updatedAt = new \DateTimeImmutable();
     }
 
+    /**
+     * Whether this webhook receives an event. Subscriptions stored under a
+     * legacy name (`internal_note.added`, `ticket.tagged`, ...) receive the
+     * canonical event they stand for.
+     */
     public function subscribedTo(string $event): bool
     {
-        return \in_array($event, $this->events, true);
+        return \in_array(EventNames::canonical($event), EventNames::canonicalList($this->events), true);
     }
 
     public function getId(): ?int

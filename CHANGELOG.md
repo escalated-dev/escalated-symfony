@@ -8,6 +8,7 @@
 - Set `escalated.user_class` to the host user entity so pages show names: requesters, assignees, reply authors and the agent picker read `getName()` (else the email) from it.
 
 ### Fixed
+- An API token created from the admin page without a `user_id` was owned by the admin's login name (usually the email) instead of their user key, so it authenticated as no one. It is now owned by the key.
 - The ticket pages received the `Ticket` entity itself, which reaches Inertia as `{}` (or camelCase getters including the guest token), so every ticket screen rendered empty. `Agent/TicketIndex`, `Agent/TicketShow`, `Agent/Dashboard`, `Admin/Tickets/Index`, `Admin/Tickets/Show`, `Customer/Index`, `Customer/Show` and `Customer/Create` now get escalated-laravel's props, built from an allowlist by `Rendering\TicketPresenter`:
   - queues are Laravel's paginator (`data`, `links`, `current_page`, `total`, ...) of snake_case rows with `requester`, `assignee`, `department`, `tags` and `latest_reply`;
   - the staff ticket carries `replies` (latest first, with `author`, `is_internal_note`, `is_pinned`, `attachments`), `pinned_notes`, `activities` (with `description` and `created_at_human`), `satisfaction_rating`, `subjects`, the chat fields, `requester_ticket_count` and `related_tickets`; the pages also get `departments`, `tags`, `cannedResponses`, `macros`, `is_following` and `followers_count`, plus `agents`, `savedViews` and `is_snoozed` on the admin pages;
@@ -17,6 +18,7 @@
 - Ticket writes read Inertia's JSON bodies (they read only form fields before) and go back to the page with the errors flashed under `errors` when input is invalid.
 
 ### Added
+- `Escalated/Admin/ApiTokens/Index` gets what the page reads: `users` (the agents, for the owner picker), `api_enabled` (always `true`; the JSON API is always mounted) and each token's `user_name` and `user_email`.
 - Admin configuration pages, against what the shared pages read and post:
   - `Escalated/Admin/SlaPolicies/Index` and `Form`: a new SLA policy admin under `{route_prefix}/admin/sla-policies` (`escalated.admin.sla-policies.index`, `create`, `store`, `edit`, `update`, `destroy`), with hours per priority, `business_hours_only`, `is_default`, `is_active`, and the targeting fields. Deleting a policy detaches its tickets.
   - `Escalated/Admin/Departments/Form` (`escalated.admin.departments.create`, `edit`), and `Departments/Index` rows with `tickets_count` and `agents_count`. It rendered the entities before.

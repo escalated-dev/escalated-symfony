@@ -10,6 +10,7 @@ use Escalated\Symfony\Entity\BusinessSchedule;
 use Escalated\Symfony\Entity\Department;
 use Escalated\Symfony\Entity\DepartmentAgent;
 use Escalated\Symfony\Entity\Ticket;
+use Escalated\Symfony\Rendering\TicketPresenter;
 use Escalated\Symfony\Rendering\UiRendererInterface;
 use Escalated\Symfony\Repository\DepartmentRepository;
 use Symfony\Component\HttpFoundation\Request;
@@ -29,6 +30,7 @@ class DepartmentController extends UiController
         private readonly DepartmentRepository $departmentRepository,
         private readonly UiRendererInterface $renderer,
         private readonly SluggerInterface $slugger,
+        private readonly TicketPresenter $presenter,
     ) {
     }
 
@@ -55,7 +57,10 @@ class DepartmentController extends UiController
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
 
-        return $this->renderer->render('Escalated/Admin/Departments/Form', ['department' => null]);
+        return $this->renderer->render('Escalated/Admin/Departments/Form', [
+            'department' => null,
+            'schedules' => $this->presenter->businessSchedules(),
+        ]);
     }
 
     #[Route('', name: 'store', methods: ['POST'])]
@@ -83,6 +88,7 @@ class DepartmentController extends UiController
 
         return $this->renderer->render('Escalated/Admin/Departments/Form', [
             'department' => $this->serialize($this->find($id)),
+            'schedules' => $this->presenter->businessSchedules(),
         ]);
     }
 
@@ -161,7 +167,7 @@ class DepartmentController extends UiController
         if (\array_key_exists('is_active', $payload)) {
             $department->setIsActive(filter_var($payload['is_active'], \FILTER_VALIDATE_BOOL));
         }
-        // Only when sent: the shared form has no schedule field.
+        // Only when sent, so a form without the schedule picker leaves it alone.
         if (\array_key_exists('business_schedule_id', $payload)) {
             $scheduleId = $payload['business_schedule_id'];
             $schedule = null === $scheduleId || '' === $scheduleId ? null

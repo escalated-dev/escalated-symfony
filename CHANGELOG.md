@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.3.5] - 2026-10-22
+
 ### Upgrading
 - **Behaviour change:** `GET /admin/reports/sla-trends` and `/admin/reports/agent-ranking` now render the shared `Reports/SlaTrends` and `Reports/AgentRanking` pages for browsers and Inertia visits. A client that sends `Accept: application/json` (without `X-Inertia`) still gets the JSON it got before.
 - **Behaviour change:** creating an automation (`POST /admin/automations`) now validates like escalated-laravel: a name of at most 255 characters, at least one condition and at least one action are required, and `active` must be a boolean. An update checks the fields it sends. Invalid saves go back with the errors (Inertia) or answer 422 (JSON) instead of saving an automation that can never run. A new automation without a `position` goes last.

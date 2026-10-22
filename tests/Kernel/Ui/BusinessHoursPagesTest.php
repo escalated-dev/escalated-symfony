@@ -186,6 +186,35 @@ final class BusinessHoursPagesTest extends EscalatedWebTestCase
         self::assertNull($em->getRepository(SlaPolicy::class)->find($policy->getId())->getBusinessSchedule());
     }
 
+    public function testPolicyAndDepartmentFormsListTheSchedulesByName(): void
+    {
+        $em = static::entityManager();
+        $zulu = (new BusinessSchedule())->setName('Zulu shift');
+        $alpha = (new BusinessSchedule())->setName('Alpha weekend');
+        $department = (new Department())->setName('Ops')->setSlug('ops')->setBusinessSchedule($zulu);
+        $policy = (new SlaPolicy())->setName('Picker')->setFirstResponseHours(['low' => 4])->setResolutionHours(['low' => 8]);
+        foreach ([$zulu, $alpha, $department, $policy] as $entity) {
+            $em->persist($entity);
+        }
+        $em->flush();
+        $expected = [
+            ['id' => $alpha->getId(), 'name' => 'Alpha weekend'],
+            ['id' => $zulu->getId(), 'name' => 'Zulu shift'],
+        ];
+
+        foreach ([
+            '/support/admin/sla-policies/create' => 'Escalated/Admin/SlaPolicies/Form',
+            '/support/admin/sla-policies/'.$policy->getId().'/edit' => 'Escalated/Admin/SlaPolicies/Form',
+            '/support/admin/departments/create' => 'Escalated/Admin/Departments/Form',
+            '/support/admin/departments/'.$department->getId().'/edit' => 'Escalated/Admin/Departments/Form',
+        ] as $uri => $component) {
+            $page = $this->visit($uri);
+            self::assertSame($component, $page['component']);
+            self::assertSame($expected, $page['props']['schedules'], $uri);
+        }
+        self::assertSame($zulu->getId(), $this->visit('/support/admin/departments/'.$department->getId().'/edit')['props']['department']['business_schedule_id']);
+    }
+
     /**
      * @return array<string, string>
      */

@@ -99,7 +99,7 @@ final class AdminConfigPagesTest extends EscalatedWebTestCase
         self::assertSame(1, $row['agents_count']);
 
         $page = $this->visit('/support/admin/departments/create');
-        self::assertSame(['component' => 'Escalated/Admin/Departments/Form', 'props' => ['department' => null]], $page);
+        self::assertSame(['component' => 'Escalated/Admin/Departments/Form', 'props' => ['department' => null, 'schedules' => []]], $page);
 
         $this->send('POST', '/support/admin/departments', ['name' => 'Sales Team', 'slug' => '', 'description' => 'Pre-sales', 'is_active' => true]);
         self::assertResponseRedirects('/support/admin/departments');

@@ -142,6 +142,7 @@ class SlaPolicyController extends UiController
             'targeted' => $this->targetedSlas,
             'departments' => $this->presenter->departments(),
             'ticketTypes' => Ticket::TYPES,
+            'schedules' => $this->presenter->businessSchedules(),
         ];
     }
 

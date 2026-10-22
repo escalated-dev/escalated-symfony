@@ -8,6 +8,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\ORM\Tools\Pagination\Paginator;
 use Escalated\Symfony\Entity\Attachment;
+use Escalated\Symfony\Entity\BusinessSchedule;
 use Escalated\Symfony\Entity\CannedResponse;
 use Escalated\Symfony\Entity\ChatSession;
 use Escalated\Symfony\Entity\Department;
@@ -344,6 +345,20 @@ class TicketPresenter
             'to' => null === $from ? null : $from + \count($rows) - 1,
             'total' => $total,
         ];
+    }
+
+    /**
+     * The SLA policy and department forms' `schedules`: every business
+     * schedule as {id, name}, by name, for the shared Business hours schedule
+     * picker (escalated-laravel's BusinessSchedule::orderBy('name')->get(['id', 'name'])).
+     *
+     * @return list<array{id: int|null, name: string}>
+     */
+    public function businessSchedules(): array
+    {
+        $schedules = $this->em->getRepository(BusinessSchedule::class)->findBy([], ['name' => 'ASC', 'id' => 'ASC']);
+
+        return array_map(static fn (BusinessSchedule $s): array => ['id' => $s->getId(), 'name' => $s->getName()], $schedules);
     }
 
     /**

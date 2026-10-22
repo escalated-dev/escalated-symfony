@@ -9,6 +9,7 @@ use Escalated\Symfony\Entity\Automation;
 use Escalated\Symfony\Entity\Reply;
 use Escalated\Symfony\Entity\Tag;
 use Escalated\Symfony\Entity\Ticket;
+use Escalated\Symfony\Import\ImportContext;
 use Escalated\Symfony\Repository\TicketStatusRepository;
 use Escalated\Symfony\Security\UserKeyResolver;
 use Psr\Log\LoggerInterface;
@@ -38,6 +39,10 @@ class AutomationRunner
      */
     public function run(): int
     {
+        if (ImportContext::isImporting()) {
+            return 0;
+        }
+
         /** @var Automation[] $automations */
         $automations = $this->em->getRepository(Automation::class)
             ->findBy(['active' => true], ['position' => 'ASC', 'id' => 'ASC']);

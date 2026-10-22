@@ -8,6 +8,7 @@ use Doctrine\Bundle\DoctrineBundle\Attribute\AsDoctrineListener;
 use Doctrine\ORM\Event\PostPersistEventArgs;
 use Doctrine\ORM\Events;
 use Escalated\Symfony\Entity\Ticket;
+use Escalated\Symfony\Import\ImportContext;
 use Escalated\Symfony\Service\WebhookDispatcher;
 use Escalated\Symfony\Service\WebhookPayloadFactory;
 use Psr\Log\LoggerInterface;
@@ -37,7 +38,8 @@ class WebhookTicketListener
     public function postPersist(PostPersistEventArgs $args): void
     {
         $entity = $args->getObject();
-        if (!$entity instanceof Ticket) {
+        // An imported ticket is history, not a new ticket (ImportContext).
+        if (!$entity instanceof Ticket || ImportContext::isImporting()) {
             return;
         }
         $this->handleTicketCreated($entity);

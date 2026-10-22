@@ -123,6 +123,8 @@ final class EscalatedTestKernel extends Kernel
     private function configureContainer(ContainerConfigurator $container): void
     {
         $container->services()->set(Fixtures\TestAccountResolver::class)->public();
+        // An import source, registered the way a host or plugin bundle registers one.
+        $container->services()->set(Fixtures\FakeImportAdapter::class)->public()->tag('escalated.import_adapter');
         $container->extension('framework', [
             'test' => true,
             'secret' => 'escalated-test-secret',

@@ -9,6 +9,7 @@ use Escalated\Symfony\Entity\BusinessSchedule;
 use Escalated\Symfony\Entity\SlaPolicy;
 use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Event\TicketWorkflowEvent;
+use Escalated\Symfony\Import\ImportContext;
 use Escalated\Symfony\Repository\TicketRepository;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -30,7 +31,7 @@ class SlaService
      */
     public function attachDefaultPolicy(Ticket $ticket): void
     {
-        if (!$this->slaEnabled) {
+        if (!$this->slaEnabled || ImportContext::isImporting()) {
             return;
         }
 
@@ -112,7 +113,7 @@ class SlaService
      */
     public function checkBreaches(): int
     {
-        if (!$this->slaEnabled) {
+        if (!$this->slaEnabled || ImportContext::isImporting()) {
             return 0;
         }
 

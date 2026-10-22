@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-10-22
+
 ### Upgrading
 - Run the migrations: `Version20261025000101` adds the `import_jobs` and `import_source_maps` tables.
 - **Behaviour change:** saving `Admin/Settings/PublicTickets` now validates like escalated-laravel (mode one of `unassigned`, `guest_user`, `prompt_signup`; `guest_policy_user_id` an integer of at least 1 and required for `guest_user`; template at most 500 characters) and goes back with the errors instead of silently falling back to `unassigned`. It answers with a 303, and the page's `guest_policy_user_id` prop is now the stored string (or `null`), not an integer.

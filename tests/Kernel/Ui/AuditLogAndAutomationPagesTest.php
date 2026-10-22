@@ -117,8 +117,9 @@ final class AuditLogAndAutomationPagesTest extends EscalatedWebTestCase
         $a = $page['props']['automation'];
         self::assertSame($automation->getId(), $a['id']);
         self::assertSame('Stale', $a['name']);
-        self::assertSame([['field' => 'hours_since_updated', 'operator' => '>', 'value' => 48]], $a['conditions']);
-        self::assertSame([['type' => 'set_ticket_type', 'value' => 'problem']], $a['actions']);
+        // MySQL's JSON type does not keep key order.
+        self::assertEquals([['field' => 'hours_since_updated', 'operator' => '>', 'value' => 48]], $a['conditions']);
+        self::assertEquals([['type' => 'set_ticket_type', 'value' => 'problem']], $a['actions']);
         self::assertTrue($a['active']);
 
         $this->client->request('GET', '/support/admin/automations/999999/edit', server: ['HTTP_X_INERTIA' => 'true']);

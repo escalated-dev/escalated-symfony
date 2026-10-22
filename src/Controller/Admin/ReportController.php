@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Escalated\Symfony\Controller\Admin;
 
 use Escalated\Symfony\Rendering\ReportPages;
+use Escalated\Symfony\Rendering\ReportScreens;
 use Escalated\Symfony\Rendering\UiRendererInterface;
 use Escalated\Symfony\Service\AdvancedReportingService;
 use Escalated\Symfony\Service\ExportService;
@@ -38,6 +39,7 @@ class ReportController extends AbstractController
         private readonly ExportService $exportService,
         private readonly UiRendererInterface $renderer,
         private readonly ?ReportPages $pages = null,
+        private readonly ?ReportScreens $screens = null,
     ) {
     }
 
@@ -109,15 +111,59 @@ class ReportController extends AbstractController
         return $this->pages ?? throw new \LogicException('ReportPages is not available.');
     }
 
+    #[Route('/response-times', name: 'reports.response-times', methods: ['GET'])]
+    public function responseTimes(Request $request): Response
+    {
+        $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
+
+        return $this->renderer->render('Escalated/Admin/Reports/ResponseTimes', $this->screens()->responseTimes($this->range($request)[2]));
+    }
+
+    #[Route('/resolution-times', name: 'reports.resolution-times', methods: ['GET'])]
+    public function resolutionTimes(Request $request): Response
+    {
+        $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
+
+        return $this->renderer->render('Escalated/Admin/Reports/ResolutionTimes', $this->screens()->resolutionTimes($this->range($request)[2]));
+    }
+
+    #[Route('/cohorts', name: 'reports.cohorts', methods: ['GET'])]
+    public function cohorts(Request $request): Response
+    {
+        $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
+
+        return $this->renderer->render('Escalated/Admin/Reports/Cohorts', $this->screens()->cohorts($this->range($request)[2]));
+    }
+
+    private function screens(): ReportScreens
+    {
+        return $this->screens ?? throw new \LogicException('ReportScreens is not available.');
+    }
+
+    /**
+     * The analytics paths answered JSON before the shared pages lived at them.
+     * A client that asks for JSON (and is not Inertia) still gets it; a browser
+     * or an Inertia visit gets the page.
+     */
+    private function wantsJson(Request $request): bool
+    {
+        return !$request->headers->has('X-Inertia') && 'json' === $request->getPreferredFormat();
+    }
+
     /**
      * SLA breach trends over time (first-response vs resolution breaches).
      */
+    #[Route('/sla-trends', name: 'reports.sla-trends', methods: ['GET'])]
     #[Route('/sla-trends', name: 'reports.sla_trends', methods: ['GET'])]
-    public function slaTrends(Request $request): JsonResponse
+    public function slaTrends(Request $request): Response
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
 
         [$from, $to, $days] = $this->range($request);
+
+        if (null !== $this->screens && !$this->wantsJson($request)) {
+            return $this->renderer->render('Escalated/Admin/Reports/SlaTrends', $this->screens()->slaTrends($days, (string) $request->query->get('group_by', 'day')));
+        }
 
         return new JsonResponse([
             'period_days' => $days,
@@ -164,12 +210,17 @@ class ReportController extends AbstractController
     /**
      * Agent performance ranking (composite score).
      */
+    #[Route('/agent-ranking', name: 'reports.agent-ranking', methods: ['GET'])]
     #[Route('/agent-ranking', name: 'reports.agent_ranking', methods: ['GET'])]
-    public function agentRanking(Request $request): JsonResponse
+    public function agentRanking(Request $request): Response
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
 
         [$from, $to, $days] = $this->range($request);
+
+        if (null !== $this->screens && !$this->wantsJson($request)) {
+            return $this->renderer->render('Escalated/Admin/Reports/AgentRanking', $this->screens()->agentRanking($days));
+        }
 
         return new JsonResponse([
             'period_days' => $days,

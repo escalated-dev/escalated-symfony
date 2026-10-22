@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Upgrading
+- **Behaviour change:** `GET /admin/reports/sla-trends` and `/admin/reports/agent-ranking` now render the shared `Reports/SlaTrends` and `Reports/AgentRanking` pages for browsers and Inertia visits. A client that sends `Accept: application/json` (without `X-Inertia`) still gets the JSON it got before.
+
+### Added
+- The analytics report screens: `Admin/Reports/SlaTrends`, `ResponseTimes`, `ResolutionTimes`, `AgentRanking` and `Cohorts`, at escalated-laravel's paths and route names (`escalated.admin.reports.sla-trends`, `response-times`, `resolution-times`, `agent-ranking`, `cohorts`), with the props its Admin\ReportController passes: breach trends, breach rates by department and priority, the tickets due within eight hours, first response and resolution summaries (average, median, p90, share within 4h/24h), histograms, daily trends, per-agent, per-department, per-priority and per-channel times, the composite agent ranking, and cohorts by tag, department, channel, type and priority.
+
 ## [0.3.4] - 2026-10-22
 
 ### Upgrading

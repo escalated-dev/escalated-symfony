@@ -65,6 +65,15 @@ class CustomField
     #[ORM\Column(type: Types::STRING, length: 50, options: ['default' => 'ticket'])]
     private string $entityType = 'ticket';
 
+    #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
+    private ?string $placeholder = null;
+
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $validationRules = null;
+
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $conditions = null;
+
     #[ORM\Column(type: Types::INTEGER, options: ['default' => 0])]
     private int $position = 0;
 
@@ -191,6 +200,42 @@ class CustomField
     public function setEntityType(string $entityType): self
     {
         $this->entityType = $entityType;
+
+        return $this;
+    }
+
+    public function getPlaceholder(): ?string
+    {
+        return $this->placeholder;
+    }
+
+    public function setPlaceholder(?string $placeholder): self
+    {
+        $this->placeholder = $placeholder;
+
+        return $this;
+    }
+
+    public function getValidationRules(): ?array
+    {
+        return $this->validationRules;
+    }
+
+    public function setValidationRules(?array $validationRules): self
+    {
+        $this->validationRules = $validationRules;
+
+        return $this;
+    }
+
+    public function getConditions(): ?array
+    {
+        return $this->conditions;
+    }
+
+    public function setConditions(?array $conditions): self
+    {
+        $this->conditions = $conditions;
 
         return $this;
     }

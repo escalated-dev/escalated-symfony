@@ -8,6 +8,7 @@ use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Event\TicketCustomActionTriggeredEvent;
 use Escalated\Symfony\Security\EnsureAgentVoter;
 use Escalated\Symfony\Security\TicketRequesterVoter;
+use Escalated\Symfony\Service\CustomFieldService;
 use Escalated\Symfony\Service\SatisfactionRatingService;
 use Escalated\Symfony\Service\TicketActionRegistry;
 use Escalated\Symfony\Service\TicketService;
@@ -28,6 +29,7 @@ class TicketController extends AbstractController
         private readonly TicketActionRegistry $ticketActions,
         private readonly EventDispatcherInterface $dispatcher,
         private readonly SatisfactionRatingService $satisfactionRatings,
+        private readonly ?CustomFieldService $customFields = null,
     ) {
     }
 
@@ -48,6 +50,30 @@ class TicketController extends AbstractController
             ]),
             $this->ticketActions->forTicket($ticket, $user),
         );
+    }
+
+    /**
+     * The ticket detail payload, with its custom field values.
+     *
+     * @return array<string, mixed>
+     */
+    private function detail(Ticket $ticket): array
+    {
+        $data = json_decode($this->serializer->serialize($ticket, 'json', ['groups' => 'ticket:detail']), true);
+        $data = \is_array($data) ? $data : [];
+        if (null !== $this->customFields) {
+            $data['custom_fields'] = $this->customFields->forTicket($ticket);
+        }
+
+        return $data;
+    }
+
+    /**
+     * @param array<string, string> $errors
+     */
+    private function customFieldErrors(array $errors): JsonResponse
+    {
+        return $this->json(['error' => reset($errors), 'message' => reset($errors), 'errors' => $errors], Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
     #[Route('', name: 'index', methods: ['GET'])]
@@ -72,7 +98,7 @@ class TicketController extends AbstractController
             return $this->json(['error' => 'Ticket not found.'], Response::HTTP_NOT_FOUND);
         }
 
-        $data = json_decode($this->serializer->serialize($ticket, 'json', ['groups' => 'ticket:detail']), true);
+        $data = $this->detail($ticket);
         $data['custom_actions'] = $this->customActionsForTicket($ticket, $this->getUser());
 
         return $this->json(['data' => $data]);
@@ -119,16 +145,23 @@ class TicketController extends AbstractController
     {
         $this->denyAccessUnlessGranted(EnsureAgentVoter::ATTRIBUTE);
 
-        $data = json_decode($request->getContent(), true) ?? [];
+        $data = json_decode($request->getContent(), true);
+        $data = \is_array($data) ? $data : [];
+        $custom = $this->customFields?->validateTicketInput($data, true) ?? ['errors' => [], 'values' => []];
+        if ([] !== $custom['errors']) {
+            return $this->customFieldErrors($custom['errors']);
+        }
+        unset($data['custom_fields']);
 
         try {
             $ticket = $this->ticketService->create($data);
         } catch (\InvalidArgumentException $e) {
             return $this->json(['error' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
+        $this->customFields?->saveForTicket($ticket, $custom['values']);
 
         return $this->json([
-            'data' => json_decode($this->serializer->serialize($ticket, 'json', ['groups' => 'ticket:detail']), true),
+            'data' => $this->detail($ticket),
         ], Response::HTTP_CREATED);
     }
 
@@ -142,11 +175,18 @@ class TicketController extends AbstractController
             return $this->json(['error' => 'Ticket not found.'], Response::HTTP_NOT_FOUND);
         }
 
-        $data = json_decode($request->getContent(), true) ?? [];
+        $data = json_decode($request->getContent(), true);
+        $data = \is_array($data) ? $data : [];
+        $custom = $this->customFields?->validateTicketInput($data, false) ?? ['errors' => [], 'values' => []];
+        if ([] !== $custom['errors']) {
+            return $this->customFieldErrors($custom['errors']);
+        }
+        unset($data['custom_fields']);
         $ticket = $this->ticketService->update($ticket, $data);
+        $this->customFields?->saveForTicket($ticket, $custom['values']);
 
         return $this->json([
-            'data' => json_decode($this->serializer->serialize($ticket, 'json', ['groups' => 'ticket:detail']), true),
+            'data' => $this->detail($ticket),
         ]);
     }
 

@@ -73,7 +73,12 @@ class TicketController extends TicketDeskController
 
         $ticket = $this->ticketOr404($reference);
         $payload = $this->payload($request);
+        $custom = $this->customFields?->validateTicketInput($payload, false) ?? ['errors' => [], 'values' => []];
+        if ([] !== $custom['errors']) {
+            return $this->invalid($request, $custom['errors'], ...$this->showRoute($ticket));
+        }
         $this->tickets->update($ticket, array_intersect_key($payload, array_flip(['subject', 'description', 'priority', 'ticket_type'])));
+        $this->customFields?->saveForTicket($ticket, $custom['values']);
 
         $this->addFlash('success', 'Ticket updated.');
 

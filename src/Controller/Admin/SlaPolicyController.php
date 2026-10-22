@@ -7,6 +7,7 @@ namespace Escalated\Symfony\Controller\Admin;
 use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Controller\TicketDeskController;
 use Escalated\Symfony\Controller\UiController;
+use Escalated\Symfony\Entity\BusinessSchedule;
 use Escalated\Symfony\Entity\Department;
 use Escalated\Symfony\Entity\SlaPolicy;
 use Escalated\Symfony\Entity\Ticket;
@@ -201,10 +202,22 @@ class SlaPolicyController extends UiController
         if (null !== $type && '' !== $type && !\in_array($type, Ticket::TYPES, true)) {
             $errors['ticket_type'] = 'The selected ticket type is invalid.';
         }
+        // Only when sent: the shared form has no schedule field, and saving
+        // it must not take away a schedule set some other way.
+        $schedule = $policy->getBusinessSchedule();
+        if (\array_key_exists('business_schedule_id', $payload)) {
+            $scheduleId = $payload['business_schedule_id'];
+            $schedule = null === $scheduleId || '' === $scheduleId ? null
+                : (is_numeric($scheduleId) ? $this->em->getRepository(BusinessSchedule::class)->find((int) $scheduleId) : null);
+            if (null !== $scheduleId && '' !== $scheduleId && null === $schedule) {
+                $errors['business_schedule_id'] = 'The selected business schedule is invalid.';
+            }
+        }
         if ([] !== $errors) {
             return $errors;
         }
 
+        $policy->setBusinessSchedule($schedule);
         $policy->setName($name)
             ->setDescription(\is_string($payload['description'] ?? null) && '' !== $payload['description'] ? $payload['description'] : null)
             ->setFirstResponseHours($hours['first_response_hours'])
@@ -230,6 +243,7 @@ class SlaPolicyController extends UiController
             'first_response_hours' => (object) $p->getFirstResponseHours(),
             'resolution_hours' => (object) $p->getResolutionHours(),
             'business_hours_only' => $p->isBusinessHoursOnly(),
+            'business_schedule_id' => $p->getBusinessSchedule()?->getId(),
             'is_default' => $p->isDefault(),
             'is_active' => $p->isActive(),
             'department_id' => $p->getDepartment()?->getId(),

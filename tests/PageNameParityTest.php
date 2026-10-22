@@ -36,8 +36,6 @@ final class PageNameParityTest extends TestCase
     private const NOT_YET_RENDERED = [
         'Escalated/Admin/AuditLog/Index',
         'Escalated/Admin/Automations/Form',
-        'Escalated/Admin/BusinessHours/Form',
-        'Escalated/Admin/BusinessHours/Index',
         'Escalated/Admin/CustomFields/Form',
         'Escalated/Admin/CustomFields/Index',
         'Escalated/Admin/CustomObjects/Form',

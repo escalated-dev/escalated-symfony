@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Escalated\Symfony\Service\BusinessHoursCalculator;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_business_schedules')]
@@ -35,7 +36,7 @@ class BusinessSchedule
     private bool $isActive = true;
 
     /** @var Collection<int, Holiday> */
-    #[ORM\OneToMany(targetEntity: Holiday::class, mappedBy: 'businessSchedule', cascade: ['persist', 'remove'])]
+    #[ORM\OneToMany(targetEntity: Holiday::class, mappedBy: 'businessSchedule', cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $holidays;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
@@ -147,29 +148,33 @@ class BusinessSchedule
         return $this;
     }
 
+    public function removeHoliday(Holiday $holiday): self
+    {
+        $this->holidays->removeElement($holiday);
+
+        return $this;
+    }
+
+    /**
+     * The weekly hours in the shape the shared pages read and post
+     * (escalated-laravel's `schedule` column): every weekday, each with
+     * `start` and `end` as "HH:MM", both empty on a closed day.
+     *
+     * @return array<string, array{start: string, end: string}>
+     */
+    public function getSchedule(): array
+    {
+        $schedule = [];
+        foreach (['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as $day) {
+            $schedule[$day] = BusinessHoursCalculator::dayBounds($this->hours[$day] ?? null) ?? ['start' => '', 'end' => ''];
+        }
+
+        return $schedule;
+    }
+
     public function isWithinBusinessHours(?\DateTimeInterface $dateTime = null): bool
     {
-        $dateTime ??= new \DateTimeImmutable('now', new \DateTimeZone($this->timezone));
-        if ($dateTime->getTimezone()->getName() !== $this->timezone) {
-            $dateTime = \DateTimeImmutable::createFromInterface($dateTime)->setTimezone(new \DateTimeZone($this->timezone));
-        }
-
-        $dayName = strtolower($dateTime->format('l'));
-        $dayConfig = $this->hours[$dayName] ?? null;
-
-        if (!$dayConfig || !($dayConfig['enabled'] ?? false)) {
-            return false;
-        }
-
-        foreach ($this->holidays as $holiday) {
-            if ($holiday->getDate()->format('Y-m-d') === $dateTime->format('Y-m-d')) {
-                return false;
-            }
-        }
-
-        $time = $dateTime->format('H:i');
-
-        return $time >= $dayConfig['start'] && $time <= $dayConfig['end'];
+        return (new BusinessHoursCalculator())->isWithinBusinessHours($dateTime ?? new \DateTimeImmutable(), $this);
     }
 
     public function getCreatedAt(): \DateTimeImmutable

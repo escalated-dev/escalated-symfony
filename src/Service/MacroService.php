@@ -9,6 +9,7 @@ use Escalated\Symfony\Entity\Macro;
 use Escalated\Symfony\Entity\Reply;
 use Escalated\Symfony\Entity\Tag;
 use Escalated\Symfony\Entity\Ticket;
+use Escalated\Symfony\Repository\TicketStatusRepository;
 use Escalated\Symfony\Security\UserKeyResolver;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -111,7 +112,7 @@ class MacroService
                 switch ($type) {
                     case 'change_status':
                     case 'set_status':
-                        $ticket->setStatus((string) $value);
+                        TicketStatusRepository::applyStatus($this->em, $ticket, (string) $value);
                         $this->em->flush();
                         break;
                     case 'change_priority':

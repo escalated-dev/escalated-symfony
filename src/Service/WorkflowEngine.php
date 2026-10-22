@@ -13,6 +13,7 @@ use Escalated\Symfony\Entity\Tag;
 use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Entity\TicketFollower;
 use Escalated\Symfony\Event\EventNames;
+use Escalated\Symfony\Repository\TicketStatusRepository;
 use Escalated\Symfony\Security\UserKeyResolver;
 
 class WorkflowEngine
@@ -352,7 +353,7 @@ class WorkflowEngine
 
         try {
             $done = match ($action['type'] ?? null) {
-                'change_status' => '' !== $text && $this->flushed($ticket->setStatus($text)),
+                'change_status' => '' !== $text && $this->flushed(TicketStatusRepository::applyStatus($this->em, $ticket, $text)),
                 'assign_agent' => $this->flushed($ticket->setAssignedTo(UserKeyResolver::normalize(\is_string($value) ? trim($value) : $value))),
                 'change_priority' => '' !== $text && $this->flushed($ticket->setPriority($text)),
                 'add_tag' => $this->addTag($ticket, $text),

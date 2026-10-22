@@ -62,6 +62,9 @@ services:
     Escalated\Symfony\Repository\EscalatedSettingRepository:
         tags: ['doctrine.repository_service']
 
+    Escalated\Symfony\Repository\TicketStatusRepository:
+        tags: ['doctrine.repository_service']
+
     # Custom ticket action registry: tagged services + config-defined actions
     Escalated\Symfony\Service\TicketActionRegistry:
         arguments:

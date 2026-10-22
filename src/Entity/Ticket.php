@@ -23,6 +23,7 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Index(columns: ['assigned_to'], name: 'idx_ticket_assigned')]
 #[ORM\Index(columns: ['requester_id'], name: 'idx_ticket_requester')]
 #[ORM\Index(columns: ['merged_into_id'], name: 'idx_ticket_merged_into')]
+#[ORM\Index(columns: ['ticket_status_id'], name: 'idx_ticket_custom_status')]
 #[ORM\HasLifecycleCallbacks]
 class Ticket
 {
@@ -109,6 +110,13 @@ class Ticket
 
     #[ORM\Column(type: Types::STRING, length: 32, options: ['default' => 'open'])]
     private string $status = self::STATUS_OPEN;
+
+    // The custom status (TicketStatus) the ticket is in, if any. `status`
+    // above stays the built-in source of truth: it holds the custom status's
+    // category anchor, and setting any built-in status clears this.
+    #[ORM\ManyToOne(targetEntity: TicketStatus::class)]
+    #[ORM\JoinColumn(name: 'ticket_status_id', nullable: true, onDelete: 'SET NULL')]
+    private ?TicketStatus $customStatus = null;
 
     #[ORM\Column(type: Types::STRING, length: 16, options: ['default' => 'medium'])]
     private string $priority = self::PRIORITY_MEDIUM;
@@ -360,11 +368,45 @@ class Ticket
         return $this->status;
     }
 
+    /**
+     * Sets a built-in status, which also clears any custom status: snooze,
+     * merge, chat, workflow and every other path that writes a built-in
+     * status leaves the ticket in that built-in status alone.
+     */
     public function setStatus(string $status): self
     {
         $this->status = $status;
+        $this->customStatus = null;
 
         return $this;
+    }
+
+    public function getCustomStatus(): ?TicketStatus
+    {
+        return $this->customStatus;
+    }
+
+    /**
+     * Puts the ticket in a custom status: the built-in status becomes the
+     * category's anchor and the custom status is recorded beside it. Callers
+     * that need transition checks, timestamps and events go through
+     * {@see \Escalated\Symfony\Service\TicketService::changeStatus()}.
+     */
+    public function applyCustomStatus(TicketStatus $status): self
+    {
+        $this->setStatus($status->anchor());
+        $this->customStatus = $status;
+
+        return $this;
+    }
+
+    /**
+     * The category of the effective status: the custom status's, else the
+     * built-in status's.
+     */
+    public function getStatusCategory(): string
+    {
+        return $this->customStatus?->getCategory() ?? TicketStatus::categoryOfBuiltIn($this->status);
     }
 
     public function getPriority(): string

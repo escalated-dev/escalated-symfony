@@ -77,6 +77,24 @@ final class MigrationsTest extends EscalatedKernelTestCase
         self::assertSame(0, $exitCode, "doctrine:schema:validate failed:\n".$validation);
     }
 
+    public function testMigratingSeedsTheBuiltInStatusesAsSystemRows(): void
+    {
+        $exitCode = $this->console(['command' => 'doctrine:migrations:migrate', '--no-interaction' => true]);
+        self::assertSame(0, $exitCode, "doctrine:migrations:migrate failed:\n".$this->console->getDisplay());
+
+        $connection = self::getContainer()->get('doctrine.dbal.default_connection');
+        \assert($connection instanceof \Doctrine\DBAL\Connection);
+        $rows = $connection->fetchAllAssociative('SELECT slug, category, is_system FROM escalated_ticket_statuses ORDER BY position');
+
+        self::assertSame(
+            ['open' => 'open', 'in_progress' => 'open', 'waiting_on_customer' => 'pending', 'waiting_on_agent' => 'open', 'escalated' => 'open', 'resolved' => 'solved', 'closed' => 'solved', 'reopened' => 'open', 'snoozed' => 'on_hold', 'live' => 'open'],
+            array_column($rows, 'category', 'slug'),
+        );
+        foreach ($rows as $row) {
+            self::assertTrue((bool) $row['is_system']);
+        }
+    }
+
     /**
      * @param array<string, mixed> $input
      */

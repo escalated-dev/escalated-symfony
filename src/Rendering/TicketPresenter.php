@@ -59,6 +59,8 @@ class TicketPresenter
             'reference' => $ticket->getReference(),
             'subject' => $ticket->getSubject(),
             'status' => $ticket->getStatus(),
+            'custom_status' => $ticket->getCustomStatus()?->summary(),
+            'status_category' => $ticket->getStatusCategory(),
             'priority' => $ticket->getPriority(),
             'ticket_type' => $ticket->getTicketType(),
             'channel' => $ticket->getChannel(),

@@ -71,6 +71,30 @@ class AutomationRunnerTest extends TestCase
         $this->assertNotNull($automation->getLastRunAt());
     }
 
+    public function testSetTicketTypeActionSetsTheType(): void
+    {
+        // The shared Automations form offers "Set ticket type"; the runner has
+        // to carry it out or the rule saves and then does nothing.
+        $automation = new Automation();
+        $automation->setName('triage')
+            ->setConditions([['field' => 'hours_since_created', 'operator' => '>', 'value' => 1]])
+            ->setActions([['type' => 'set_ticket_type', 'value' => 'problem']]);
+
+        $ticket = new Ticket();
+        $ticket->setStatus(Ticket::STATUS_OPEN);
+
+        $automationRepo = $this->createMock(EntityRepository::class);
+        $automationRepo->method('findBy')->willReturn([$automation]);
+
+        $em = $this->createMock(EntityManagerInterface::class);
+        $em->method('getRepository')->willReturn($automationRepo);
+        $em->method('createQueryBuilder')->willReturn($this->makeQbThatReturns([$ticket]));
+
+        (new AutomationRunner($em, new NullLogger()))->run();
+
+        $this->assertSame('problem', $ticket->getTicketType());
+    }
+
     public function testOneFailingActionDoesNotAbortSiblings(): void
     {
         $automation = new Automation();

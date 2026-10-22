@@ -180,13 +180,14 @@ final class ImportPagesTest extends EscalatedWebTestCase
         self::assertResponseRedirects(self::BASE.'/progress/'.$job->getId());
         self::assertSame('fakedesk', $job->getPlatform());
         self::assertEquals($this->admin->getId(), $job->getUserId());
-        self::assertSame(self::FIELD_MAPPINGS, $job->getFieldMappings());
+        // MySQL keeps JSON object keys in its own order.
+        self::assertEquals(self::FIELD_MAPPINGS, $job->getFieldMappings());
 
         self::assertSame('completed', $job->getStatus());
         self::assertNotNull($job->getCompletedAt());
         self::assertNull($job->getSealedCredentials());
         self::assertSame([], $job->getErrorLog());
-        self::assertSame(['total' => 3, 'processed' => 3, 'skipped' => 0, 'failed' => 0, 'cursor' => '2'], $job->getProgress()['tickets']);
+        self::assertEquals(['total' => 3, 'processed' => 3, 'skipped' => 0, 'failed' => 0, 'cursor' => '2'], $job->getProgress()['tickets']);
 
         $tickets = $this->importedTickets($job);
         self::assertSame(['Refund please', 'Login broken', 'Feature idea'], array_map(static fn (Ticket $t) => $t->getSubject(), $tickets));
@@ -238,9 +239,9 @@ final class ImportPagesTest extends EscalatedWebTestCase
         $sent = $page['props']['job'];
         self::assertSame($job->getId(), $sent['id']);
         self::assertSame('importing', $sent['status']);
-        self::assertSame($job->getProgress(), $sent['progress']);
+        self::assertEquals($job->getProgress(), $sent['progress']);
         self::assertSame($job->getErrorLog(), $sent['error_log']);
-        self::assertSame(self::FIELD_MAPPINGS, $sent['field_mappings']);
+        self::assertEquals(self::FIELD_MAPPINGS, $sent['field_mappings']);
         self::assertArrayNotHasKey('credentials', $sent);
         self::assertStringNotContainsString(FakeImportAdapter::TOKEN, (string) $this->client->getResponse()->getContent());
     }
@@ -254,7 +255,7 @@ final class ImportPagesTest extends EscalatedWebTestCase
 
         self::assertSame(['status', 'progress', 'error_log', 'started_at', 'completed_at'], array_keys($body));
         self::assertSame('importing', $body['status']);
-        self::assertSame($job->getProgress(), $body['progress']);
+        self::assertEquals($job->getProgress(), $body['progress']);
         self::assertSame($job->getErrorLog(), $body['error_log']);
     }
 

@@ -9,9 +9,11 @@ use Escalated\Symfony\Entity\Contact;
 use Escalated\Symfony\Entity\Reply;
 use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Entity\TicketActivity;
+use Escalated\Symfony\Entity\TicketStatus;
 use Escalated\Symfony\Event\EventNames;
 use Escalated\Symfony\Event\TicketWorkflowEvent;
 use Escalated\Symfony\Repository\TicketRepository;
+use Escalated\Symfony\Repository\TicketStatusRepository;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -205,41 +207,61 @@ class TicketService
     }
 
     /**
-     * Transition a ticket to a new status.
+     * Transition a ticket to a new status: a built-in status, or the slug of a
+     * custom status ({@see TicketStatus}). A custom status moves the built-in
+     * status to its category's anchor and runs everything that anchor runs.
+     * Moving between custom statuses with the same anchor skips the transition
+     * check but is still saved, logged and announced; so is choosing the
+     * anchor built-in itself to leave a custom status.
      */
     public function changeStatus(Ticket $ticket, string $newStatus, int|string|null $causerId = null): Ticket
     {
         $this->access?->assertVisible($ticket);
-        if (!$ticket->canTransitionTo($newStatus)) {
-            throw new \InvalidArgumentException(sprintf('Cannot transition from "%s" to "%s".', $ticket->getStatus(), $newStatus));
+
+        $custom = $this->customStatus($newStatus);
+        $target = $custom?->anchor() ?? $newStatus;
+        $oldStatus = $ticket->getStatus();
+        $oldCustom = $ticket->getCustomStatus();
+        $oldCategory = $ticket->getStatusCategory();
+        $sameBuiltIn = $target === $oldStatus;
+
+        if ($sameBuiltIn ? (null === $custom && null === $oldCustom) || ($custom === $oldCustom) : !$ticket->canTransitionTo($target)) {
+            throw new \InvalidArgumentException(sprintf('Cannot transition from "%s" to "%s".', $oldCustom?->getSlug() ?? $oldStatus, $newStatus));
         }
 
-        $oldStatus = $ticket->getStatus();
-        $ticket->setStatus($newStatus);
+        null === $custom ? $ticket->setStatus($target) : $ticket->applyCustomStatus($custom);
 
-        // Handle timestamp updates for special statuses
-        $now = new \DateTimeImmutable();
-        match ($newStatus) {
-            Ticket::STATUS_RESOLVED => $ticket->setResolvedAt($now),
-            Ticket::STATUS_CLOSED => $ticket->setClosedAt($now),
-            Ticket::STATUS_REOPENED => $ticket->setResolvedAt(null)->setClosedAt(null),
-            default => null,
-        };
+        // Timestamps follow the built-in status, so only when it changes.
+        if (!$sameBuiltIn) {
+            $now = new \DateTimeImmutable();
+            match ($target) {
+                Ticket::STATUS_RESOLVED => $ticket->setResolvedAt($now),
+                Ticket::STATUS_CLOSED => $ticket->setClosedAt($now),
+                Ticket::STATUS_REOPENED => $ticket->setResolvedAt(null)->setClosedAt(null),
+                default => null,
+            };
+        }
 
         $this->em->flush();
 
-        $this->logActivity($ticket, TicketActivity::TYPE_STATUS_CHANGED, $causerId, [
+        $change = [
             'old_status' => $oldStatus,
-            'new_status' => $newStatus,
-        ]);
+            'new_status' => $target,
+            'old_custom_status' => $oldCustom?->getSlug(),
+            'new_custom_status' => $custom?->getSlug(),
+            'old_category' => $oldCategory,
+            'new_category' => $ticket->getStatusCategory(),
+        ];
+
+        $this->logActivity($ticket, TicketActivity::TYPE_STATUS_CHANGED, $causerId, $change);
 
         $this->dispatcher->dispatch(new TicketWorkflowEvent(
             'ticket.status_changed',
             $ticket,
-            ['old_status' => $oldStatus, 'new_status' => $newStatus, 'causer_id' => $causerId],
+            $change + ['causer_id' => $causerId],
         ));
 
-        if (Ticket::STATUS_REOPENED === $newStatus) {
+        if (Ticket::STATUS_REOPENED === $target && !$sameBuiltIn) {
             $this->dispatcher->dispatch(new TicketWorkflowEvent(
                 'ticket.reopened',
                 $ticket,
@@ -248,6 +270,28 @@ class TicketService
         }
 
         return $ticket;
+    }
+
+    /**
+     * Whether a status-change input is a custom status's slug.
+     */
+    public function isCustomStatus(string $status): bool
+    {
+        return null !== $this->customStatus($status);
+    }
+
+    /**
+     * The custom status a status-change input names; null for a built-in
+     * status or an unknown value (rejected by the transition check).
+     */
+    private function customStatus(string $status): ?TicketStatus
+    {
+        if (\array_key_exists($status, Ticket::TRANSITIONS)) {
+            return null;
+        }
+        $repository = $this->em->getRepository(TicketStatus::class);
+
+        return $repository instanceof TicketStatusRepository ? $repository->findCustomBySlug($status) : null;
     }
 
     /**

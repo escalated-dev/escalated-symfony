@@ -59,6 +59,11 @@ class TicketNormalizer implements NormalizerInterface, NormalizerAwareInterface
         $data['account_type'] = $object->getAccountType();
         $data['account_id'] = $object->getAccountId();
 
+        // Staff-facing: the custom sub-status, if any, and the category of
+        // the effective status. `status` stays the built-in value.
+        $data['custom_status'] = $object->getCustomStatus()?->summary();
+        $data['status_category'] = $object->getStatusCategory();
+
         // requester_name: guest name when available, null otherwise
         if (!array_key_exists('requester_name', $data)) {
             $data['requester_name'] = $object->getGuestName();

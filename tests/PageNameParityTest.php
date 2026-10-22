@@ -57,8 +57,6 @@ final class PageNameParityTest extends TestCase
         'Escalated/Admin/Settings/Sandbox',
         'Escalated/Admin/Settings/SsoSettings',
         'Escalated/Admin/Settings/TwoFactor',
-        'Escalated/Admin/Statuses/Form',
-        'Escalated/Admin/Statuses/Index',
         'Escalated/Admin/Workflows/Builder',
         'Escalated/Auth/TwoFactorChallenge',
         'Escalated/Error',

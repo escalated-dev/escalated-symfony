@@ -149,7 +149,7 @@ abstract class TicketDeskController extends UiController
     {
         $ticket = $this->ticketOr404($reference);
         $status = $this->payload($request)['status'] ?? null;
-        if (!\is_string($status) || !\in_array($status, self::statuses(), true)) {
+        if (!\is_string($status) || (!\in_array($status, self::statuses(), true) && !$this->tickets->isCustomStatus($status))) {
             return $this->invalid($request, ['status' => 'The selected status is invalid.'], ...$this->showRoute($ticket));
         }
 

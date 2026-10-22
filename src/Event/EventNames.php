@@ -158,7 +158,12 @@ final class EventNames
         }
 
         $names = [$name];
-        if (self::STATUS_CHANGED === $name) {
+        // A move between custom statuses that share a built-in status (two
+        // `solved` sub-statuses, say) is a status change, but the ticket was
+        // already resolved: announce no second ticket.resolved.
+        $context = $event->context;
+        $sameBuiltIn = \array_key_exists('old_status', $context) && ($context['old_status'] ?? null) === ($context['new_status'] ?? null);
+        if (self::STATUS_CHANGED === $name && !$sameBuiltIn) {
             $derived = self::STATUS_EVENTS[(string) ($event->context['new_status'] ?? '')] ?? null;
             if (null !== $derived) {
                 $names[] = $derived;

@@ -18,6 +18,7 @@ use Escalated\Symfony\Security\TicketAccess;
 use Escalated\Symfony\Security\UserKeyResolver;
 use Escalated\Symfony\Service\AssignmentService;
 use Escalated\Symfony\Service\CannedResponseService;
+use Escalated\Symfony\Service\CustomFieldService;
 use Escalated\Symfony\Service\MacroService;
 use Escalated\Symfony\Service\SnoozeService;
 use Escalated\Symfony\Service\TicketService;
@@ -58,6 +59,7 @@ abstract class TicketDeskController extends UiController
         #[Autowire(service: 'cache.app')]
         protected readonly CacheItemPoolInterface $cache,
         protected readonly ?TicketAccess $access = null,
+        protected readonly ?CustomFieldService $customFields = null,
     ) {
     }
 
@@ -124,6 +126,7 @@ abstract class TicketDeskController extends UiController
             'macros' => $this->presenter->macros($this->macros->listForAgent($me)),
             'is_following' => $this->presenter->isFollowing($ticket, $me),
             'followers_count' => $this->presenter->followersCount($ticket),
+            'custom_fields' => $this->customFields?->forTicket($ticket) ?? [],
         ];
     }
 

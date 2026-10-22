@@ -13,6 +13,7 @@ use Escalated\Symfony\Rendering\TicketPresenter;
 use Escalated\Symfony\Rendering\UiRendererInterface;
 use Escalated\Symfony\Security\TicketRequesterVoter;
 use Escalated\Symfony\Security\UserKeyResolver;
+use Escalated\Symfony\Service\CustomFieldService;
 use Escalated\Symfony\Service\SatisfactionRatingService;
 use Escalated\Symfony\Service\TicketService;
 use Symfony\Component\HttpFoundation\Request;
@@ -42,6 +43,7 @@ class TicketController extends UiController
         private readonly UserKeyResolver $userKeys,
         private readonly EntityManagerInterface $em,
         private readonly bool $allowCustomerClose,
+        private readonly ?CustomFieldService $customFields = null,
     ) {
     }
 
@@ -90,6 +92,7 @@ class TicketController extends UiController
         return $this->renderer->render('Escalated/Customer/Create', [
             'departments' => $this->presenter->departments(),
             'priorities' => TicketDeskController::priorities(),
+            'custom_fields' => $this->customFields?->ticketDefinitions() ?? [],
         ]);
     }
 
@@ -127,6 +130,8 @@ class TicketController extends UiController
         if (null === $key) {
             $errors['subject'] ??= 'Your account cannot open tickets.';
         }
+        $custom = $this->customFields?->validateTicketInput($payload, true) ?? ['errors' => [], 'values' => []];
+        $errors += $custom['errors'];
         if ([] !== $errors) {
             return $this->invalid($request, $errors, 'escalated.customer.tickets.create');
         }
@@ -148,6 +153,7 @@ class TicketController extends UiController
         }
 
         $ticket = $this->ticketService->create($data);
+        $this->customFields?->saveForTicket($ticket, $custom['values']);
 
         $this->addFlash('success', 'Ticket created successfully.');
 
@@ -163,6 +169,7 @@ class TicketController extends UiController
 
         return $this->renderer->render('Escalated/Customer/Show', [
             'ticket' => $this->presenter->customer($ticket),
+            'custom_fields' => $this->customFields?->forTicket($ticket) ?? [],
         ]);
     }
 

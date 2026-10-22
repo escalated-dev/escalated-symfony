@@ -11,6 +11,12 @@
 - **Behaviour change:** the customer portal (`/customer/tickets`) now identifies the requester by the host user's primary key and class, as the `ESCALATED_TICKET_REQUESTER` voter and the API already did. Tickets the portal created before stored `getUserIdentifier()` (usually the email) as `requester_id`; set those rows' `requester_id` to the user's key to keep them visible to their requester. Before, the portal listed every ticket to every signed-in customer, and refused to open any.
 - `Controller\Agent\TicketSnoozeController` is folded into `Controller\Agent\TicketController`; the routes (`escalated.agent.tickets.snooze`, `unsnooze`) are unchanged.
 - Set `escalated.user_class` to the host user entity so pages show names: requesters, assignees, reply authors and the agent picker read `getName()` (else the email) from it.
+- **Behaviour change:** saving a webhook with the secret left blank (or not sent) now keeps the stored secret, because the form no longer receives it. Send `clear_secret: true` to remove it; a non-blank `secret` still replaces it. Creating a webhook is unchanged. (This bundle has no SSO settings page, so there is no SSO mask to post back.)
+- The import pages' job rows (`Admin/Import/Index` `jobs`, `Admin/Import/Progress` `job`) no longer carry `user_id` and `updated_at`, and `error_log` holds the last 50 entries, as escalated-laravel's `ImportJob::toPageProps()`.
+
+### Security
+- **Stored secrets stay out of serialization.** The admin pages already sent no stored secret: webhook pages send `has_secret`, the import pages leave the sealed credentials out, and the API token page sends no token hash. This is now locked in by a test that seeds distinctive secrets and checks every import, webhook and API token page and JSON response for them through the router, and the entities themselves hide their secrets from the Symfony serializer (`#[Ignore]` on `Webhook::getSecret()`, `ImportJob::getSealedCredentials()`, `TwoFactor::getSecret()` and `getRecoveryCodes()`, `ApiToken::getToken()`), so a host that serializes them does not leak them either. The import page rows are now built from an explicit field list.
+- Saving a webhook form, which never shows the stored secret, used to erase it when the secret field was left blank. A blank secret now keeps it (see Upgrading).
 
 ### Fixed
 - `Admin/Users/Index` failed on PostgreSQL: the user count kept the listing's `ORDER BY`, which PostgreSQL rejects beside an aggregate.

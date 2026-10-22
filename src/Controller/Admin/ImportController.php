@@ -249,8 +249,10 @@ class ImportController extends AbstractController
     }
 
     /**
-     * Laravel sends the job model as is. Its credentials are left out here:
-     * they are a secret, and no screen reads them.
+     * The fields the import pages read, as escalated-laravel's
+     * ImportJob::toPageProps(). Built from an explicit list so a field added
+     * later is not sent to the browser by default; the credentials are a
+     * secret the import run reads server-side and are never sent.
      *
      * @return array<string, mixed>
      */
@@ -258,16 +260,14 @@ class ImportController extends AbstractController
     {
         return [
             'id' => $job->getId(),
-            'user_id' => $job->getUserId(),
             'platform' => $job->getPlatform(),
             'status' => $job->getStatus(),
-            'field_mappings' => (object) $job->getFieldMappings(),
             'progress' => (object) $job->getProgress(),
-            'error_log' => $job->getErrorLog(),
+            'field_mappings' => (object) $job->getFieldMappings(),
+            'error_log' => \array_slice($job->getErrorLog(), -50),
             'started_at' => $job->getStartedAt()?->format(\DateTimeInterface::ATOM),
             'completed_at' => $job->getCompletedAt()?->format(\DateTimeInterface::ATOM),
             'created_at' => $job->getCreatedAt()->format(\DateTimeInterface::ATOM),
-            'updated_at' => $job->getUpdatedAt()->format(\DateTimeInterface::ATOM),
         ];
     }
 

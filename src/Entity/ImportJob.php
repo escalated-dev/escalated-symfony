@@ -7,6 +7,7 @@ namespace Escalated\Symfony\Entity;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Escalated\Symfony\Doctrine\UserIdType;
+use Symfony\Component\Serializer\Attribute\Ignore;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -142,6 +143,10 @@ class ImportJob
         return \in_array($this->status, ['paused', 'failed'], true);
     }
 
+    /**
+     * Read by the import run server-side; never serialized.
+     */
+    #[Ignore]
     public function getSealedCredentials(): ?string
     {
         return $this->credentials;

@@ -9,6 +9,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Escalated\Symfony\Event\EventNames;
+use Symfony\Component\Serializer\Attribute\Ignore;
 
 /**
  * Outbound webhook subscription — an admin-registered HTTP endpoint that
@@ -105,6 +106,10 @@ class Webhook
         return $this;
     }
 
+    /**
+     * Signs deliveries; never serialized. Pages get `has_secret` instead.
+     */
+    #[Ignore]
     public function getSecret(): ?string
     {
         return $this->secret;

@@ -7,6 +7,7 @@ namespace Escalated\Symfony\Controller\Admin;
 use Escalated\Symfony\Rendering\ReportPages;
 use Escalated\Symfony\Rendering\ReportScreens;
 use Escalated\Symfony\Rendering\UiRendererInterface;
+use Escalated\Symfony\Security\UserKeyResolver;
 use Escalated\Symfony\Service\AdvancedReportingService;
 use Escalated\Symfony\Service\ExportService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -104,6 +105,20 @@ class ReportController extends AbstractController
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
 
         return $this->renderer->render('Escalated/Admin/Reports/Comparison', $this->pages()->comparison($this->range($request)[2]));
+    }
+
+    /**
+     * One agent's report, the screen the agent ranking links to, with the props
+     * Reports/AgentDetail declares.
+     */
+    #[Route('/agent/{id}/detail', name: 'reports.agent-detail', methods: ['GET'], requirements: ['id' => '[^/]+'])]
+    public function agentDetail(Request $request, string $id): Response
+    {
+        $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
+
+        $agentId = UserKeyResolver::normalize($id) ?? throw $this->createNotFoundException();
+
+        return $this->renderer->render('Escalated/Admin/Reports/AgentDetail', $this->pages()->agentDetail($agentId, $this->range($request)[2]));
     }
 
     private function pages(): ReportPages

@@ -11,6 +11,7 @@
 - `Admin/AuditLog/Index` at `/admin/audit-log` (`escalated.admin.audit-log`), with escalated-laravel's props: `logs` (50 a page, newest first, Laravel's paginator, each row with `user`, `action`, `auditable_type`, `auditable_id`, `old_values`, `new_values`, `ip_address`), `filters`, `users`, `actions` and `resourceTypes`, filtered by user, action, resource type and date range. It lists what `AuditLogService` records; the bundle itself does not write entries yet.
 - `Admin/Automations/Form` at `/admin/automations/create` and `/admin/automations/{id}/edit` (`escalated.admin.automations.create`, `edit`), plus the `escalated.admin.automations.destroy` name the index page calls (`delete` is kept).
 - Automations run the `set_ticket_type` action the shared form offers.
+- `Admin/Reports/AgentDetail` at `/admin/reports/agent/{id}/detail` (`escalated.admin.reports.agent-detail`), the per-agent screen the agent ranking links to, admins only, with the props the shared page declares: `period_days`, `agent {id, name, email}`, `total_tickets`, `resolved_tickets`, `avg_frt`, `avg_resolution`, `csat_score` (null without ratings), `response_percentiles {p50..p99}`, `productivity` (per day `{label, value, values: [public replies, resolved]}`), `workload` (tickets created per day), `csat_breakdown` (`N stars` counts), and `prev_*` for the same number of days before. It reads `days` (or `period`, default 30).
 
 ## [0.3.4] - 2026-10-22
 

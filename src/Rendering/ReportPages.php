@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Escalated\Symfony\Rendering;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Escalated\Symfony\Entity\Reply;
 use Escalated\Symfony\Entity\SatisfactionRating;
 use Escalated\Symfony\Entity\SlaPolicy;
 use Escalated\Symfony\Entity\Ticket;
@@ -12,7 +13,8 @@ use Escalated\Symfony\Entity\Ticket;
 /**
  * The report screens' props, as escalated-laravel's Admin\ReportController
  * and ReportingService build them for Escalated/Admin/Reports and
- * Reports/Dashboard, AgentMetrics, SlaReport, CsatReport and Comparison.
+ * Reports/Dashboard, AgentMetrics, SlaReport, CsatReport and Comparison, and
+ * the props Reports/AgentDetail declares.
  *
  * Figures cover tickets created in the last `days` days, except the
  * dashboard's status and priority breakdowns, which are all-time as on
@@ -228,6 +230,162 @@ class ReportPages
             'breach_count' => \count(array_filter($created, self::breached(...))),
             'volume_trend' => self::series(self::counts($created, static fn (array $t): string => $t['createdAt']->format('Y-m-d'))),
         ];
+    }
+
+    /**
+     * Reports/AgentDetail: one agent's last `days` days against the `days`
+     * before them, under the names the shared page declares (as
+     * escalated-rails, -go, -spring, -nestjs and -dotnet send them;
+     * escalated-laravel #260 brings Laravel to the same shape).
+     *
+     * @return array<string, mixed>
+     */
+    public function agentDetail(int|string $agentId, int $days): array
+    {
+        $end = new \DateTimeImmutable('now');
+        $start = $end->modify(sprintf('-%d days', $days));
+        $current = $this->agentWindow($agentId, $start, $end);
+        $previous = $this->agentWindow($agentId, $start->modify(sprintf('-%d days', $days)), $start);
+        $user = $this->users->find($agentId);
+
+        return [
+            'period_days' => $days,
+            'agent' => [
+                'id' => $user['id'] ?? $agentId,
+                'name' => $user['name'] ?? null,
+                'email' => $user['email'] ?? null,
+            ],
+            ...$current,
+            'prev_total_tickets' => $previous['total_tickets'],
+            'prev_resolved_tickets' => $previous['resolved_tickets'],
+            'prev_avg_frt' => $previous['avg_frt'],
+            'prev_avg_resolution' => $previous['avg_resolution'],
+            'prev_csat_score' => $previous['csat_score'],
+        ];
+    }
+
+    /**
+     * The agent's tickets created in [start, end): KPIs, response-time
+     * percentiles, and the productivity, workload and CSAT charts as
+     * `{label, value}` rows. `csat_score` is null without ratings, rather than
+     * a zero that reads like a rating.
+     *
+     * @return array<string, mixed>
+     */
+    private function agentWindow(int|string $agentId, \DateTimeImmutable $start, \DateTimeImmutable $end): array
+    {
+        $tickets = array_values(array_filter(
+            $this->tickets($start, $end),
+            static fn (array $t): bool => null !== $t['assignedTo'] && (string) $t['assignedTo'] === (string) $agentId,
+        ));
+
+        $response = [];
+        foreach ($tickets as $t) {
+            if ($t['firstResponseAt'] instanceof \DateTimeInterface) {
+                $response[] = ($t['firstResponseAt']->getTimestamp() - $t['createdAt']->getTimestamp()) / 3600;
+            }
+        }
+        sort($response);
+
+        $ratings = [];
+        if ([] !== $tickets) {
+            $ratings = $this->em->createQueryBuilder()
+                ->select('r.rating')
+                ->from(SatisfactionRating::class, 'r')
+                ->where('IDENTITY(r.ticket) IN (:ids)')
+                ->andWhere('r.rating > 0')
+                ->setParameter('ids', array_column($tickets, 'id'))
+                ->getQuery()
+                ->getArrayResult();
+        }
+
+        // Public replies the agent wrote, and the agent's tickets resolved, per day.
+        $days = [];
+        $replies = $this->em->createQueryBuilder()
+            ->select('r.createdAt')
+            ->from(Reply::class, 'r')
+            ->where('r.authorId = :agent')
+            ->andWhere('r.isInternalNote = false')
+            ->andWhere('r.deletedAt IS NULL')
+            ->andWhere('r.createdAt >= :start')
+            ->andWhere('r.createdAt < :end')
+            ->setParameter('agent', $agentId)
+            ->setParameter('start', $start)
+            ->setParameter('end', $end)
+            ->getQuery()
+            ->getArrayResult();
+        foreach ($replies as $reply) {
+            $day = $reply['createdAt']->format('Y-m-d');
+            $days[$day] ??= [0, 0];
+            ++$days[$day][0];
+        }
+        $resolved = $this->em->createQueryBuilder()
+            ->select('t.resolvedAt')
+            ->from(Ticket::class, 't')
+            ->where('t.deletedAt IS NULL')
+            ->andWhere('t.assignedTo = :agent')
+            ->andWhere('t.resolvedAt >= :start')
+            ->andWhere('t.resolvedAt < :end')
+            ->setParameter('agent', $agentId)
+            ->setParameter('start', $start)
+            ->setParameter('end', $end)
+            ->getQuery()
+            ->getArrayResult();
+        foreach ($resolved as $row) {
+            $day = $row['resolvedAt']->format('Y-m-d');
+            $days[$day] ??= [0, 0];
+            ++$days[$day][1];
+        }
+        ksort($days);
+        $productivity = [];
+        foreach ($days as $day => [$written, $closed]) {
+            $productivity[] = ['label' => (string) $day, 'value' => $written + $closed, 'values' => [$written, $closed]];
+        }
+
+        $breakdown = [];
+        foreach ($ratings as $rating) {
+            $breakdown[(int) $rating['rating']] = ($breakdown[(int) $rating['rating']] ?? 0) + 1;
+        }
+        ksort($breakdown);
+        $csatBreakdown = [];
+        foreach ($breakdown as $stars => $count) {
+            $csatBreakdown[] = ['label' => $stars.' stars', 'value' => $count];
+        }
+
+        $percentiles = [];
+        foreach ([50, 75, 90, 95, 99] as $p) {
+            $percentiles['p'.$p] = round(self::percentile($response, $p), 1);
+        }
+
+        return [
+            'total_tickets' => \count($tickets),
+            'resolved_tickets' => \count(array_filter($tickets, static fn (array $t): bool => null !== $t['resolvedAt'])),
+            'avg_frt' => self::averageHours($tickets, 'firstResponseAt'),
+            'avg_resolution' => self::averageHours($tickets, 'resolvedAt'),
+            'csat_score' => [] === $ratings ? null : self::averageRating($ratings),
+            'response_percentiles' => $percentiles,
+            'productivity' => $productivity,
+            'workload' => self::series(self::counts($tickets, static fn (array $t): string => $t['createdAt']->format('Y-m-d'))),
+            'csat_breakdown' => $csatBreakdown,
+        ];
+    }
+
+    /**
+     * Linear interpolation between closest ranks, as Laravel's
+     * ReportingService::percentile.
+     *
+     * @param list<float> $sorted
+     */
+    private static function percentile(array $sorted, int $p): float
+    {
+        if ([] === $sorted) {
+            return 0.0;
+        }
+        $index = $p / 100 * (\count($sorted) - 1);
+        $lower = (int) floor($index);
+        $upper = min($lower + 1, \count($sorted) - 1);
+
+        return $sorted[$lower] + ($index - $lower) * ($sorted[$upper] - $sorted[$lower]);
     }
 
     /**

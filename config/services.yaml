@@ -65,6 +65,25 @@ services:
     Escalated\Symfony\Repository\TicketStatusRepository:
         tags: ['doctrine.repository_service']
 
+    # Import sources: every service tagged escalated.import_adapter
+    # (autoconfigured for Contract\ImportAdapterInterface).
+    Escalated\Symfony\Import\ImportAdapterRegistry:
+        arguments:
+            $adapters: !tagged_iterator escalated.import_adapter
+
+    Escalated\Symfony\Import\ImportService:
+        arguments:
+            $userClass: '%escalated.user_class%'
+
+    Escalated\Symfony\Import\ImportCredentials:
+        arguments:
+            $secret: '%kernel.secret%'
+
+    # How a started import is run. The default runs it after the response
+    # (kernel.terminate); a host with Messenger or another queue aliases this
+    # to its own ImportDispatcherInterface.
+    Escalated\Symfony\Import\ImportDispatcherInterface: '@Escalated\Symfony\Import\TerminateImportDispatcher'
+
     # Custom ticket action registry: tagged services + config-defined actions
     Escalated\Symfony\Service\TicketActionRegistry:
         arguments:

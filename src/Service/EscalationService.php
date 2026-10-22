@@ -9,6 +9,7 @@ use Escalated\Symfony\Entity\Department;
 use Escalated\Symfony\Entity\EscalationRule;
 use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Event\TicketWorkflowEvent;
+use Escalated\Symfony\Import\ImportContext;
 use Escalated\Symfony\Security\UserKeyResolver;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -40,6 +41,10 @@ class EscalationService
      */
     public function evaluateRules(): int
     {
+        if (ImportContext::isImporting()) {
+            return 0;
+        }
+
         /** @var EscalationRule[] $rules */
         $rules = $this->em->getRepository(EscalationRule::class)
             ->findBy(['isActive' => true], ['sortOrder' => 'ASC', 'id' => 'ASC']);

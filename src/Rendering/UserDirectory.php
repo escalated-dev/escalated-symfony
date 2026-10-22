@@ -143,6 +143,35 @@ class UserDirectory
     }
 
     /**
+     * The id of the host user with this email (the `email` field of the user
+     * entity), or null when there is none or the user entity is not mapped.
+     */
+    public function findIdByEmail(string $email): int|string|null
+    {
+        $manager = $this->manager();
+        if (null === $manager || '' === trim($email)) {
+            return null;
+        }
+
+        try {
+            $metadata = $manager->getClassMetadata($this->userClass);
+            if (!$metadata->hasField('email')) {
+                return null;
+            }
+            $user = $manager->getRepository($this->userClass)->findOneBy(['email' => trim($email)]);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        if (null === $user) {
+            return null;
+        }
+        $values = $metadata->getIdentifierValues($user);
+
+        return UserKeyResolver::normalize(reset($values));
+    }
+
+    /**
      * @param list<string> $getters
      */
     private function read(object $user, array $getters): ?string

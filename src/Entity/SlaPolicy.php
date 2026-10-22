@@ -10,9 +10,27 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_sla_policies')]
 #[ORM\Index(columns: ['department_id', 'ticket_type'], name: 'idx_sla_target')]
+#[ORM\Index(columns: ['business_schedule_id'], name: 'idx_sla_business_schedule')]
 #[ORM\HasLifecycleCallbacks]
 class SlaPolicy
 {
+    /** The hours this policy's business-hours deadlines count in. */
+    #[ORM\ManyToOne(targetEntity: BusinessSchedule::class)]
+    #[ORM\JoinColumn(name: 'business_schedule_id', nullable: true, onDelete: 'SET NULL')]
+    private ?BusinessSchedule $businessSchedule = null;
+
+    public function getBusinessSchedule(): ?BusinessSchedule
+    {
+        return $this->businessSchedule;
+    }
+
+    public function setBusinessSchedule(?BusinessSchedule $businessSchedule): self
+    {
+        $this->businessSchedule = $businessSchedule;
+
+        return $this;
+    }
+
     #[ORM\ManyToOne(targetEntity: Department::class)]
     #[ORM\JoinColumn(name: 'department_id', nullable: true, onDelete: 'RESTRICT')]
     private ?Department $department = null;

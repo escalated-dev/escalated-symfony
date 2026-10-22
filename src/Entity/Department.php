@@ -12,9 +12,27 @@ use Escalated\Symfony\Repository\DepartmentRepository;
 
 #[ORM\Entity(repositoryClass: DepartmentRepository::class)]
 #[ORM\Table(name: 'escalated_departments')]
+#[ORM\Index(columns: ['business_schedule_id'], name: 'idx_dept_business_schedule')]
 #[ORM\HasLifecycleCallbacks]
 class Department
 {
+    /** The hours this department's business-hours deadlines count in. */
+    #[ORM\ManyToOne(targetEntity: BusinessSchedule::class)]
+    #[ORM\JoinColumn(name: 'business_schedule_id', nullable: true, onDelete: 'SET NULL')]
+    private ?BusinessSchedule $businessSchedule = null;
+
+    public function getBusinessSchedule(): ?BusinessSchedule
+    {
+        return $this->businessSchedule;
+    }
+
+    public function setBusinessSchedule(?BusinessSchedule $businessSchedule): self
+    {
+        $this->businessSchedule = $businessSchedule;
+
+        return $this;
+    }
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::INTEGER)]

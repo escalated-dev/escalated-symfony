@@ -6,6 +6,7 @@ namespace Escalated\Symfony\Controller\Admin;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Controller\UiController;
+use Escalated\Symfony\Entity\BusinessSchedule;
 use Escalated\Symfony\Entity\Department;
 use Escalated\Symfony\Entity\DepartmentAgent;
 use Escalated\Symfony\Entity\Ticket;
@@ -160,6 +161,17 @@ class DepartmentController extends UiController
         if (\array_key_exists('is_active', $payload)) {
             $department->setIsActive(filter_var($payload['is_active'], \FILTER_VALIDATE_BOOL));
         }
+        // Only when sent: the shared form has no schedule field.
+        if (\array_key_exists('business_schedule_id', $payload)) {
+            $scheduleId = $payload['business_schedule_id'];
+            $schedule = null === $scheduleId || '' === $scheduleId ? null
+                : (is_numeric($scheduleId) ? $this->em->getRepository(BusinessSchedule::class)->find((int) $scheduleId) : null);
+            if (null !== $scheduleId && '' !== $scheduleId && null === $schedule) {
+                $errors['business_schedule_id'] = 'The selected business schedule is invalid.';
+            } else {
+                $department->setBusinessSchedule($schedule);
+            }
+        }
 
         return $errors;
     }
@@ -175,6 +187,7 @@ class DepartmentController extends UiController
             'slug' => $d->getSlug(),
             'description' => $d->getDescription(),
             'is_active' => $d->isActive(),
+            'business_schedule_id' => $d->getBusinessSchedule()?->getId(),
             'created_at' => $d->getCreatedAt()->format(\DateTimeInterface::ATOM),
             'updated_at' => $d->getUpdatedAt()->format(\DateTimeInterface::ATOM),
         ];

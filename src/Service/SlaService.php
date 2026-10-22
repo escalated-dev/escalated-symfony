@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Escalated\Symfony\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Escalated\Symfony\Entity\BusinessSchedule;
 use Escalated\Symfony\Entity\SlaPolicy;
 use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Event\TicketWorkflowEvent;
@@ -87,16 +88,17 @@ class SlaService
 
         $firstResponseHours = $policy->getFirstResponseHoursFor($ticket->getPriority());
         $resolutionHours = $policy->getResolutionHoursFor($ticket->getPriority());
+        $schedule = $policy->isBusinessHoursOnly() ? $this->scheduleFor($policy, $ticket) : null;
 
         if (null !== $firstResponseHours) {
             $ticket->setFirstResponseDueAt(
-                $this->calculateDueDate($ticket->getCreatedAt(), $firstResponseHours, $policy->isBusinessHoursOnly())
+                $this->calculateDueDate($ticket->getCreatedAt(), $firstResponseHours, $policy->isBusinessHoursOnly(), $schedule)
             );
         }
 
         if (null !== $resolutionHours) {
             $ticket->setResolutionDueAt(
-                $this->calculateDueDate($ticket->getCreatedAt(), $resolutionHours, $policy->isBusinessHoursOnly())
+                $this->calculateDueDate($ticket->getCreatedAt(), $resolutionHours, $policy->isBusinessHoursOnly(), $schedule)
             );
         }
 
@@ -174,12 +176,34 @@ class SlaService
     }
 
     /**
+     * The business schedule a business-hours policy counts in for this
+     * ticket: the policy's own, else the ticket department's, else the
+     * default schedule. Inactive schedules are passed over. Null when there is
+     * none, and the configured `sla.business_hours` apply as before.
+     */
+    public function scheduleFor(SlaPolicy $policy, Ticket $ticket): ?BusinessSchedule
+    {
+        foreach ([$policy->getBusinessSchedule(), $ticket->getDepartment()?->getBusinessSchedule()] as $schedule) {
+            if (null !== $schedule && $schedule->isActive()) {
+                return $schedule;
+            }
+        }
+
+        return $this->em->getRepository(BusinessSchedule::class)
+            ->findOneBy(['isDefault' => true, 'isActive' => true], ['id' => 'ASC']);
+    }
+
+    /**
      * Calculate a due date from a starting point, adding the given hours.
      */
-    private function calculateDueDate(\DateTimeImmutable $from, float $hours, bool $businessHoursOnly): \DateTimeImmutable
+    private function calculateDueDate(\DateTimeImmutable $from, float $hours, bool $businessHoursOnly, ?BusinessSchedule $schedule = null): \DateTimeImmutable
     {
         if (!$businessHoursOnly) {
             return $from->modify(sprintf('+%d minutes', (int) ($hours * 60)));
+        }
+
+        if (null !== $schedule) {
+            return (new BusinessHoursCalculator())->addBusinessHours($from, $hours, $schedule)->setTimezone($from->getTimezone());
         }
 
         $start = $this->businessHours['start'] ?? '09:00';

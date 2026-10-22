@@ -4,9 +4,13 @@
 
 ### Upgrading
 - **Behaviour change:** `GET /admin/reports/sla-trends` and `/admin/reports/agent-ranking` now render the shared `Reports/SlaTrends` and `Reports/AgentRanking` pages for browsers and Inertia visits. A client that sends `Accept: application/json` (without `X-Inertia`) still gets the JSON it got before.
+- **Behaviour change:** creating an automation (`POST /admin/automations`) now validates like escalated-laravel: a name of at most 255 characters, at least one condition and at least one action are required, and `active` must be a boolean. An update checks the fields it sends. Invalid saves go back with the errors (Inertia) or answer 422 (JSON) instead of saving an automation that can never run. A new automation without a `position` goes last.
 
 ### Added
 - The analytics report screens: `Admin/Reports/SlaTrends`, `ResponseTimes`, `ResolutionTimes`, `AgentRanking` and `Cohorts`, at escalated-laravel's paths and route names (`escalated.admin.reports.sla-trends`, `response-times`, `resolution-times`, `agent-ranking`, `cohorts`), with the props its Admin\ReportController passes: breach trends, breach rates by department and priority, the tickets due within eight hours, first response and resolution summaries (average, median, p90, share within 4h/24h), histograms, daily trends, per-agent, per-department, per-priority and per-channel times, the composite agent ranking, and cohorts by tag, department, channel, type and priority.
+- `Admin/AuditLog/Index` at `/admin/audit-log` (`escalated.admin.audit-log`), with escalated-laravel's props: `logs` (50 a page, newest first, Laravel's paginator, each row with `user`, `action`, `auditable_type`, `auditable_id`, `old_values`, `new_values`, `ip_address`), `filters`, `users`, `actions` and `resourceTypes`, filtered by user, action, resource type and date range. It lists what `AuditLogService` records; the bundle itself does not write entries yet.
+- `Admin/Automations/Form` at `/admin/automations/create` and `/admin/automations/{id}/edit` (`escalated.admin.automations.create`, `edit`), plus the `escalated.admin.automations.destroy` name the index page calls (`delete` is kept).
+- Automations run the `set_ticket_type` action the shared form offers.
 
 ## [0.3.4] - 2026-10-22
 
@@ -161,7 +165,6 @@ All notable changes to `escalated-symfony` will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
 
 ### Security
 - Rate-limit `POST {route_prefix}/widget/api/chat/start`. It creates a ticket and chat session per request but had no limit; it now shares the guest ticket limit (`escalated.guest_rate_limit.tickets_per_minute`, default 5 per client IP per minute) with `POST /widget/api/tickets`, checked before validation, and answers 429 with `Retry-After`. Allowed embedding origins still get CORS headers on the 429.

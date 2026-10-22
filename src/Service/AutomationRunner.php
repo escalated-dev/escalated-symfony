@@ -187,6 +187,11 @@ class AutomationRunner
                         }
                         break;
 
+                    case 'set_ticket_type':
+                        $ticket->setTicketType('' === (string) $value ? null : (string) $value);
+                        $this->em->flush();
+                        break;
+
                     case 'add_note':
                         $reply = new Reply();
                         $reply->setTicket($ticket);

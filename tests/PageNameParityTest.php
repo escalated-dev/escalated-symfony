@@ -34,8 +34,6 @@ final class PageNameParityTest extends TestCase
      * and the test below fails until that happens, so the list stays exact.
      */
     private const NOT_YET_RENDERED = [
-        'Escalated/Admin/AuditLog/Index',
-        'Escalated/Admin/Automations/Form',
         'Escalated/Admin/Plugins/Index',
         'Escalated/Admin/Reports/AgentDetail',
         'Escalated/Admin/Roles/Form',

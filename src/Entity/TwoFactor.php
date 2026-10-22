@@ -7,6 +7,7 @@ namespace Escalated\Symfony\Entity;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Escalated\Symfony\Doctrine\UserIdType;
+use Symfony\Component\Serializer\Attribute\Ignore;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_two_factors')]
@@ -84,6 +85,8 @@ class TwoFactor
         return $this;
     }
 
+    /** The TOTP seed; never serialized. */
+    #[Ignore]
     public function getSecret(): ?string
     {
         return $this->secret;
@@ -96,6 +99,8 @@ class TwoFactor
         return $this;
     }
 
+    /** Never serialized. */
+    #[Ignore]
     public function getRecoveryCodes(): ?array
     {
         return $this->recoveryCodes;

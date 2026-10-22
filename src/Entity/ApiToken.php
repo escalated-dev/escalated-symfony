@@ -6,6 +6,7 @@ namespace Escalated\Symfony\Entity;
 
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Ignore;
 
 /**
  * ApiToken — a hashed, per-user bearer credential for programmatic access to
@@ -123,6 +124,8 @@ class ApiToken
         return $this;
     }
 
+    /** The token hash, only for lookups; never serialized. */
+    #[Ignore]
     public function getToken(): string
     {
         return $this->token;

@@ -231,9 +231,14 @@ class WebhookController extends AbstractController
             // form is stored as the event it stands for.
             $webhook->setEvents(EventNames::canonicalList($payload['events']));
         }
-        if (\array_key_exists('secret', $payload)) {
-            $secret = null === $payload['secret'] ? null : (string) $payload['secret'];
-            $webhook->setSecret('' === $secret ? null : $secret);
+        // The form never receives the stored secret, so a blank or missing
+        // one means "leave it as it is"; `clear_secret` removes it. On a new
+        // webhook there is nothing stored, so blank stays unset.
+        $secret = \is_scalar($payload['secret'] ?? null) ? (string) $payload['secret'] : '';
+        if (filter_var($payload['clear_secret'] ?? false, \FILTER_VALIDATE_BOOLEAN)) {
+            $webhook->setSecret(null);
+        } elseif ('' !== $secret) {
+            $webhook->setSecret($secret);
         }
         if (\array_key_exists('active', $payload)) {
             $webhook->setActive((bool) $payload['active']);

@@ -6,6 +6,9 @@
 - Live chat transfer (escalated-laravel `ChatController::transfer`): `POST /agent/chat/{session}/transfer`, named `escalated.admin.chat.transfer` as in Laravel, so the shared `Agent/TicketShow` transfer menu (which passes the ticket's `chat_session_id`) now reaches it. Agents can transfer, like the rest of the chat console. The body is `{agent_id, department_id}` (either or both); the shared `ChatActionBar`'s `{type: "agent"|"department", id}` is accepted too. With an agent, the session and ticket are reassigned to them. With only a department, the ticket moves there and the chat goes back to the queue (unassigned, waiting) and routing re-runs for the new department. A missing target, an unknown department, an ended chat, or an agent who cannot access the ticket (under restricted visibility) is a 422; an unknown session is a 404. New `ChatSessionService::transferChat()`.
 - `chat.transferred` is sent to outbound webhooks, runs workflows and is offered in the webhook form and workflow builder. Its payload adds `from_agent_id`, `to_agent_id` and `to_department_id` to the chat event fields (no visitor chat token). The realtime ticket channel gets `chat.transferred` too.
 
+### Fixed
+- End Chat on the shared `Agent/TicketShow` page now works. The page POSTs `{}` to `route('escalated.admin.chat.end', ticket.chat_session_id)`, a chat SESSION id, but the only end endpoint (`escalated.agent.chat.end`, `POST /agent/chat/sessions/{id}/end`) looks the chat up by TICKET id and the Laravel route name did not exist. New `POST /agent/chat/{session}/end`, named `escalated.admin.chat.end` as in escalated-laravel, ends the chat by session id for agents: 200 `{message: "Chat ended."}`, 422 `{message: "Chat is already ended."}` for an ended or abandoned chat (as Laravel), 404 for an unknown session. The ticket-id route, its name and its responses are unchanged.
+
 ## [0.3.5] - 2026-10-22
 
 ### Upgrading

@@ -128,6 +128,74 @@ class ChatSessionService
     }
 
     /**
+     * Hand a chat to another agent and/or department, as escalated-laravel's
+     * ChatSessionService::transferChat. With an agent, the session and its
+     * ticket are reassigned to that agent. With a department, the ticket moves
+     * there; without an agent too, the chat goes back to the queue
+     * (unassigned, waiting) and routing picks an agent in its new department.
+     * Emits `chat.transferred` with from_agent_id, to_agent_id and
+     * to_department_id.
+     *
+     * @throws \InvalidArgumentException when neither target is given, the
+     *                                   chat is over, or the agent cannot
+     *                                   access the chat's ticket
+     */
+    public function transferChat(ChatSession $session, int|string|null $toAgentId = null, ?\Escalated\Symfony\Entity\Department $toDepartment = null): ChatSession
+    {
+        if (null === $toAgentId && null === $toDepartment) {
+            throw new \InvalidArgumentException('Provide an agent_id or department_id.');
+        }
+        if ($this->isOver($session)) {
+            throw new \InvalidArgumentException('Chat is already ended.');
+        }
+
+        $ticket = $session->getTicket();
+        $fromAgentId = $session->getAgentId();
+
+        if (null !== $toDepartment) {
+            $ticket->setDepartment($toDepartment);
+        }
+        if (null !== $toAgentId && null !== $this->access && !$this->access->canAssign($ticket, $toAgentId)) {
+            if (null !== $toDepartment) {
+                $this->em->refresh($ticket);
+            }
+            throw new \InvalidArgumentException('Agent cannot access this ticket.');
+        }
+
+        if (null !== $toAgentId) {
+            $session->setAgentId($toAgentId);
+            $ticket->setAssignedTo($toAgentId);
+        } else {
+            $session->setAgentId(null);
+            $session->setStatus(ChatSession::STATUS_WAITING);
+            $ticket->setAssignedTo(null);
+        }
+        $this->em->flush();
+
+        $transfer = [
+            'from_agent_id' => $fromAgentId,
+            'to_agent_id' => $toAgentId,
+            'to_department_id' => $toDepartment?->getId(),
+        ];
+        $this->announce(EventNames::CHAT_TRANSFERRED, $session, $transfer);
+
+        ($this->delivery ?? $this->broadcaster)->broadcast(new BroadcastableEvent(
+            'chat.transferred',
+            sprintf('ticket.%d', $ticket->getId()),
+            ['session_id' => $session->getId(), ...$transfer]
+        ));
+
+        if (null === $toAgentId) {
+            $agentId = $this->routingService->findAvailableAgent($toDepartment, $ticket);
+            if (null !== $agentId) {
+                $this->assignAgent($session, $agentId);
+            }
+        }
+
+        return $session;
+    }
+
+    /**
      * Send a chat message (creates a reply on the ticket).
      */
     public function sendMessage(ChatSession $session, string $body, int|string|null $authorId = null, ?string $authorClass = null): void
@@ -343,7 +411,7 @@ class ChatSessionService
     /**
      * Announces a chat event to webhooks and workflows through the dispatch
      * tickets use, under its canonical name (chat.started, chat.assigned,
-     * chat.message, chat.ended). The payload carries the session's id, never
+     * chat.transferred, chat.message, chat.ended). The payload carries the session's id, never
      * the visitor's chat token. Realtime broadcasts keep their own names.
      *
      * @param array<string, mixed> $context

@@ -153,11 +153,12 @@ final class WebhookSubscriber implements EventSubscriberInterface
 
             case EventNames::CHAT_STARTED:
             case EventNames::CHAT_ASSIGNED:
+            case EventNames::CHAT_TRANSFERRED:
             case EventNames::CHAT_MESSAGE:
             case EventNames::CHAT_ENDED:
                 // The session's id, never the visitor's chat token.
                 $payload = $base;
-                foreach (['chat_session_id', 'agent_id', 'reply_id', 'is_agent', 'ended_by', 'reason'] as $key) {
+                foreach (['chat_session_id', 'agent_id', 'from_agent_id', 'to_agent_id', 'to_department_id', 'reply_id', 'is_agent', 'ended_by', 'reason'] as $key) {
                     if (\array_key_exists($key, $context)) {
                         $payload[$key] = $context[$key];
                     }

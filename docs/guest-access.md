@@ -89,9 +89,16 @@ proof is consumed either way. A reference alone never opens a ticket.
 
 ## Live chat
 
-`POST /chat/start` takes a `chat` proof. The chat is then addressed by the `id`
-it returns, as before. A ticket proof cannot start a chat, and a chat proof
-cannot open a ticket.
+`POST /widget/api/chat/start` needs a `chat` code. Its `id` (also
+`data.guest_token`) is a random token that works as the chat's grant: only its
+SHA-256 is stored, on the chat session, and it expires
+`escalated.guest_access.ttl_minutes` after the chat starts (`expires_at`).
+After that, and for any unknown token, every chat route answers 404 and the
+visitor starts a new chat. The chat's ticket gets no guest token, so a chat
+token cannot open ticket routes. An ended chat answers 422 to messages, typing
+and a second end, and `rate` answers 422 until the chat has ended; the
+transcript and rating stay available until the token expires. A ticket proof cannot start a chat, and a chat
+proof cannot open a ticket.
 
 ## Browser guest portal
 
@@ -127,5 +134,3 @@ verified grant everywhere; guests then get a new link through lookup.
 
 - Attachments on guest tickets and replies: the bundle has no upload store.
 - There is no mobile guest API.
-- Live chat keeps its server-issued session token rather than an expiring chat
-  grant.

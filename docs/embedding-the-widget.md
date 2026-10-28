@@ -95,7 +95,9 @@ The bundled widget calls, under `{route_prefix}/widget/api`: `GET /config`,
 `GET /articles?q=`, `GET /articles/{slug}`, `POST /tickets`,
 `GET /chat/availability`, `POST /chat/start`, and `GET`/`POST
 /chat/{id}/messages`, `POST /chat/{id}/typing`, `/end` and `/rate`, where
-`{id}` is the random guest token `/chat/start` returns as `id`, plus
+`{id}` is the random chat token `/chat/start` returns as `id` (with
+`expires_at`; only its SHA-256 is stored, and an unknown or expired token is a
+404), plus
 `POST /verification` and `POST /lookup`. `/config` returns
 `guest_verification_required: true` and `status_lookup_enabled: true`: tickets,
 chats and status lookups need an emailed code. See

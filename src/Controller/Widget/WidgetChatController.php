@@ -126,11 +126,15 @@ class WidgetChatController extends AbstractController
 
         $ticket = $result['ticket'];
         $session = $result['session'];
+        $token = $result['visitor_token'];
+        $expiresAt = $session->getVisitorTokenExpiresAt()?->format(\DateTimeInterface::ATOM);
 
         return $this->json([
             // The shared widget addresses the chat by `id`: the random guest
             // token, never the sequential session id.
-            'id' => $ticket->getGuestToken(),
+            'id' => $token,
+            // The token stops working after this; the visitor starts a new chat.
+            'expires_at' => $expiresAt,
             'reference' => $ticket->getReference(),
             'status' => $session->getStatus(),
             'messages' => $this->messageList($session),
@@ -138,7 +142,8 @@ class WidgetChatController extends AbstractController
             'data' => [
                 'session_id' => $session->getId(),
                 'ticket_reference' => $ticket->getReference(),
-                'guest_token' => $ticket->getGuestToken(),
+                'guest_token' => $token,
+                'expires_at' => $expiresAt,
                 'status' => $session->getStatus(),
             ],
         ], Response::HTTP_CREATED);
@@ -248,6 +253,9 @@ class WidgetChatController extends AbstractController
         $session = $this->sessionByToken($id);
         if (null === $session) {
             return WidgetRequest::error('Chat not found.', Response::HTTP_NOT_FOUND);
+        }
+        if (!$this->chatSessionService->isOver($session)) {
+            return WidgetRequest::error('Chat must be ended before rating.', Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $data = WidgetRequest::body($request);
@@ -382,19 +390,16 @@ class WidgetChatController extends AbstractController
         return \is_scalar($value) ? (string) $value : null;
     }
 
+    /** Unknown and expired tokens are both null (404), as in escalated-laravel. */
     private function sessionByToken(string $token): ?ChatSession
     {
-        $ticket = $this->em->getRepository(Ticket::class)
-            ->findOneBy(['guestToken' => strtolower($token), 'channel' => Ticket::CHANNEL_CHAT]);
-
-        return null === $ticket ? null : $this->chatSessionService->findByTicket((int) $ticket->getId());
+        return $this->chatSessionService->findByVisitorToken($token);
     }
 
     private function findSessionByReferenceAndToken(string $reference, string $token): ?ChatSession
     {
-        $ticket = $this->em->getRepository(Ticket::class)
-            ->findOneBy(['reference' => $reference, 'guestToken' => $token, 'channel' => Ticket::CHANNEL_CHAT]);
+        $session = $this->sessionByToken($token);
 
-        return null === $ticket ? null : $this->chatSessionService->findByTicket((int) $ticket->getId());
+        return null !== $session && $session->getTicket()->getReference() === $reference ? $session : null;
     }
 }

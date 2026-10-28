@@ -24,7 +24,55 @@ class ChatSessionService
         private readonly ?\Escalated\Symfony\Security\TicketAccess $access = null,
         private readonly ?\Escalated\Symfony\Broadcasting\TicketBroadcastDelivery $delivery = null,
         private readonly ?EventDispatcherInterface $events = null,
+        private readonly ?\Escalated\Symfony\Security\GuestAccess $guestAccess = null,
     ) {
+    }
+
+    /** The SHA-256 a chat token is stored as. */
+    public static function hashVisitorToken(string $token): string
+    {
+        return hash('sha256', strtolower($token));
+    }
+
+    /**
+     * The chat a visitor's unexpired token unlocks, or null (answered with 404).
+     * As in escalated-laravel, a chat token is an expiring grant: only its
+     * SHA-256 is kept, and it stops working the guest access lifetime after the
+     * chat starts. A chat started before that holds its plain token as the
+     * ticket's guest_token: the first request with it moves the token's hash to
+     * the session with a full lifetime and clears the ticket's copy, so chats in
+     * progress during an upgrade keep working.
+     */
+    public function findByVisitorToken(string $token): ?ChatSession
+    {
+        if ('' === $token || \strlen($token) > 255) {
+            return null;
+        }
+        $session = $this->em->getRepository(ChatSession::class)->findOneBy(['visitorTokenHash' => self::hashVisitorToken($token)]);
+        if (null === $session) {
+            $ticket = $this->em->getRepository(Ticket::class)
+                ->findOneBy(['guestToken' => strtolower($token), 'channel' => Ticket::CHANNEL_CHAT]);
+            $session = null === $ticket ? null : $this->findByTicket((int) $ticket->getId());
+            if (null === $ticket || null === $session || null !== $session->getVisitorTokenHash()) {
+                return null;
+            }
+            $session->setVisitorTokenHash(self::hashVisitorToken($token))
+                ->setVisitorTokenExpiresAt($this->visitorTokenExpiry());
+            $ticket->setGuestToken(null);
+            $this->em->flush();
+        }
+        $expires = $session->getVisitorTokenExpiresAt();
+
+        return null !== $expires && $expires > new \DateTimeImmutable() ? $session : null;
+    }
+
+    /** Chat tokens live as long as guest grants (escalated.guest_access.ttl_minutes). */
+    private function visitorTokenExpiry(): \DateTimeImmutable
+    {
+        $minutes = $this->guestAccess?->ttlMinutes() ?? 1440;
+
+        return (new \DateTimeImmutable('@'.(time() + $minutes * 60)))
+            ->setTimezone(new \DateTimeZone(date_default_timezone_get()));
     }
 
     /**
@@ -45,7 +93,6 @@ class ChatSessionService
         $ticket->setStatus(Ticket::STATUS_LIVE);
         $ticket->setGuestName($data['guest_name'] ?? null);
         $ticket->setGuestEmail($data['guest_email'] ?? null);
-        $ticket->setGuestToken(Uuid::v4()->toRfc4122());
         if (($data['department'] ?? null) instanceof \Escalated\Symfony\Entity\Department) {
             $ticket->setDepartment($data['department']);
         }
@@ -62,8 +109,13 @@ class ChatSessionService
         $ticket->setReference($ticket->generateReference());
         $this->em->flush();
 
+        // The visitor's only key to this chat: random, expiring, stored hashed.
+        // The ticket gets no guest token, so it cannot open ticket routes.
+        $visitorToken = Uuid::v4()->toRfc4122();
         $session = new ChatSession();
         $session->setTicket($ticket);
+        $session->setVisitorTokenHash(self::hashVisitorToken($visitorToken));
+        $session->setVisitorTokenExpiresAt($this->visitorTokenExpiry());
         $session->setVisitorIp($data['visitor_ip'] ?? null);
         $session->setVisitorUserAgent($data['visitor_user_agent'] ?? null);
         $session->setVisitorPageUrl(isset($data['page_url']) ? mb_substr((string) $data['page_url'], 0, 255) : null);
@@ -94,6 +146,7 @@ class ChatSessionService
         return [
             'ticket' => $ticket,
             'session' => $session,
+            'visitor_token' => $visitorToken,
         ];
     }
 

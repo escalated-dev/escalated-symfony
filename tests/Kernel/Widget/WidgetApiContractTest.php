@@ -322,6 +322,111 @@ final class WidgetApiContractTest extends EscalatedWebTestCase
         self::assertSame(404, $this->code($client));
     }
 
+    public function testTheChatTokenExpiresWithTheGuestAccessLifetimeAndOnlyItsHashIsStored(): void
+    {
+        $client = $this->client();
+        $before = time();
+        $session = $this->api($client, 'POST', '/chat/start', ['name' => 'Ada', 'email' => 'ada@example.com']);
+        self::assertSame(201, $this->code($client));
+
+        $ttl = static::getContainer()->get(\Escalated\Symfony\Security\GuestAccess::class)->ttlMinutes() * 60;
+        $expires = (new \DateTimeImmutable($session['expires_at']))->getTimestamp();
+        self::assertGreaterThanOrEqual($before + $ttl, $expires);
+        self::assertLessThanOrEqual(time() + $ttl, $expires);
+        self::assertSame($session['expires_at'], $session['data']['expires_at']);
+
+        static::entityManager()->clear();
+        $ticket = static::entityManager()->getRepository(Ticket::class)->findOneBy(['reference' => $session['reference']]);
+        self::assertNotNull($ticket);
+        self::assertNull($ticket->getGuestToken());
+        $chat = static::getContainer()->get(ChatSessionService::class)->findByTicket((int) $ticket->getId());
+        self::assertInstanceOf(ChatSession::class, $chat);
+        self::assertSame(hash('sha256', $session['id']), $chat->getVisitorTokenHash());
+        self::assertSame($expires, $chat->getVisitorTokenExpiresAt()?->getTimestamp());
+    }
+
+    public function testEveryChatRouteAnswers404OnceTheTokenHasExpired(): void
+    {
+        $client = $this->client();
+        $session = $this->api($client, 'POST', '/chat/start', ['name' => 'Ada', 'email' => 'ada@example.com']);
+        $id = $session['id'];
+        $this->expireChat($session['reference'], new \DateTimeImmutable('-1 minute'));
+
+        $this->api($client, 'GET', '/chat/'.$id.'/messages');
+        self::assertSame(404, $this->code($client));
+        foreach (['messages', 'typing', 'end', 'rate'] as $action) {
+            $this->api($client, 'POST', '/chat/'.$id.'/'.$action, ['body' => 'x', 'rating' => 5]);
+            self::assertSame(404, $this->code($client), $action);
+        }
+        $client->request('POST', self::API.'/chat/sessions/'.$session['reference'].'/messages', server: [
+            'REMOTE_ADDR' => $this->ip,
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_X_GUEST_TOKEN' => $id,
+        ], content: (string) json_encode(['body' => 'Still here']));
+        self::assertSame(404, $this->code($client));
+    }
+
+    public function testAChatStartedBeforeTokensExpiredKeepsWorkingWithAFullLifetime(): void
+    {
+        $client = $this->client();
+        $session = $this->api($client, 'POST', '/chat/start', ['name' => 'Ada', 'email' => 'ada@example.com']);
+        $id = $session['id'];
+        // The shape such a chat has after the migration: the plain token on
+        // the ticket, nothing on the session.
+        $em = static::entityManager();
+        $em->clear();
+        $ticket = $em->getRepository(Ticket::class)->findOneBy(['reference' => $session['reference']]);
+        self::assertNotNull($ticket);
+        $ticket->setGuestToken($id);
+        $chat = static::getContainer()->get(ChatSessionService::class)->findByTicket((int) $ticket->getId());
+        self::assertInstanceOf(ChatSession::class, $chat);
+        $chat->setVisitorTokenHash(null)->setVisitorTokenExpiresAt(null);
+        $em->flush();
+        $before = time();
+
+        $this->api($client, 'GET', '/chat/'.$id.'/messages');
+        self::assertSame(200, $this->code($client));
+        $this->api($client, 'POST', '/chat/'.$id.'/messages', ['body' => 'Still here']);
+        self::assertSame(200, $this->code($client));
+
+        $em->clear();
+        $ticket = $em->getRepository(Ticket::class)->findOneBy(['reference' => $session['reference']]);
+        self::assertNotNull($ticket);
+        self::assertNull($ticket->getGuestToken());
+        $chat = static::getContainer()->get(ChatSessionService::class)->findByTicket((int) $ticket->getId());
+        self::assertSame(hash('sha256', $id), $chat?->getVisitorTokenHash());
+        $ttl = static::getContainer()->get(\Escalated\Symfony\Security\GuestAccess::class)->ttlMinutes() * 60;
+        self::assertGreaterThanOrEqual($before + $ttl, (int) $chat?->getVisitorTokenExpiresAt()?->getTimestamp());
+    }
+
+    public function testAnEndedChatIsClosedToTypingAndASecondEndButStaysReadable(): void
+    {
+        $client = $this->client();
+        $id = $this->api($client, 'POST', '/chat/start', ['name' => 'Ada', 'email' => 'ada@example.com'])['id'];
+
+        $this->api($client, 'POST', '/chat/'.$id.'/end');
+        self::assertSame(200, $this->code($client));
+        $this->api($client, 'POST', '/chat/'.$id.'/typing');
+        self::assertSame(422, $this->code($client));
+        $this->api($client, 'POST', '/chat/'.$id.'/end');
+        self::assertSame(422, $this->code($client));
+        self::assertTrue($this->api($client, 'GET', '/chat/'.$id.'/messages')['ended']);
+        $this->api($client, 'POST', '/chat/'.$id.'/rate', ['rating' => 4]);
+        self::assertSame(200, $this->code($client));
+    }
+
+    private function expireChat(string $reference, \DateTimeImmutable $at): void
+    {
+        $em = static::entityManager();
+        $em->clear();
+        $ticket = $em->getRepository(Ticket::class)->findOneBy(['reference' => $reference]);
+        self::assertNotNull($ticket);
+        $chat = static::getContainer()->get(ChatSessionService::class)->findByTicket((int) $ticket->getId());
+        self::assertInstanceOf(ChatSession::class, $chat);
+        $chat->setVisitorTokenExpiresAt($at);
+        $em->flush();
+    }
+
     public function testRatingNeedsAnEndedChatAndAValidScore(): void
     {
         $client = $this->client();

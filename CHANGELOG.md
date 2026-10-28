@@ -2,6 +2,32 @@
 
 ## [Unreleased]
 
+### Upgrading
+- Run the migrations (`Version20261028000001`): it adds nullable
+  `visitor_token_hash` and `visitor_token_expires_at` to the chat sessions
+  table. Chats already in progress keep working: the next widget request with
+  their token (still the chat ticket's `guest_token`) moves the token's hash to
+  the session with a full lifetime and clears the ticket's copy.
+- Widget chat tokens now expire `escalated.guest_access.ttl_minutes` after the
+  chat starts (default 1440, clamped to 5 minutes .. 7 days), as in
+  escalated-laravel. After that every `/widget/api/chat/{id}/...` route, and
+  `/chat/sessions/{reference}/...` with that `X-Guest-Token`, answers 404 and
+  the visitor starts a new chat.
+- `ChatSessionService::startSession()` returns the token once as
+  `visitor_token`; new chat tickets no longer carry it as their `guest_token`.
+
+### Security
+- **Widget chat tokens are stored hashed and expire.** The token returned by
+  `POST /widget/api/chat/start` (`id`, `data.guest_token`) was the chat
+  ticket's plain `guest_token`, never expired, and (with legacy tokens on)
+  also opened the ticket's guest routes. It is now kept only as a SHA-256 on
+  the chat session, the start answer carries `expires_at`, and an unknown or
+  expired token is a 404 on every chat route.
+
+### Changed
+- `rate` on a chat that has not ended answers 422 before the rating is
+  validated, as in escalated-laravel.
+
 ## [0.3.6] - 2026-10-22
 
 ### Added

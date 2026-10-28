@@ -12,6 +12,7 @@ use Escalated\Symfony\Doctrine\UserIdType;
 #[ORM\Table(name: 'escalated_chat_sessions')]
 #[ORM\Index(columns: ['status'], name: 'idx_chat_session_status')]
 #[ORM\Index(columns: ['agent_id'], name: 'idx_chat_session_agent')]
+#[ORM\UniqueConstraint(name: 'uniq_chat_session_visitor_token', columns: ['visitor_token_hash'])]
 #[ORM\HasLifecycleCallbacks]
 class ChatSession
 {
@@ -37,6 +38,14 @@ class ChatSession
 
     #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
     private ?string $visitorUserAgent = null;
+
+    /** SHA-256 of the visitor's chat token; null only for chats started before hashing. */
+    #[ORM\Column(type: Types::STRING, length: 64, nullable: true)]
+    private ?string $visitorTokenHash = null;
+
+    /** When the visitor's chat token stops working. */
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $visitorTokenExpiresAt = null;
 
     #[ORM\Column(type: Types::STRING, length: 45, nullable: true)]
     private ?string $visitorIp = null;
@@ -115,6 +124,30 @@ class ChatSession
     public function setAgentId(int|string|null $agentId): self
     {
         $this->agentId = $agentId;
+
+        return $this;
+    }
+
+    public function getVisitorTokenHash(): ?string
+    {
+        return $this->visitorTokenHash;
+    }
+
+    public function setVisitorTokenHash(?string $visitorTokenHash): self
+    {
+        $this->visitorTokenHash = $visitorTokenHash;
+
+        return $this;
+    }
+
+    public function getVisitorTokenExpiresAt(): ?\DateTimeImmutable
+    {
+        return $this->visitorTokenExpiresAt;
+    }
+
+    public function setVisitorTokenExpiresAt(?\DateTimeImmutable $visitorTokenExpiresAt): self
+    {
+        $this->visitorTokenExpiresAt = $visitorTokenExpiresAt;
 
         return $this;
     }

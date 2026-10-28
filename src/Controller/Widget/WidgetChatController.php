@@ -128,19 +128,25 @@ class WidgetChatController extends AbstractController
         $session = $result['session'];
         $token = $result['visitor_token'];
         $expiresAt = $session->getVisitorTokenExpiresAt()?->format(\DateTimeInterface::ATOM);
+        $agent = $this->agent($session);
 
+        // As in escalated-laravel: `id` and `session_id` are both the chat
+        // token; the numeric session id stays internal.
         return $this->json([
             // The shared widget addresses the chat by `id`: the random guest
             // token, never the sequential session id.
             'id' => $token,
+            'session_id' => $token,
             // The token stops working after this; the visitor starts a new chat.
             'expires_at' => $expiresAt,
+            'ticket_reference' => $ticket->getReference(),
             'reference' => $ticket->getReference(),
             'status' => $session->getStatus(),
+            'agent_name' => $agent['name'] ?? null,
             'messages' => $this->messageList($session),
-            'agent' => $this->agent($session),
+            'agent' => $agent,
             'data' => [
-                'session_id' => $session->getId(),
+                'session_id' => $token,
                 'ticket_reference' => $ticket->getReference(),
                 'guest_token' => $token,
                 'expires_at' => $expiresAt,

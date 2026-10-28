@@ -308,13 +308,35 @@ final class WidgetApiContractTest extends EscalatedWebTestCase
         self::assertSame('Great', $ticket->getChatMetadata()['rating_comment']);
     }
 
+    public function testChatStartAnswersWithTheSameFieldsAsLaravel(): void
+    {
+        $client = $this->client();
+        $session = $this->api($client, 'POST', '/chat/start', ['name' => 'Ada', 'email' => 'ada@example.com']);
+
+        self::assertSame(201, $this->code($client));
+        // `id` and `session_id` are both the chat token, as in escalated-laravel.
+        self::assertSame($session['id'], $session['session_id']);
+        self::assertGreaterThan(time(), strtotime((string) $session['expires_at']));
+        $ticket = static::entityManager()->getRepository(Ticket::class)->findOneBy(['reference' => $session['ticket_reference']]);
+        self::assertNotNull($ticket);
+        self::assertSame('waiting', $session['status']);
+        self::assertArrayHasKey('agent_name', $session);
+        self::assertNull($session['agent_name']);
+        // The numeric session id the token replaced is not exposed anywhere.
+        self::assertSame($session['id'], $session['data']['session_id']);
+    }
+
     public function testChatIdIsTheSecret(): void
     {
         $client = $this->client();
         $session = $this->api($client, 'POST', '/chat/start', ['name' => 'Ada', 'email' => 'ada@example.com']);
 
         // The numeric session id and the ticket reference are not enough.
-        $this->api($client, 'GET', '/chat/'.$session['data']['session_id'].'/messages');
+        $ticket = static::entityManager()->getRepository(Ticket::class)->findOneBy(['reference' => $session['ticket_reference']]);
+        self::assertNotNull($ticket);
+        $chat = static::getContainer()->get(ChatSessionService::class)->findByTicket((int) $ticket->getId());
+        self::assertInstanceOf(ChatSession::class, $chat);
+        $this->api($client, 'GET', '/chat/'.$chat->getId().'/messages');
         self::assertSame(404, $this->code($client));
         $this->api($client, 'POST', '/chat/'.$session['data']['ticket_reference'].'/messages', ['body' => 'hi']);
         self::assertSame(404, $this->code($client));

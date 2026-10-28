@@ -125,7 +125,7 @@ Load the widget on another site with `<script src="https://help.example.com/supp
 
 ### Verified guest access
 
-Widget tickets, live chats and status lookups need an eight-digit code emailed to the guest (`POST {route_prefix}/widget/api/verification`), and tickets are read with expiring grants. Configure `symfony/mailer` with a From address, and run the migrations. See [docs/guest-access.md](docs/guest-access.md).
+Widget tickets, live chats and status lookups need an eight-digit code emailed to the guest (`POST {route_prefix}/widget/api/verification`), and tickets are read with expiring grants. The same codes and grants serve the mobile guest API under `{route_prefix}/api/v1/mobile/guest`. Configure `symfony/mailer` with a From address, and run the migrations. See [docs/guest-access.md](docs/guest-access.md).
 
 ### Guest widget rate limits
 
@@ -137,6 +137,7 @@ escalated:
         enabled: true            # false only if you already throttle upstream
         tickets_per_minute: 5
         replies_per_minute: 10
+        requests_per_minute: 60  # every mobile guest API route
         cache_pool: cache.app    # any PSR-6 pool service id; use a shared (Redis) pool on multiple servers
 ```
 

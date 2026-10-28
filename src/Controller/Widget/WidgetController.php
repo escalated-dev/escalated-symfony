@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Escalated\Symfony\Controller\Widget;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Escalated\Symfony\Controller\GuestVerificationEndpoints;
 use Escalated\Symfony\Entity\Article;
 use Escalated\Symfony\Entity\Department;
 use Escalated\Symfony\Entity\GuestVerification;
 use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Security\GuestAccess;
-use Escalated\Symfony\Security\GuestCodeBudgetException;
 use Escalated\Symfony\Security\GuestEmailVerification;
 use Escalated\Symfony\Security\GuestVerificationException;
 use Escalated\Symfony\Service\GuestRateLimiter;
@@ -37,6 +37,7 @@ class WidgetController extends AbstractController
         private readonly KnowledgeBaseService $knowledgeBase,
         private readonly GuestEmailVerification $verification,
         private readonly GuestAccess $guestAccess,
+        private readonly GuestVerificationEndpoints $endpoints,
     ) {
     }
 
@@ -60,23 +61,7 @@ class WidgetController extends AbstractController
             return WidgetRequest::error('Guest tickets are disabled.', Response::HTTP_FORBIDDEN);
         }
 
-        try {
-            $id = $this->verification->challenge(
-                \is_string($data['email'] ?? null) ? $data['email'] : '',
-                $purpose,
-                $request->getClientIp() ?? 'unknown',
-            );
-        } catch (GuestVerificationException $e) {
-            return self::invalid($e);
-        } catch (GuestCodeBudgetException $e) {
-            return self::noStore(WidgetRequest::error($e->getMessage(), Response::HTTP_TOO_MANY_REQUESTS, ['Retry-After' => (string) $e->retryAfter]));
-        }
-
-        return self::noStore($this->json([
-            'verification_id' => $id,
-            'expires_in' => GuestEmailVerification::CODE_TTL_SECONDS,
-            'message' => 'If that address can receive email, a verification code is on its way.',
-        ], Response::HTTP_ACCEPTED));
+        return $this->endpoints->verification($request, $data, 'If that address can receive email, a verification code is on its way.');
     }
 
     /**
@@ -96,46 +81,7 @@ class WidgetController extends AbstractController
             return WidgetRequest::error('Guest tickets are disabled.', Response::HTTP_FORBIDDEN);
         }
 
-        $data = WidgetRequest::body($request);
-        $email = WidgetRequest::guestEmail($data);
-        $reference = \is_scalar($data['reference'] ?? null) ? trim((string) $data['reference']) : '';
-        if (null === $email || '' === $reference || mb_strlen($reference) > 191) {
-            return self::invalid(new GuestVerificationException(null === $email ? 'email' : 'reference', 'Email and reference are required.'));
-        }
-        if (null !== $missing = self::missingProof($data)) {
-            return $missing;
-        }
-
-        try {
-            $matches = $this->verification->consume(
-                $data['verification_id'],
-                $data['verification_code'],
-                $email,
-                GuestVerification::PURPOSE_LOOKUP,
-                function () use ($email, $reference): array {
-                    $normalized = GuestEmailVerification::normalize($email);
-                    $found = [];
-                    foreach ($this->em->getRepository(Ticket::class)->findBy(['reference' => $reference], ['id' => 'ASC'], 20) as $ticket) {
-                        if (null === $ticket->getGuestEmail() || GuestEmailVerification::normalize($ticket->getGuestEmail()) !== $normalized) {
-                            continue;
-                        }
-                        $grant = $this->guestAccess->issue($ticket, $email);
-                        $found[] = [
-                            'reference' => $ticket->getReference(),
-                            'subject' => $ticket->getSubject(),
-                            'guest_access_token' => $grant['token'],
-                            'expires_at' => $grant['expires_at']->format(\DateTimeInterface::ATOM),
-                        ];
-                    }
-
-                    return $found;
-                },
-            );
-        } catch (GuestVerificationException $e) {
-            return self::invalid($e);
-        }
-
-        return self::noStore($this->json(['data' => $matches]));
+        return $this->endpoints->lookup(WidgetRequest::body($request));
     }
 
     #[Route('/config', name: 'config', methods: ['GET'])]

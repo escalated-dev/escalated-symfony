@@ -43,6 +43,7 @@ class TicketService
      *     guest_name?: string,
      *     guest_email?: string,
      *     metadata?: array,
+     *     channel?: string,
      * } $data
      */
     public function create(array $data, ?Ticket $accountSource = null): Ticket
@@ -62,6 +63,9 @@ class TicketService
         $ticket->setPriority($data['priority'] ?? Ticket::PRIORITY_MEDIUM);
         $ticket->setTicketType($data['ticket_type'] ?? null);
         $ticket->setMetadata($data['metadata'] ?? null);
+        if (isset($data['channel'])) {
+            $ticket->setChannel($data['channel']);
+        }
 
         if (isset($data['requester_id'])) {
             $ticket->setRequesterId($data['requester_id']);

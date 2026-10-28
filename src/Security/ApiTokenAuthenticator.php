@@ -26,6 +26,8 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
  *  - Only acts on routes whose name starts with the api prefix.
  *  - Public API routes (the knowledge base) -> no bearer is required; the
  *                         KnowledgeBaseGuard decides.
+ *  - Mobile guest routes -> left alone: a guest proves an emailed code and
+ *                         holds a grant in the path, never a principal.
  *  - No bearer header  -> 401 "Unauthenticated." unless the firewall already
  *                         authenticated a user (a signed-in session).
  *  - Unknown / revoked -> 401 "Invalid token."
@@ -39,6 +41,8 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
  */
 class ApiTokenAuthenticator
 {
+    public const GUEST_ROUTE_PREFIX = 'escalated.api.mobile.guest.';
+
     /**
      * @param list<string> $publicRoutePrefixes api routes that need no credentials
      */
@@ -59,7 +63,7 @@ class ApiTokenAuthenticator
 
         $request = $event->getRequest();
         $routeName = (string) $request->attributes->get('_route', '');
-        if (!str_starts_with($routeName, $this->apiRoutePrefix)) {
+        if (!str_starts_with($routeName, $this->apiRoutePrefix) || str_starts_with($routeName, self::GUEST_ROUTE_PREFIX)) {
             return;
         }
 

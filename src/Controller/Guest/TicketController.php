@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Escalated\Symfony\Controller\Guest;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Escalated\Symfony\Controller\GuestVerificationEndpoints;
 use Escalated\Symfony\Controller\TicketDeskController;
 use Escalated\Symfony\Controller\UiController;
 use Escalated\Symfony\Controller\Widget\WidgetController;
@@ -14,7 +15,6 @@ use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Rendering\TicketPresenter;
 use Escalated\Symfony\Rendering\UiRendererInterface;
 use Escalated\Symfony\Security\GuestAccess;
-use Escalated\Symfony\Security\GuestCodeBudgetException;
 use Escalated\Symfony\Security\GuestEmailVerification;
 use Escalated\Symfony\Security\GuestVerificationException;
 use Escalated\Symfony\Service\GuestRateLimiter;
@@ -52,6 +52,7 @@ class TicketController extends UiController
         private readonly SatisfactionRatingService $ratings,
         private readonly WidgetSettings $settings,
         private readonly EntityManagerInterface $em,
+        private readonly GuestVerificationEndpoints $endpoints,
     ) {
     }
 
@@ -72,23 +73,7 @@ class TicketController extends UiController
             return WidgetController::invalid(new GuestVerificationException('purpose', 'The selected purpose is invalid.'));
         }
 
-        try {
-            $id = $this->verification->challenge(
-                \is_string($data['email'] ?? null) ? $data['email'] : '',
-                $purpose,
-                $request->getClientIp() ?? 'unknown',
-            );
-        } catch (GuestVerificationException $e) {
-            return WidgetController::invalid($e);
-        } catch (GuestCodeBudgetException $e) {
-            return WidgetController::noStore(WidgetRequest::error($e->getMessage(), Response::HTTP_TOO_MANY_REQUESTS, ['Retry-After' => (string) $e->retryAfter]));
-        }
-
-        return WidgetController::noStore(new JsonResponse([
-            'verification_id' => $id,
-            'expires_in' => GuestEmailVerification::CODE_TTL_SECONDS,
-            'message' => 'Check your email for a verification code.',
-        ], Response::HTTP_ACCEPTED));
+        return $this->endpoints->verification($request, $data);
     }
 
     /**
@@ -103,46 +88,7 @@ class TicketController extends UiController
             return $limited;
         }
 
-        $data = $this->payload($request);
-        $email = self::email($data);
-        $reference = \is_scalar($data['reference'] ?? null) ? trim((string) $data['reference']) : '';
-        if (null === $email || '' === $reference || mb_strlen($reference) > 191) {
-            return WidgetController::invalid(new GuestVerificationException(null === $email ? 'email' : 'reference', 'Email and reference are required.'));
-        }
-        if (null !== $missing = WidgetController::missingProof($data)) {
-            return $missing;
-        }
-
-        try {
-            $matches = $this->verification->consume(
-                $data['verification_id'],
-                $data['verification_code'],
-                $email,
-                GuestVerification::PURPOSE_LOOKUP,
-                function () use ($email, $reference): array {
-                    $normalized = GuestEmailVerification::normalize($email);
-                    $found = [];
-                    foreach ($this->em->getRepository(Ticket::class)->findBy(['reference' => $reference], ['id' => 'DESC'], 20) as $ticket) {
-                        if (null === $ticket->getGuestEmail() || GuestEmailVerification::normalize($ticket->getGuestEmail()) !== $normalized) {
-                            continue;
-                        }
-                        $grant = $this->guestAccess->issue($ticket, $email);
-                        $found[] = [
-                            'reference' => $ticket->getReference(),
-                            'subject' => $ticket->getSubject(),
-                            'guest_access_token' => $grant['token'],
-                            'expires_at' => $grant['expires_at']->format(\DateTimeInterface::ATOM),
-                        ];
-                    }
-
-                    return $found;
-                },
-            );
-        } catch (GuestVerificationException $e) {
-            return WidgetController::invalid($e);
-        }
-
-        return WidgetController::noStore(new JsonResponse(['data' => $matches]));
+        return $this->endpoints->lookup($this->payload($request));
     }
 
     #[Route('/create', name: 'tickets.create', methods: ['GET'])]

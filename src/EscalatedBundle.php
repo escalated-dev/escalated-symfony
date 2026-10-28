@@ -183,6 +183,7 @@ class EscalatedBundle extends AbstractBundle
         $builder->setParameter('escalated.guest_rate_limit.enabled', $guestRateLimit['enabled']);
         $builder->setParameter('escalated.guest_rate_limit.tickets_per_minute', $guestRateLimit['tickets_per_minute']);
         $builder->setParameter('escalated.guest_rate_limit.replies_per_minute', $guestRateLimit['replies_per_minute']);
+        $builder->setParameter('escalated.guest_rate_limit.requests_per_minute', $guestRateLimit['requests_per_minute']);
         $builder->setAlias('escalated.guest_rate_limit.cache', $guestRateLimit['cache_pool']);
     }
 

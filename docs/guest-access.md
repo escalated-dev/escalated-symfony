@@ -4,8 +4,9 @@ Guests who open a widget ticket, start a live chat or look up a ticket's status
 first prove they control the email address. This follows escalated-laravel's
 `docs/guest-access.md` and escalated-developer-context
 `domain-model/guest-policy.md`, for the widget API under
-`{route_prefix}/widget/api` and the browser guest portal under
-`{route_prefix}/guest`.
+`{route_prefix}/widget/api`, the browser guest portal under
+`{route_prefix}/guest` and the mobile guest API under
+`{route_prefix}/api/v1/mobile/guest`.
 
 ## Host configuration
 
@@ -122,6 +123,75 @@ and `Referrer-Policy: no-referrer`. Codes, budgets and per-IP limits are the
 widget's. Bad input goes back to the form with the errors flashed under
 `errors`.
 
+## Mobile guest API
+
+The mobile face of the same codes and grants, as specified in the canonical
+contract,
+[escalated-developer-context `domain-model/mobile-guest-api.md`](https://github.com/escalated-dev/escalated-developer-context/blob/main/domain-model/mobile-guest-api.md).
+The routes live under `{route_prefix}/api/v1/mobile/guest` (default
+`/support/api/v1/mobile/guest`):
+
+| Method | Route | Name | Guest limit |
+|---|---|---|---|
+| POST | `/verification` | `escalated.api.mobile.guest.verification` | tickets |
+| POST | `/lookup` | `escalated.api.mobile.guest.lookup` | replies |
+| POST | `/tickets` | `escalated.api.mobile.guest.tickets.store` | tickets |
+| GET | `/tickets/{token}` | `escalated.api.mobile.guest.tickets.show` | requests only |
+| POST | `/tickets/{token}/replies` | `escalated.api.mobile.guest.tickets.reply` | replies |
+
+This bundle's JSON API has no on/off switch: it is registered wherever the host
+imports the bundle routes, with or without `ui_enabled`, and so are these
+routes. They need no API token or session; the API token listener leaves them
+alone.
+
+- `verification` and `lookup` are the handlers the widget and the guest
+  portal use (`Controller\GuestVerificationEndpoints`). Purpose `ticket` or
+  `lookup` needs guest tickets allowed, `chat` needs the widget enabled
+  (it hosts live chat); otherwise `403`.
+- `POST /tickets` takes `name`, `email`, `subject`, `description`,
+  `verification_id`, `verification_code` and optional `priority` and
+  `department_id`, as JSON or form fields. In order: `403 {"message": "Guest
+  tickets are not enabled."}` when guest tickets are off, `422` for invalid
+  fields, `422` with `errors.verification_code` for a bad proof (nothing is
+  created), then the contact, the ticket (channel `web`, lower-cased guest
+  email) and its grant, in the transaction that spends the code. Status,
+  assignee, metadata and external references cannot be set. `201 {"data":
+  <mobile ticket>, "message": "Ticket created."}`.
+- `GET /tickets/{token}` answers `{"data": <mobile ticket>}` with the public
+  replies, newest first.
+- `POST /tickets/{token}/replies` takes `{email, body}`: `404` for a bad
+  grant, `422 {"message": "This ticket is closed."}`, `422` for invalid fields,
+  `403` when `email` (trimmed, any case) is not the ticket's guest email, then
+  a public reply with no author and `201 {"message": "Reply sent."}`.
+
+The mobile ticket object is an allowlist (`TicketPresenter::mobile()`):
+`metadata` is always `{}`, staff appear by display name only, internal notes,
+external references and chat metadata never appear.
+
+A grant from any surface opens the others. An expired, rotated, revoked,
+malformed or over-long grant, a legacy guest token and a chat token are all
+`404`. Every answer, errors and `429`s included, is sent `Cache-Control:
+private, no-store` and `Referrer-Policy: no-referrer`; keep the `{token}` path
+segment out of access logs.
+
+Rate limits are the per-IP guest limits shared with the widget and the guest
+portal (`tickets_per_minute`, `replies_per_minute`) plus
+`guest_rate_limit.requests_per_minute` (default 60), counted on every mobile
+guest route. Over a limit: `429` with `Retry-After`.
+
+Differences from the contract:
+- The bundle has no API rate limiter, so there is no API-layer limit and no
+  `X-RateLimit-*` headers; the guest limits above apply.
+- `attachments[]` is refused with `422`: the bundle has no upload store.
+- `requests_per_minute` counts the mobile routes only; the widget and the
+  guest portal keep their ticket and reply limits. The reply limit defaults to
+  10 a minute (Laravel 30).
+- Lookup matches `reference` only.
+- `verification` counts against the tickets limit here, as the contract
+  says; the widget and the guest portal count it against the reply limit.
+- The `ticket.created` webhook is queued from Doctrine's `postPersist`, as for
+  every ticket in this bundle, so it is not deferred until the code is spent.
+
 ## Legacy tokens
 
 Tickets created before grants carry a permanent guest token. While
@@ -133,4 +203,3 @@ verified grant everywhere; guests then get a new link through lookup.
 ## Not covered
 
 - Attachments on guest tickets and replies: the bundle has no upload store.
-- There is no mobile guest API.

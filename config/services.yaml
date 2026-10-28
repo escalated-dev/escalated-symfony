@@ -99,6 +99,7 @@ services:
             $enabled: '%escalated.guest_rate_limit.enabled%'
             $ticketsPerMinute: '%escalated.guest_rate_limit.tickets_per_minute%'
             $repliesPerMinute: '%escalated.guest_rate_limit.replies_per_minute%'
+            $requestsPerMinute: '%escalated.guest_rate_limit.requests_per_minute%'
 
     # CORS for the widget API, for the origins WidgetOrigins allows (the
     # WidgetSettings allowedOrigins argument plus the widget_allowed_origins

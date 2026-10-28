@@ -208,6 +208,127 @@ class TicketPresenter
     }
 
     /**
+     * Status labels of the mobile ticket object
+     * (escalated-developer-context domain-model/mobile-guest-api.md).
+     */
+    private const MOBILE_STATUS_LABELS = [
+        Ticket::STATUS_OPEN => 'Open',
+        Ticket::STATUS_IN_PROGRESS => 'In Progress',
+        Ticket::STATUS_WAITING_ON_CUSTOMER => 'Waiting on Customer',
+        Ticket::STATUS_WAITING_ON_AGENT => 'Waiting on Agent',
+        Ticket::STATUS_ESCALATED => 'Escalated',
+        Ticket::STATUS_RESOLVED => 'Resolved',
+        Ticket::STATUS_CLOSED => 'Closed',
+        Ticket::STATUS_REOPENED => 'Reopened',
+        Ticket::STATUS_SNOOZED => 'Snoozed',
+        Ticket::STATUS_LIVE => 'Live',
+    ];
+
+    /**
+     * A ticket as the mobile guest API returns it: an allowlist with the
+     * public replies newest first, staff by display name only, `metadata`
+     * always an empty object, and the grant echoed when one is given.
+     *
+     * @return array<string, mixed>
+     */
+    public function mobile(Ticket $ticket, ?string $guestAccessToken = null, bool $withReplies = true): array
+    {
+        $replies = [];
+        if ($withReplies) {
+            foreach ($this->replies($ticket) as $reply) {
+                if ($reply->isInternalNote()) {
+                    continue;
+                }
+                $replies[] = [
+                    'id' => $reply->getId(),
+                    'body' => $reply->getBody(),
+                    'is_internal_note' => false,
+                    'is_pinned' => $reply->isPinned(),
+                    'author' => $this->mobileReplyAuthor($ticket, $reply),
+                    'attachments' => array_map(fn (Attachment $a): array => $this->mobileAttachment($a), $reply->getAttachments()->toArray()),
+                    'created_at' => self::iso($reply->getCreatedAt()),
+                ];
+            }
+        }
+
+        $assignee = $ticket->getAssignedTo();
+        $status = $ticket->getStatus();
+
+        return [
+            'id' => $ticket->getId(),
+            'reference' => $ticket->getReference(),
+            'guest_access_token' => $guestAccessToken,
+            'guest_access_expires_at' => null !== $guestAccessToken ? self::iso($ticket->getGuestAccessExpiresAt()) : null,
+            'subject' => $ticket->getSubject(),
+            'description' => $ticket->getDescription() ?? '',
+            'status' => [
+                'value' => $status,
+                'label' => $ticket->getCustomStatus()?->summary()['label'] ?? self::MOBILE_STATUS_LABELS[$status] ?? ucwords(str_replace('_', ' ', $status)),
+            ],
+            'priority' => ['value' => $ticket->getPriority(), 'label' => ucfirst($ticket->getPriority())],
+            'channel' => $ticket->getChannel(),
+            'metadata' => new \stdClass(),
+            'requester' => $this->mobileRequester($ticket),
+            'assignee' => null === $assignee ? null : ['id' => 0, 'name' => $this->users->name($assignee) ?? 'Support', 'email' => ''],
+            'department' => $this->department($ticket->getDepartment()),
+            'tags' => [],
+            'replies' => $replies,
+            'activities' => [],
+            'sla' => [
+                'first_response_due_at' => self::iso($ticket->getFirstResponseDueAt()),
+                'first_response_at' => self::iso($ticket->getFirstResponseAt()),
+                'first_response_breached' => $ticket->isSlaFirstResponseBreached(),
+                'resolution_due_at' => self::iso($ticket->getResolutionDueAt()),
+                'resolution_breached' => $ticket->isSlaResolutionBreached(),
+            ],
+            'is_following' => false,
+            'followers_count' => 0,
+            'resolved_at' => self::iso($ticket->getResolvedAt()),
+            'closed_at' => self::iso($ticket->getClosedAt()),
+            'created_at' => self::iso($ticket->getCreatedAt()),
+            'updated_at' => self::iso($ticket->getUpdatedAt()),
+        ];
+    }
+
+    /**
+     * @return array{name: string, email: string|null}
+     */
+    private function mobileRequester(Ticket $ticket): array
+    {
+        $requester = $this->requester($ticket);
+
+        return ['name' => $requester['name'] ?? 'Guest', 'email' => $requester['email']];
+    }
+
+    /**
+     * @return array{id: int, name: string, email: string|null}
+     */
+    private function mobileReplyAuthor(Ticket $ticket, Reply $reply): array
+    {
+        if (!$reply->isByAgent()) {
+            return ['id' => 0] + $this->mobileRequester($ticket);
+        }
+
+        return ['id' => 0, 'name' => $this->users->name($reply->getAuthorId()) ?? 'Support', 'email' => ''];
+    }
+
+    /**
+     * @return array{id: int|null, filename: string, mime_type: string|null, size: int, url: string}
+     */
+    private function mobileAttachment(Attachment $attachment): array
+    {
+        $normalized = $this->attachment($attachment);
+
+        return [
+            'id' => $normalized['id'],
+            'filename' => $normalized['original_filename'],
+            'mime_type' => $normalized['mime_type'],
+            'size' => $normalized['size'],
+            'url' => $normalized['url'],
+        ];
+    }
+
+    /**
      * A requester's ticket as a list row: the {@see customer()} allowlist
      * without the conversation.
      *

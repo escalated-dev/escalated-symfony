@@ -11,13 +11,16 @@ use Psr\Cache\CacheItemPoolInterface;
  *
  * Every accepted guest ticket or reply writes rows and sends outbound mail, so
  * an uncapped endpoint lets anyone flood the helpdesk and the mail provider.
- * Two scopes, each with its own fixed 60-second window per client IP:
+ * Three scopes, each with its own fixed 60-second window per client IP:
  *   - ticket: POST {route_prefix}/widget/api/tickets and
  *             POST {route_prefix}/widget/api/chat/start, one shared counter
  *             (default 5 per minute)
  *   - reply:  POST {route_prefix}/widget/api/tickets/{reference}/replies
  *             (default 10 per minute), checked before the guest token so
  *             wrong-token requests count too.
+ *   - request: every route of the mobile guest API under
+ *             {route_prefix}/api/v1/mobile/guest (default 60 per minute), on
+ *             top of the ticket or reply scope the route also counts against.
  *
  * Configured under `escalated.guest_rate_limit`. Counters live in a PSR-6 pool,
  * `cache.app` by default; a multi-server deployment should point `cache_pool`
@@ -31,6 +34,7 @@ final class GuestRateLimiter
 {
     public const TICKET = 'ticket';
     public const REPLY = 'reply';
+    public const REQUEST = 'request';
 
     private const WINDOW_SECONDS = 60;
 
@@ -39,6 +43,7 @@ final class GuestRateLimiter
         private readonly bool $enabled = true,
         private readonly int $ticketsPerMinute = 5,
         private readonly int $repliesPerMinute = 10,
+        private readonly int $requestsPerMinute = 60,
     ) {
     }
 
@@ -53,7 +58,11 @@ final class GuestRateLimiter
             return null;
         }
 
-        $limit = self::TICKET === $scope ? $this->ticketsPerMinute : $this->repliesPerMinute;
+        $limit = match ($scope) {
+            self::TICKET => $this->ticketsPerMinute,
+            self::REQUEST => $this->requestsPerMinute,
+            default => $this->repliesPerMinute,
+        };
         $now = time();
 
         $item = $this->cache->getItem(self::key($scope, $ip));

@@ -30,6 +30,21 @@
   the chat session, the start answer carries `expires_at`, and an unknown or
   expired token is a 404 on every chat route.
 
+### Added
+- **Mobile guest API** (escalated-developer-context
+  [`domain-model/mobile-guest-api.md`](https://github.com/escalated-dev/escalated-developer-context/blob/main/domain-model/mobile-guest-api.md)):
+  `POST {route_prefix}/api/v1/mobile/guest/verification`, `/lookup` and
+  `/tickets`, `GET /tickets/{token}` and `POST /tickets/{token}/replies`, where
+  `{token}` is the guest grant. They run on the codes, grants and per-IP guest
+  limits the widget and the guest portal use, so a grant from one surface opens
+  the others; a bad, expired or chat grant is a 404, and every answer is sent
+  `Cache-Control: private, no-store` and `Referrer-Policy: no-referrer`. The
+  JSON API is always registered in this bundle, so the routes are too (also
+  with `ui_enabled: false`). See docs/guest-access.md.
+- `escalated.guest_rate_limit.requests_per_minute` (default 60): per-IP limit
+  over every mobile guest route, on top of the ticket and reply limits.
+- `TicketService::create()` takes an optional `channel`.
+
 ### Changed
 - `rate` on a chat that has not ended answers 422 before the rating is
   validated, as in escalated-laravel.

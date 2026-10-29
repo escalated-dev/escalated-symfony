@@ -3,7 +3,7 @@
 ## [Unreleased]
 
 ### Upgrading
-- To run SDK plugins' cron schedules, run `php bin/console escalated:plugins:cron`
+- To run plugins' cron schedules (native and SDK), run `php bin/console escalated:plugins:cron`
   every minute (from cron or Symfony Scheduler).
 - Run the migrations (`Version20261029000001`): it adds the
   `escalated_plugins` and `escalated_plugin_store` tables (with your
@@ -21,6 +21,11 @@
   `escalated.plugins.sdk.enabled: true`; see docs/plugins.md.
 
 ### Added
+- Native plugins get cron schedules and widget badges like SDK plugins:
+  implement `CronPluginInterface::handleCron()` (schedules listed in the
+  manifest's `cronSchedules`, run by `escalated:plugins:cron` while active,
+  as no user) and `WidgetBadgePluginInterface::widgetBadge()` (asked as the
+  viewer for `hasBadge: true` widgets; a throw is `null`).
 - SDK plugin cron schedules run: `escalated:plugins:cron` (every minute) sends
   the due five-field (UTC) schedules of active SDK plugins to the runtime as
   `cron`, as no user. SDK plugin widgets with a `badge` function carry its

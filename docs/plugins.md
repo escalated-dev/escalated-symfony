@@ -63,12 +63,51 @@ final class CrmPlugin extends AbstractPlugin
 
 The manifest has the SDK's shape: `name` (required), `version`,
 `description`, `author`, `homepage`, `pages`, `components`, `widgets`,
-`endpoints`, `webhooks` and `filterHooks`. A native plugin is offered every
+`endpoints`, `webhooks`, `filterHooks` and `cronSchedules`. A native plugin is offered every
 action; return early from `handleAction()` for the ones it does not want.
 
 The slug is the name without the leading `@` and with `/` as `--`
 (`@acme/escalated-plugin-crm` is `acme--escalated-plugin-crm`). Two plugins
 with one slug stop the registry with an error naming both.
+
+### Cron schedules and widget badges
+
+The native forms of the SDK's `cron` and widget `badge` functions are two
+optional interfaces:
+
+```php
+use Escalated\Symfony\Plugin\CronPluginInterface;
+use Escalated\Symfony\Plugin\WidgetBadgePluginInterface;
+
+final class InboxPlugin extends AbstractPlugin implements CronPluginInterface, WidgetBadgePluginInterface
+{
+    public function manifest(): array
+    {
+        return [
+            'name' => '@acme/escalated-plugin-inbox',
+            'widgets' => [['component' => 'InboxWidget', 'label' => 'Inbox', 'hasBadge' => true]],
+            'cronSchedules' => ['*/15 * * * *', '0 9 * * mon-fri'],
+        ];
+    }
+
+    public function handleCron(string $schedule, PluginContext $ctx): void
+    {
+        $ctx->storeInsert('runs', ['schedule' => $schedule]);
+    }
+
+    public function widgetBadge(string $component, PluginContext $ctx): int|float|string|null
+    {
+        return \count($ctx->storeQuery('unread', ['user' => $ctx->currentUser()['id'] ?? null]));
+    }
+}
+```
+
+`escalated:plugins:cron` calls `handleCron()` for each schedule in
+`cronSchedules` that is due that minute (UTC), while the plugin is active,
+with no acting user; a throw is logged and the other schedules still run.
+`widgetBadge()` is asked, as the viewer, for each `hasBadge: true` widget
+while `escalated.plugins` is built; its answer is the widget's `badge`, and a
+throw makes it `null`. A widget without `hasBadge` carries no `badge` key.
 
 A native plugin is your code with your process's privileges, and nothing can
 time it out. Only register plugins you would merge into your own code.
@@ -120,8 +159,8 @@ package to remove the plugin.
 | `endpoints` | `{route_prefix}/api/plugins/{slug}{path}` | Admins, plus the endpoint's `capability` |
 | `webhooks` | `{route_prefix}/webhooks/plugins/{slug}{path}` | Anyone. The plugin must authenticate the sender. |
 | `pages[].menu`, `components`, `widgets` | Shared with every screen as `escalated.plugins` (`menuItems`, `pageComponents`, `dashboardWidgets`) in the `_escalated_shared` request attribute | Viewers who hold the item's `capability`; admin menu items for admins only |
-| `widgets[].badge` (SDK) | Asked from the runtime while `dashboardWidgets` is built, as the viewer, within 5 s; the answer is the item's `badge` (`null` when it fails) | The viewer |
-| `cron` (SDK) | Five-field cron expressions in UTC (or `@hourly`, `@daily`, ...). `php bin/console escalated:plugins:cron`, run every minute, sends each due schedule of each active SDK plugin to the runtime, as no user, within 30 s. An unreadable schedule is logged and skipped. | |
+| `widgets[].badge` | Native: `WidgetBadgePluginInterface::widgetBadge()`, see [above](#cron-schedules-and-widget-badges). SDK: asked from the runtime while `dashboardWidgets` is built, as the viewer, within 5 s; the answer is the item's `badge` (`null` when it fails) | The viewer |
+| `cron` | Five-field cron expressions in UTC (or `@hourly`, `@daily`, ...). `php bin/console escalated:plugins:cron`, run every minute, runs each due schedule of each active plugin, as no user: a native plugin's `handleCron()` in process, an SDK plugin's through the runtime within 30 s. An unreadable schedule is logged and skipped. | |
 
 Only active plugins answer; anything else is a 404. All plugin pages share one
 route, `escalated.plugin.page` (`{slug}`, `{route}`), rather than one named

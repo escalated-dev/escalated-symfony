@@ -411,9 +411,13 @@ class PluginRegistry
                     'position' => is_numeric($widget['order'] ?? null) ? (int) $widget['order'] : 100,
                     'width' => \is_string($widget['size'] ?? null) ? $widget['size'] : 'half',
                 ];
-                if (!$plugin->isNative() && true === ($widget['hasBadge'] ?? false)) {
+                if (true === ($widget['hasBadge'] ?? false)) {
                     // Asked as the viewer: the ctx handler acts as the request's user.
-                    $item['badge'] = $this->bridge->badge($plugin->name, $widget['component'], $this->ctxFor([$plugin->name]));
+                    if (!$plugin->isNative()) {
+                        $item['badge'] = $this->bridge->badge($plugin->name, $widget['component'], $this->ctxFor([$plugin->name]));
+                    } elseif ($plugin->native instanceof WidgetBadgePluginInterface) {
+                        $item['badge'] = $this->nativeBadge($plugin, $plugin->native, $widget['component']);
+                    }
                 }
                 $dashboardWidgets[] = $item;
             }
@@ -427,19 +431,26 @@ class PluginRegistry
     }
 
     /**
-     * Runs every cron schedule of every active SDK plugin that is due in the
-     * minute of `$now` (UTC), through the runtime, one after another, each
-     * within 30 s. A failing or unreadable schedule is logged and never stops
-     * the others. Returns how many ran.
+     * Runs every cron schedule of every active plugin that is due in the
+     * minute of `$now` (UTC), one after another, with no acting user: a native
+     * plugin's in process ({@see CronPluginInterface}), an SDK plugin's
+     * through the runtime within 30 s. A failing or unreadable schedule is
+     * logged and never stops the others. Returns how many ran.
      */
     public function runDueCron(\DateTimeInterface $now): int
     {
-        if (!$this->bridge->isEnabled()) {
-            return 0;
-        }
+        return $this->contexts->asNoUser(fn (): int => $this->runCron($now));
+    }
+
+    private function runCron(\DateTimeInterface $now): int
+    {
         $ran = 0;
         foreach ($this->activePlugins() as $plugin) {
-            if ($plugin->isNative()) {
+            $native = $plugin->native;
+            if ($plugin->isNative() && !$native instanceof CronPluginInterface) {
+                if ([] !== $plugin->cronSchedules()) {
+                    $this->logger->warning(sprintf('[Escalated plugins] %s lists cronSchedules but does not implement %s; skipped.', $plugin->name, CronPluginInterface::class));
+                }
                 continue;
             }
             foreach ($plugin->cronSchedules() as $schedule) {
@@ -449,14 +460,40 @@ class PluginRegistry
                     $this->logger->warning(sprintf('[Escalated plugins] %s cron "%s" skipped: %s', $plugin->name, $schedule, $e->getMessage()));
                     continue;
                 }
-                if ($due) {
+                if (!$due) {
+                    continue;
+                }
+                ++$ran;
+                if ($native instanceof CronPluginInterface) {
+                    try {
+                        $native->handleCron($schedule, $this->context($plugin));
+                    } catch (\Throwable $e) {
+                        $this->logger->error(sprintf('[Escalated plugins] %s cron "%s" failed: %s', $plugin->name, $schedule, $e->getMessage()), ['exception' => $e]);
+                    }
+                } else {
                     $this->bridge->cron($plugin->name, $schedule, $this->ctxFor([$plugin->name]));
-                    ++$ran;
                 }
             }
         }
 
         return $ran;
+    }
+
+    /**
+     * A native widget's badge, asked as the viewer; `null` when it throws or
+     * answers something other than a number or a string.
+     */
+    private function nativeBadge(RegisteredPlugin $plugin, WidgetBadgePluginInterface $native, string $component): int|float|string|null
+    {
+        try {
+            $answer = $native->widgetBadge($component, $this->context($plugin));
+        } catch (\Throwable $e) {
+            $this->logger->warning(sprintf('[Escalated plugins] %s badge %s failed: %s', $plugin->name, $component, $e->getMessage()));
+
+            return null;
+        }
+
+        return \is_int($answer) || \is_float($answer) || \is_string($answer) ? $answer : null;
     }
 
     /**

@@ -30,7 +30,7 @@ final class EscalatedRouteLoader extends Loader
     /**
      * Controller directories (trailing slash) and files, relative to src/Controller.
      */
-    private const ALWAYS = ['Api/', 'InboundEmailController.php'];
+    private const ALWAYS = ['Api/', 'Plugin/', 'InboundEmailController.php'];
 
     private const UI = ['Customer/', 'Agent/', 'Admin/', 'Widget/', 'Guest/'];
 

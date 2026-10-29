@@ -22,6 +22,8 @@ services:
     _instanceof:
         Escalated\Symfony\Contract\TicketActionInterface:
             tags: ['escalated.ticket_action']
+        Escalated\Symfony\Plugin\PluginInterface:
+            tags: ['escalated.plugin']
 
     # Auto-register everything under the bundle's src tree. Individual services
     # below override arguments / tags where needed; this resource catches the
@@ -41,6 +43,12 @@ services:
             - '../src/Security/GuestVerificationException.php'
             - '../src/Security/GuestCodeBudgetException.php'
             - '../src/Doctrine/TicketVisibilityFilter.php'
+            # Plugin values built by the registry, not services.
+            - '../src/Plugin/PluginContext.php'
+            - '../src/Plugin/RegisteredPlugin.php'
+            - '../src/Plugin/PluginHttp.php'
+            - '../src/Plugin/Bridge/JsonRpcClient.php'
+            - '../src/Plugin/Bridge/BridgeException.php'
 
     # Route loader behind @EscalatedBundle/config/routes.yaml. Applies ui_enabled,
     # enable_newsletters and route_prefix when the host's router loads it.
@@ -354,3 +362,17 @@ services:
         arguments:
             $inner: '@Escalated\Symfony\Doctrine\Migration\TicketAccessMigrationFactory.inner'
             $tablePrefix: '%escalated.table_prefix%'
+
+    # Plugins (docs/plugins.md): native plugins are services tagged
+    # escalated.plugin (autoconfigured for Plugin\PluginInterface); SDK
+    # plugins run in the Node plugin runtime behind the bridge.
+    Escalated\Symfony\Plugin\PluginRegistry:
+        arguments:
+            $nativePlugins: !tagged_iterator escalated.plugin
+            $routePrefix: '%escalated.route_prefix%'
+
+    Escalated\Symfony\Plugin\Bridge\PluginBridge:
+        arguments:
+            $enabled: '%escalated.plugins.sdk.enabled%'
+            $command: '%escalated.plugins.sdk.runtime_command%'
+            $cwd: '%escalated.plugins.sdk.runtime_cwd%'

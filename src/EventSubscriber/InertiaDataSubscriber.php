@@ -6,6 +6,7 @@ namespace Escalated\Symfony\EventSubscriber;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Entity\AgentProfile;
+use Escalated\Symfony\Plugin\PluginRegistry;
 use Escalated\Symfony\Security\NewsletterPermissions;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -27,6 +28,7 @@ class InertiaDataSubscriber implements EventSubscriberInterface
         private readonly EntityManagerInterface $em,
         private readonly string $routePrefix,
         private readonly bool $newslettersEnabled = false,
+        private readonly ?PluginRegistry $plugins = null,
     ) {
     }
 
@@ -71,6 +73,18 @@ class InertiaDataSubscriber implements EventSubscriberInterface
             } catch (\Throwable) {
                 // Agent profiles table may not exist yet
             }
+        }
+
+        // Active plugins' menu items, page components and dashboard widgets,
+        // as usePluginExtensions() reads them; {} when none is active.
+        $data['plugins'] = new \stdClass();
+        try {
+            $extensions = $this->plugins?->uiExtensions() ?? [];
+            if ([] !== $extensions) {
+                $data['plugins'] = $extensions;
+            }
+        } catch (\Throwable) {
+            // The plugin tables may not exist yet.
         }
 
         // Store shared data in the request attributes for Inertia renderers to pick up

@@ -34,7 +34,6 @@ final class PageNameParityTest extends TestCase
      * and the test below fails until that happens, so the list stays exact.
      */
     private const NOT_YET_RENDERED = [
-        'Escalated/Admin/Plugins/Index',
         'Escalated/Admin/Roles/Form',
         'Escalated/Admin/Roles/Index',
         'Escalated/Admin/Settings/Sandbox',
@@ -43,7 +42,6 @@ final class PageNameParityTest extends TestCase
         'Escalated/Admin/Workflows/Builder',
         'Escalated/Auth/TwoFactorChallenge',
         'Escalated/Error',
-        'Escalated/Plugin/Page',
     ];
 
     public function testEveryRenderedPageNameResolvesToAComponent(): void

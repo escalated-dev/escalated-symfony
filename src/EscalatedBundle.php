@@ -75,6 +75,11 @@ class EscalatedBundle extends AbstractBundle
             $builder->setAlias('escalated.ticket_subject_resolver', $resolverId);
         }
 
+        $builder->setParameter('escalated.plugins.sdk.enabled', (bool) ($config['plugins']['sdk']['enabled'] ?? false));
+        $builder->setParameter('escalated.plugins.sdk.runtime_command', $config['plugins']['sdk']['runtime_command'] ?? 'node node_modules/@escalated-dev/plugin-runtime/build/bin/escalated-plugins.js');
+        $builder->setParameter('escalated.plugins.sdk.runtime_cwd', $config['plugins']['sdk']['runtime_cwd'] ?? '%kernel.project_dir%');
+        $builder->registerForAutoconfiguration(Plugin\PluginInterface::class)->addTag('escalated.plugin');
+
         // Routes are not registered here. The container loader cannot read a
         // routing file; the host imports @EscalatedBundle/config/routes.yaml
         // and Routing\EscalatedRouteLoader applies ui_enabled and

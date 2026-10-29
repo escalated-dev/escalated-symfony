@@ -2,6 +2,61 @@
 
 ## [Unreleased]
 
+### Upgrading
+- Run the migrations (`Version20261029000001`): it adds the
+  `escalated_plugins` and `escalated_plugin_store` tables (with your
+  `table_prefix`). Nothing else changes until an admin activates a plugin.
+- New routes: `{route_prefix}/admin/plugins` (Admin > Plugins and plugin
+  pages, with the UI), and, always, `{route_prefix}/api/plugins/{slug}/...`
+  (plugin endpoints, admins only) and `{route_prefix}/webhooks/plugins/{slug}/...`
+  (plugin webhooks, no authentication: an inactive or unknown plugin is a
+  404). If your firewall or access control covers those paths, let them
+  through as you do the rest of the bundle's routes.
+- Every Escalated page's shared data (`_escalated_shared`) now carries
+  `plugins`: `{}` until a plugin is active.
+- SDK plugins are off by default. To run them, install
+  `@escalated-dev/plugin-runtime` with npm and set
+  `escalated.plugins.sdk.enabled: true`; see docs/plugins.md.
+
+### Added
+- **Plugins**, per the shared plugin contract
+  (escalated-developer-context `domain-model/plugin-contract.md`):
+  - **Native plugins**: services implementing
+    `Escalated\Symfony\Plugin\PluginInterface` (extend `AbstractPlugin`),
+    autoconfigured with the `escalated.plugin` tag and listed as `registered`.
+  - **SDK plugins** (`@escalated-dev/plugin-sdk`) through the plugin runtime
+    bridge, ported from escalated-laravel: JSON-RPC 2.0 over stdio, started on
+    first use, handshake and HTTP contract 1, `activate`/`deactivate` sent on
+    the lifecycle, the active plugins passed on every action and filter,
+    restarts with backoff, and 503s rather than failures when the runtime is
+    down. Listed as `composer` (installed by npm), so they cannot be
+    uninstalled from the screen.
+  - **Admin > Plugins** (`Escalated/Admin/Plugins/Index`): every registered
+    plugin, with activate, deactivate and uninstall (303 and a flash; 404 for
+    an unknown slug on JSON). `can_upload` is false and there is no upload
+    route. Each transition runs in the contract's order, is idempotent, and a
+    throwing plugin never undoes it. Uninstalling forgets the activation and
+    keeps the plugin's stored data.
+  - **Plugin pages** (`Escalated/Plugin/Page`) with the props of the plugin's
+    own `GET /{component}` endpoint, **endpoints** behind the admin guard and
+    the declared capability, and unauthenticated **webhooks**; `:param` path
+    segments, credentials stripped from the headers, the `httpResponse()`
+    envelope, and a 500 that never shows the error.
+  - **Events**: the canonical events reach active plugins' actions after the
+    request (on terminate), with the subject flat and under `ticket`/`reply`.
+    `plugin.activated`, `plugin.deactivated` and `plugin.uninstalling` go to
+    every active plugin. A failing plugin never fails the request.
+  - **Filters**: `PluginRegistry::applyFilter()`, by priority, skipping a
+    filter that throws.
+  - **`ctx`**: config (merged), store (query operators evaluated in PHP, field
+    names checked), tickets and replies through `TicketService` with only the
+    contract's fields and filters, contacts, tags, departments, agents,
+    broadcast, log, emit (host event names dropped) and the current user. Every
+    call is scoped to the plugin being served.
+  - **`escalated.plugins`** shared on every Escalated page: active plugins'
+    `menuItems`, `pageComponents` and `dashboardWidgets`, filtered by
+    capability, admin menu items for admins only.
+
 ## [0.3.7] - 2026-10-28
 
 ### Upgrading

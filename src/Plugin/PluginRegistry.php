@@ -525,7 +525,7 @@ class PluginRegistry
             $natives = [];
             foreach ($this->nativePlugins as $service) {
                 $plugin = RegisteredPlugin::native($service);
-                self::assertUnique($natives, $plugin);
+                $this->assertUnique($natives, $plugin);
                 $natives[$plugin->slug] = $plugin;
             }
             $this->natives = $natives;
@@ -544,7 +544,7 @@ class PluginRegistry
             $sdk = [];
             foreach ($this->bridge->manifests() as $manifest) {
                 $plugin = RegisteredPlugin::sdk($manifest);
-                self::assertUnique($natives + $sdk, $plugin);
+                $this->assertUnique($natives + $sdk, $plugin);
                 $sdk[$plugin->slug] = $plugin;
             }
             // An unreachable runtime is tried again on the next request.
@@ -563,11 +563,14 @@ class PluginRegistry
      *
      * @param array<string, RegisteredPlugin> $known
      */
-    private static function assertUnique(array $known, RegisteredPlugin $plugin): void
+    private function assertUnique(array $known, RegisteredPlugin $plugin): void
     {
         $other = $known[$plugin->slug] ?? null;
         if (null !== $other) {
             throw new \LogicException(sprintf('Plugins "%s" and "%s" share the slug "%s"; rename one.', $other->name, $plugin->name, $plugin->slug));
+        }
+        if ($plugin->skippedPageCount() > 0) {
+            $this->logger->warning(sprintf('[Escalated plugins] %s declares %d page(s) without a route or component; skipped.', $plugin->name, $plugin->skippedPageCount()));
         }
     }
 

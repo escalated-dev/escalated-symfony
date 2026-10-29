@@ -403,7 +403,7 @@ class PluginRegistry
                 if (!\is_string($widget['component'] ?? null) || !$this->allows(RegisteredPlugin::capability($widget))) {
                     continue;
                 }
-                $dashboardWidgets[] = [
+                $item = [
                     'id' => $plugin->slug.'.'.$widget['component'],
                     'title' => \is_string($widget['label'] ?? null) ? $widget['label'] : $widget['component'],
                     'component' => $widget['component'],
@@ -411,6 +411,11 @@ class PluginRegistry
                     'position' => is_numeric($widget['order'] ?? null) ? (int) $widget['order'] : 100,
                     'width' => \is_string($widget['size'] ?? null) ? $widget['size'] : 'half',
                 ];
+                if (!$plugin->isNative() && true === ($widget['hasBadge'] ?? false)) {
+                    // Asked as the viewer: the ctx handler acts as the request's user.
+                    $item['badge'] = $this->bridge->badge($plugin->name, $widget['component'], $this->ctxFor([$plugin->name]));
+                }
+                $dashboardWidgets[] = $item;
             }
         }
 
@@ -419,6 +424,39 @@ class PluginRegistry
             'pageComponents' => [] === $pageComponents ? new \stdClass() : $pageComponents,
             'dashboardWidgets' => $dashboardWidgets,
         ];
+    }
+
+    /**
+     * Runs every cron schedule of every active SDK plugin that is due in the
+     * minute of `$now` (UTC), through the runtime, one after another, each
+     * within 30 s. A failing or unreadable schedule is logged and never stops
+     * the others. Returns how many ran.
+     */
+    public function runDueCron(\DateTimeInterface $now): int
+    {
+        if (!$this->bridge->isEnabled()) {
+            return 0;
+        }
+        $ran = 0;
+        foreach ($this->activePlugins() as $plugin) {
+            if ($plugin->isNative()) {
+                continue;
+            }
+            foreach ($plugin->cronSchedules() as $schedule) {
+                try {
+                    $due = PluginCron::due($schedule, $now);
+                } catch (\InvalidArgumentException $e) {
+                    $this->logger->warning(sprintf('[Escalated plugins] %s cron "%s" skipped: %s', $plugin->name, $schedule, $e->getMessage()));
+                    continue;
+                }
+                if ($due) {
+                    $this->bridge->cron($plugin->name, $schedule, $this->ctxFor([$plugin->name]));
+                    ++$ran;
+                }
+            }
+        }
+
+        return $ran;
     }
 
     /**

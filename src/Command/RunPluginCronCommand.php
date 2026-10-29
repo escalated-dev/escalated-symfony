@@ -13,12 +13,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
- * Runs the cron schedules of active SDK plugins that are due this minute
- * (UTC), through the plugin runtime. Schedule it every minute.
+ * Runs the cron schedules of active plugins (native and SDK) due this minute
+ * (UTC). Schedule it every minute.
  */
 #[AsCommand(
     name: 'escalated:plugins:cron',
-    description: 'Run the due cron schedules of active SDK plugins',
+    description: 'Run the due cron schedules of active plugins',
 )]
 class RunPluginCronCommand extends Command
 {

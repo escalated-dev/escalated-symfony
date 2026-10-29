@@ -184,7 +184,8 @@ final class RegisteredPlugin
     }
 
     /**
-     * An SDK plugin's cron schedules (five-field expressions, UTC).
+     * The plugin's cron schedules (five-field expressions, UTC): an SDK
+     * plugin's `cron` keys, or a native plugin's manifest `cronSchedules`.
      *
      * @return list<string>
      */

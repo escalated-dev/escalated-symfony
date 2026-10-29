@@ -3,6 +3,8 @@
 ## [Unreleased]
 
 ### Upgrading
+- To run SDK plugins' cron schedules, run `php bin/console escalated:plugins:cron`
+  every minute (from cron or Symfony Scheduler).
 - Run the migrations (`Version20261029000001`): it adds the
   `escalated_plugins` and `escalated_plugin_store` tables (with your
   `table_prefix`). Nothing else changes until an admin activates a plugin.
@@ -19,6 +21,11 @@
   `escalated.plugins.sdk.enabled: true`; see docs/plugins.md.
 
 ### Added
+- SDK plugin cron schedules run: `escalated:plugins:cron` (every minute) sends
+  the due five-field (UTC) schedules of active SDK plugins to the runtime as
+  `cron`, as no user. SDK plugin widgets with a `badge` function carry its
+  answer in `escalated.plugins.dashboardWidgets[].badge`, asked as the viewer
+  within 5 s (`null` when it fails).
 - **Plugins**, per the shared plugin contract
   (escalated-developer-context `domain-model/plugin-contract.md`):
   - **Native plugins**: services implementing

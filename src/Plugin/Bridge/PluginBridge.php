@@ -117,6 +117,39 @@ class PluginBridge
     }
 
     /**
+     * Runs one cron schedule. Fire-and-forget: a failure is logged, never thrown.
+     *
+     * @param callable(string, array<string, mixed>): mixed $ctx
+     */
+    public function cron(string $plugin, string $schedule, callable $ctx): void
+    {
+        try {
+            $this->request('cron', ['plugin' => $plugin, 'schedule' => $schedule], self::TIMEOUT_ACTION, $ctx);
+        } catch (BridgeException $e) {
+            $this->logger->warning(sprintf('[Escalated plugins] %s cron "%s" failed: %s', $plugin, $schedule, $e->getMessage()));
+        }
+    }
+
+    /**
+     * A widget's badge: a number or a string, or null when the runtime fails
+     * or answers anything else.
+     *
+     * @param callable(string, array<string, mixed>): mixed $ctx
+     */
+    public function badge(string $plugin, string $component, callable $ctx): int|float|string|null
+    {
+        try {
+            $answer = $this->request('badge', ['plugin' => $plugin, 'component' => $component], self::TIMEOUT_FILTER, $ctx);
+        } catch (BridgeException $e) {
+            $this->logger->warning(sprintf('[Escalated plugins] %s badge %s failed: %s', $plugin, $component, $e->getMessage()));
+
+            return null;
+        }
+
+        return \is_int($answer) || \is_float($answer) || \is_string($answer) ? $answer : null;
+    }
+
+    /**
      * The filtered value, or `$value` when the runtime fails.
      *
      * @param list<string>                                  $plugins

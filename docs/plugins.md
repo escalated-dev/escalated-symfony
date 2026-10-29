@@ -120,6 +120,8 @@ package to remove the plugin.
 | `endpoints` | `{route_prefix}/api/plugins/{slug}{path}` | Admins, plus the endpoint's `capability` |
 | `webhooks` | `{route_prefix}/webhooks/plugins/{slug}{path}` | Anyone. The plugin must authenticate the sender. |
 | `pages[].menu`, `components`, `widgets` | Shared with every screen as `escalated.plugins` (`menuItems`, `pageComponents`, `dashboardWidgets`) in the `_escalated_shared` request attribute | Viewers who hold the item's `capability`; admin menu items for admins only |
+| `widgets[].badge` (SDK) | Asked from the runtime while `dashboardWidgets` is built, as the viewer, within 5 s; the answer is the item's `badge` (`null` when it fails) | The viewer |
+| `cron` (SDK) | Five-field cron expressions in UTC (or `@hourly`, `@daily`, ...). `php bin/console escalated:plugins:cron`, run every minute, sends each due schedule of each active SDK plugin to the runtime, as no user, within 30 s. An unreadable schedule is logged and skipped. | |
 
 Only active plugins answer; anything else is a 404. All plugin pages share one
 route, `escalated.plugin.page` (`{slug}`, `{route}`), rather than one named

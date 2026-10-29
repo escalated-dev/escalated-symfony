@@ -125,6 +125,10 @@ final class EscalatedTestKernel extends Kernel
         $container->services()->set(Fixtures\TestAccountResolver::class)->public();
         // An import source, registered the way a host or plugin bundle registers one.
         $container->services()->set(Fixtures\FakeImportAdapter::class)->public()->tag('escalated.import_adapter');
+        // Two native plugins, registered the way a host registers one. Both
+        // stay inactive, and so inert, until a test activates them.
+        $container->services()->set(Fixtures\Plugin\CrmPlugin::class)->tag('escalated.plugin');
+        $container->services()->set(Fixtures\Plugin\AuditPlugin::class)->tag('escalated.plugin');
         $container->extension('framework', [
             'test' => true,
             'secret' => 'escalated-test-secret',

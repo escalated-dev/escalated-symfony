@@ -55,6 +55,11 @@ class EscalatedExtension extends Extension implements PrependExtensionInterface
         $container->setParameter('escalated.kb.enabled', $config['knowledge_base']['enabled']);
         $container->setParameter('escalated.kb.public_access', $config['knowledge_base']['public_access']);
         $container->setParameter('escalated.kb.feedback_enabled', $config['knowledge_base']['feedback_enabled']);
+        $container->setParameter('escalated.plugins.sdk.enabled', (bool) ($config['plugins']['sdk']['enabled'] ?? false));
+        $container->setParameter('escalated.plugins.sdk.runtime_command', $config['plugins']['sdk']['runtime_command'] ?? 'node node_modules/@escalated-dev/plugin-runtime/build/bin/escalated-plugins.js');
+        $container->setParameter('escalated.plugins.sdk.runtime_cwd', $config['plugins']['sdk']['runtime_cwd'] ?? '%kernel.project_dir%');
+        $container->registerForAutoconfiguration(\Escalated\Symfony\Plugin\PluginInterface::class)->addTag('escalated.plugin');
+
         $container->setParameter('escalated.mail_domain', $config['mail_domain'] ?? 'escalated.localhost');
     }
 

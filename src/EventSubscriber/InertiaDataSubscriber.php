@@ -7,7 +7,8 @@ namespace Escalated\Symfony\EventSubscriber;
 use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Entity\AgentProfile;
 use Escalated\Symfony\Plugin\PluginRegistry;
-use Escalated\Symfony\Security\NewsletterPermissions;
+use Escalated\Symfony\Security\AccessFeatures;
+use Escalated\Symfony\Security\UserPermissions;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\ControllerEvent;
@@ -29,6 +30,8 @@ class InertiaDataSubscriber implements EventSubscriberInterface
         private readonly string $routePrefix,
         private readonly bool $newslettersEnabled = false,
         private readonly ?PluginRegistry $plugins = null,
+        private readonly AccessFeatures $accessFeatures = new AccessFeatures(),
+        private readonly ?UserPermissions $userPermissions = null,
     ) {
     }
 
@@ -55,13 +58,17 @@ class InertiaDataSubscriber implements EventSubscriberInterface
 
         $user = $this->security->getUser();
 
+        $isAgent = $this->authChecker->isGranted('ESCALATED_AGENT');
+        $isAdmin = $this->authChecker->isGranted('ESCALATED_ADMIN');
+
         $data = [
             'prefix' => $this->routePrefix,
-            'is_agent' => $this->authChecker->isGranted('ESCALATED_AGENT'),
-            'is_admin' => $this->authChecker->isGranted('ESCALATED_ADMIN'),
-            'permissions' => $this->grantedPermissions(),
+            'is_agent' => $isAgent,
+            'is_admin' => $isAdmin,
+            'permissions' => $this->sharedPermissions($user, $isAgent || $isAdmin),
             'features' => [
                 'newsletters' => $this->newslettersEnabled,
+                ...$this->accessFeatures->shared(),
             ],
         ];
 
@@ -92,21 +99,28 @@ class InertiaDataSubscriber implements EventSubscriberInterface
     }
 
     /**
-     * Permission slugs the current user is granted. Symfony has no slug-based
-     * permission table — these are resolved through NewsletterPermissionVoter —
-     * so we expose the newsletter slugs the frontend gates on.
+     * The permission slugs the shared frontend checks (ADR
+     * 2026-10-29-configurable-access-features): the user's slugs while roles &
+     * permissions is on; while it is off the gates decide everything, so `*`
+     * for staff and nothing for anyone else.
      *
      * @return list<string>
      */
-    private function grantedPermissions(): array
+    private function sharedPermissions(?UserInterface $user, bool $isStaff): array
     {
-        $granted = [];
-        foreach ([NewsletterPermissions::MANAGE, NewsletterPermissions::SEND] as $slug) {
-            if ($this->authChecker->isGranted($slug)) {
-                $granted[] = $slug;
-            }
+        if (!$user instanceof UserInterface) {
+            return [];
         }
 
-        return $granted;
+        if (!$this->accessFeatures->rolesPermissions()) {
+            return $isStaff ? ['*'] : [];
+        }
+
+        try {
+            return $this->userPermissions?->of($user) ?? [];
+        } catch (\Throwable) {
+            // The roles tables may not exist yet.
+            return [];
+        }
     }
 }

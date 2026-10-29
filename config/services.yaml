@@ -42,6 +42,9 @@ services:
             - '../src/Security/ApiTokenUser.php'
             - '../src/Security/GuestVerificationException.php'
             - '../src/Security/GuestCodeBudgetException.php'
+            # Attribute and static map, not services.
+            - '../src/Security/RequiresFeature.php'
+            - '../src/Security/RoutePermissions.php'
             - '../src/Doctrine/TicketVisibilityFilter.php'
             # Plugin values built by the registry, not services.
             - '../src/Plugin/PluginContext.php'
@@ -49,6 +52,11 @@ services:
             - '../src/Plugin/PluginHttp.php'
             - '../src/Plugin/Bridge/JsonRpcClient.php'
             - '../src/Plugin/Bridge/BridgeException.php'
+
+    # Install-level access switches (ADR 2026-10-29-configurable-access-features).
+    Escalated\Symfony\Security\AccessFeatures:
+        arguments:
+            $rolesPermissions: '%escalated.access.roles_permissions%'
 
     # Route loader behind @EscalatedBundle/config/routes.yaml. Applies ui_enabled,
     # enable_newsletters and route_prefix when the host's router loads it.

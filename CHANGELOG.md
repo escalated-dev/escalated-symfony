@@ -3,6 +3,30 @@
 ## [Unreleased]
 
 ### Upgrading
+- **Roles & permissions is an install-level switch, off by default**
+  (`escalated.access.roles_permissions`, or `ESCALATED_ROLES_PERMISSIONS`
+  when the key is unset; ADR 2026-10-29-configurable-access-features). Off is
+  how every install already behaved, with these visible differences:
+  - Run the migrations (`Version20261030000001`): it adds `escalated_roles`,
+    `escalated_permissions`, `escalated_role_permission` and
+    `escalated_role_user` (with your `table_prefix`).
+  - While it is off, the new roles screens (`{route_prefix}/admin/roles*`) and
+    `PUT {route_prefix}/admin/users/{user}/roles` answer 404.
+  - The newsletter screens now follow the admin gate (`ROLE_ESCALATED_ADMIN`)
+    alone while it is off. The `ROLE_ESCALATED_NEWSLETTERS_MANAGE` and
+    `ROLE_ESCALATED_NEWSLETTERS_SEND` host roles no longer grant access to
+    non-admins; with the switch on, admins also need `newsletters.manage` /
+    `newsletters.send` from their Escalated roles.
+  - The shared `permissions` is `['*']` for staff while the switch is off (it
+    listed the newsletter slugs), and `features` carries `roles_permissions`,
+    `two_factor` and `sso` (the last two always false: this bundle does not
+    enforce them yet, so it shows no screen for them).
+
+  To enforce roles: run the migrations, `bin/console escalated:permissions:seed`,
+  give every staff user a role (`bin/console escalated:roles:assign you@example.com admin`),
+  then turn the switch on. Passing the admin gate grants no permission by
+  itself, so an admin without a role is refused everywhere. See
+  `docs/access-control.md`.
 - Run the migrations (`Version20261029000001`): it adds the
   `escalated_plugins` and `escalated_plugin_store` tables (with your
   `table_prefix`). Nothing else changes until an admin activates a plugin.
@@ -19,6 +43,20 @@
   `escalated.plugins.sdk.enabled: true`; see docs/plugins.md.
 
 ### Added
+- **Roles & permissions**, as escalated-laravel: `Role`, `Permission` and
+  `RoleUser` entities, `escalated:permissions:seed` (Laravel's slugs and the
+  system roles `admin`, `agent`, `light_agent`), `escalated:roles:assign
+  {user} {role=admin}`, **Admin > Roles** (`Escalated/Admin/Roles/Index` and
+  `Form`) and `PUT {route_prefix}/admin/users/{user}/roles`. With the switch
+  on, every admin, agent and staff API route also needs its permission
+  (`RoutePermissionSubscriber`, map in `src/Security/RoutePermissions.php`;
+  unmapped staff routes are refused and a test checks every route is mapped).
+  Status changes to `resolved`/`closed`/`reopened` also need `ticket.close`,
+  bulk actions need each action's permission, applying a macro needs
+  `macro.view` and `ticket.edit`, and the staff API checks the token owner's
+  permissions. Failing answers 403.
+- `#[RequiresFeature('...')]` on a controller or action answers 404 while that
+  access feature is off (`FeatureGateSubscriber`, `Security\AccessFeatures`).
 - **Plugins**, per the shared plugin contract
   (escalated-developer-context `domain-model/plugin-contract.md`):
   - **Native plugins**: services implementing

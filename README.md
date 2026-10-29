@@ -123,6 +123,10 @@ escalated:
 
 Admins activate and deactivate plugins in **Admin > Plugins**. Native plugins are services implementing `Escalated\Symfony\Plugin\PluginInterface`; plugins built with `@escalated-dev/plugin-sdk` run in the Node plugin runtime once `escalated.plugins.sdk.enabled` is true. Active plugins get pages, endpoints, webhooks, the canonical events and the plugin `ctx`. See [docs/plugins.md](docs/plugins.md).
 
+### Roles & permissions
+
+Off by default. Set `escalated.access.roles_permissions: true` (or `ESCALATED_ROLES_PERMISSIONS=true`) after running the migrations, `bin/console escalated:permissions:seed` and `bin/console escalated:roles:assign you@example.com admin`; every admin, agent and staff API route then needs its permission from the user's Escalated roles as well as the `ESCALATED_ADMIN` / `ESCALATED_AGENT` gate. While it is off, **Admin > Roles** answers 404 and the gates decide everything. See [docs/access-control.md](docs/access-control.md).
+
 ### Embedding the widget on other sites
 
 Load the widget on another site with `<script src="https://help.example.com/support/widget/api/embed.js" async></script>` after listing that site's origin, either in the `WidgetSettings` service's `$allowedOrigins` argument (for example `'%env(csv:ESCALATED_WIDGET_ALLOWED_ORIGINS)%'`) or in the admin setting `widget_allowed_origins`. An empty list allows no other site. See [docs/embedding-the-widget.md](docs/embedding-the-widget.md).

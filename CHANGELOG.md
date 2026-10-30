@@ -3,6 +3,50 @@
 ## [Unreleased]
 
 ### Upgrading
+- **Single sign-on is an install-level switch, off by default, and signs
+  users in when on** (`escalated.access.sso`, or `ESCALATED_SSO` when the key
+  is unset; ADR 2026-10-29-configurable-access-features). This bundle had no
+  SSO screen or route before; off, the new ones answer 404.
+  - Run the migrations (`Version20261101000001`): it adds
+    `escalated_sso_message_ids` (with your `table_prefix`), the single-use
+    request IDs, assertion IDs and JWT `jti`s.
+  - New dependencies: `onelogin/php-saml`, `league/oauth2-client` and
+    `firebase/php-jwt`.
+  - With the switch on, `Admin/Settings/SsoSettings`
+    (`{route_prefix}/admin/settings/sso`, admins, `settings.view` /
+    `settings.manage` with roles on) picks the provider (`none`, `saml`,
+    `oauth`, `jwt`) and its fields; stored secrets reach the page only as
+    `********`, and the page gets read-only `endpoints` (login, SP entity ID,
+    metadata, ACS, OAuth redirect, JWT callback) to give the IdP. Sign-in starts
+    at `{route_prefix}/sso/login`:
+    - SAML (`onelogin/php-saml`, strict): the IdP certificate must be set; the
+      assertion must be signed by it (a signed Response alone is refused);
+      Issuer, Audience (`escalated.sso.sp_entity_id`, default the metadata URL),
+      Destination, Recipient and validity windows are checked; InResponseTo must
+      name a request this install issued in the last 10 minutes (single use;
+      IdP-initiated only with `escalated.sso.allow_idp_initiated`); an assertion
+      is accepted once; encrypted assertions are refused.
+    - OAuth 2 / OIDC (`league/oauth2-client`): session-bound single-use `state`,
+      PKCE S256, server-to-server code exchange and userinfo;
+      `email_verified: false` is refused.
+    - JWT (`firebase/php-jwt`): the configured algorithm only (no `none`, no
+      switching), `exp` required, `aud` must be `escalated.sso.jwt_audience`
+      (default: the request's scheme and host, so set it), and `jti` is single use.
+    - Users are matched by email (case-insensitive). `escalated.sso.create_users`
+      (default off) creates unknown ones (`escalated.sso.user_provisioner` for
+      user entities the default cannot build); `escalated.sso.sync_roles`
+      (default off, needs roles on) replaces their roles with the asserted role
+      slug. SSO never grants the admin or agent gate.
+    - Sign-in goes through `Security::login()` on the host firewall, so
+      `LoginSuccessEvent` fires, the session is migrated and the two-factor
+      challenge still applies. A firewall with several authenticators needs
+      `escalated.sso.authenticator`. Refusals answer a generic 403 and log why.
+  - Shared `features.sso` now follows the switch.
+
+  To turn it on: run the migrations, set `ESCALATED_SSO=true`, choose the
+  provider in Admin > Settings > SSO and give the IdP the endpoints shown there
+  (a SAML install needs the IdP certificate), decide on
+  `escalated.sso.create_users` / `sync_roles`. See `docs/access-control.md`.
 - **Two-factor authentication is an install-level switch, off by default, and
   is now enforced when on** (`escalated.access.two_factor`, or
   `ESCALATED_TWO_FACTOR` when the key is unset; ADR
@@ -50,8 +94,7 @@
     `newsletters.send` from their Escalated roles.
   - The shared `permissions` is `['*']` for staff while the switch is off (it
     listed the newsletter slugs), and `features` carries `roles_permissions`,
-    `two_factor` and `sso` (`sso` always false: this bundle does not enforce
-    it yet, so it shows no screen for it).
+    `two_factor` and `sso`.
 
   To enforce roles: run the migrations, `bin/console escalated:permissions:seed`,
   give every staff user a role (`bin/console escalated:roles:assign you@example.com admin`),

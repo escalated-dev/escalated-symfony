@@ -45,7 +45,7 @@ class EscalatedBundle extends AbstractBundle
         $builder->setParameter('escalated.ui_enabled', $config['ui_enabled']);
         $builder->setParameter('escalated.enable_newsletters', $config['enable_newsletters']);
         $builder->setParameter('escalated.table_prefix', $config['table_prefix']);
-        self::setAccessFeatures($builder, $config['access'], $config['two_factor']);
+        self::setAccessFeatures($builder, $config['access'], $config['two_factor'], $config['sso']);
         $this->aliasEntityManager($builder, $config['entity_manager'] ?? null);
 
         // Storage config
@@ -162,8 +162,9 @@ class EscalatedBundle extends AbstractBundle
      *
      * @param array<string, mixed> $access
      * @param array<string, mixed> $twoFactor
+     * @param array<string, mixed> $sso
      */
-    public static function setAccessFeatures(ContainerBuilder $builder, array $access, array $twoFactor = []): void
+    public static function setAccessFeatures(ContainerBuilder $builder, array $access, array $twoFactor = [], array $sso = []): void
     {
         $builder->setParameter('escalated.access.off', false);
         $builder->setParameter(
@@ -179,6 +180,27 @@ class EscalatedBundle extends AbstractBundle
             $twoFactor['required'] ?? '%env(bool:default:escalated.access.off:ESCALATED_TWO_FACTOR_REQUIRED)%',
         );
         $builder->setParameter('escalated.two_factor.issuer', (string) ($twoFactor['issuer'] ?? 'Escalated'));
+
+        $builder->setParameter(
+            'escalated.access.sso',
+            $access['sso'] ?? '%env(bool:default:escalated.access.off:ESCALATED_SSO)%',
+        );
+        $builder->setParameter('escalated.sso.empty', '');
+        foreach (['sp_entity_id' => 'ESCALATED_SSO_SP_ENTITY_ID', 'jwt_audience' => 'ESCALATED_SSO_JWT_AUDIENCE'] as $key => $env) {
+            $builder->setParameter('escalated.sso.'.$key, $sso[$key] ?? '%env(default:escalated.sso.empty:'.$env.')%');
+        }
+        foreach (['allow_idp_initiated' => 'ESCALATED_SSO_ALLOW_IDP_INITIATED', 'create_users' => 'ESCALATED_SSO_CREATE_USERS', 'sync_roles' => 'ESCALATED_SSO_SYNC_ROLES'] as $key => $env) {
+            $builder->setParameter('escalated.sso.'.$key, $sso[$key] ?? '%env(bool:default:escalated.access.off:'.$env.')%');
+        }
+        $builder->setParameter('escalated.sso.clock_skew', max(0, min(300, (int) ($sso['clock_skew'] ?? 120))));
+        foreach (['firewall', 'authenticator', 'redirect_to'] as $key) {
+            $value = $sso[$key] ?? null;
+            $builder->setParameter('escalated.sso.'.$key, \is_string($value) && '' !== $value ? $value : null);
+        }
+        $provisioner = $sso['user_provisioner'] ?? null;
+        if (\is_string($provisioner) && '' !== $provisioner) {
+            $builder->setAlias('escalated.sso.user_provisioner', $provisioner);
+        }
     }
 
     public static function setTicketAccess(ContainerBuilder $builder, array $config): void

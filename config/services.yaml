@@ -46,6 +46,8 @@ services:
             - '../src/Security/RequiresFeature.php'
             - '../src/Security/RoutePermissions.php'
             - '../src/Security/TwoFactorSession.php'
+            - '../src/Security/SsoException.php'
+            - '../src/Support/SecretMask.php'
             - '../src/Doctrine/TicketVisibilityFilter.php'
             # Plugin values built by the registry, not services.
             - '../src/Plugin/PluginContext.php'
@@ -59,6 +61,21 @@ services:
         arguments:
             $rolesPermissions: '%escalated.access.roles_permissions%'
             $twoFactor: '%escalated.access.two_factor%'
+            $sso: '%escalated.access.sso%'
+
+    # Single sign-on (ADR 2026-10-29-configurable-access-features): SAML via
+    # onelogin/php-saml, OAuth 2 / OIDC via league/oauth2-client (this Guzzle
+    # client makes its server-to-server calls; redefine it to add a proxy or
+    # timeouts) and JWT via firebase/php-jwt.
+    escalated.sso.http_client:
+        class: GuzzleHttp\Client
+        public: true
+        arguments: [{ timeout: 10, connect_timeout: 5 }]
+
+    Escalated\Symfony\Service\SsoUserResolver:
+        arguments:
+            $provisioner: '@?escalated.sso.user_provisioner'
+            $hasher: '@?security.user_password_hasher'
 
     # Two-factor (ADR 2026-10-29-configurable-access-features): TOTP through
     # pragmarx/google2fa, secrets and recovery codes sealed under kernel.secret,

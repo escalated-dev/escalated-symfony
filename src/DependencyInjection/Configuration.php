@@ -75,6 +75,77 @@ class Configuration implements ConfigurationInterface
                                 .'reads ESCALATED_TWO_FACTOR (default false). Run the migrations first. See docs/access-control.md.'
                             )
                         ->end()
+                        ->scalarNode('sso')
+                            ->defaultNull()
+                            ->info(
+                                'Single sign-on: users sign in through the provider chosen in Admin > Settings > SSO '
+                                .'(SAML, OAuth 2 / OIDC or JWT) at {route_prefix}/sso/login. Null reads ESCALATED_SSO '
+                                .'(default false). Run the migrations first. See docs/access-control.md.'
+                            )
+                        ->end()
+                    ->end()
+                ->end()
+                ->arrayNode('sso')
+                    ->addDefaultsIfNotSet()
+                    ->info('Used while access.sso is on. The provider and its fields are chosen in Admin > Settings > SSO.')
+                    ->children()
+                        ->scalarNode('sp_entity_id')
+                            ->defaultNull()
+                            ->info('SAML SP entity ID. Null reads ESCALATED_SSO_SP_ENTITY_ID; empty means the SP metadata URL.')
+                        ->end()
+                        ->scalarNode('allow_idp_initiated')
+                            ->defaultNull()
+                            ->info('Accept SAML responses that answer no request this install issued. Null reads ESCALATED_SSO_ALLOW_IDP_INITIATED (default false).')
+                        ->end()
+                        ->scalarNode('jwt_audience')
+                            ->defaultNull()
+                            ->info(
+                                'The `aud` a JWT must carry. Null reads ESCALATED_SSO_JWT_AUDIENCE; empty means the '
+                                .'scheme and host of the request (set it explicitly, and configure trusted_hosts).'
+                            )
+                        ->end()
+                        ->integerNode('clock_skew')
+                            ->defaultValue(120)
+                            ->min(0)->max(300)
+                            ->info('Seconds of JWT clock skew. SAML uses php-saml\'s fixed 180 seconds.')
+                        ->end()
+                        ->scalarNode('create_users')
+                            ->defaultNull()
+                            ->info(
+                                'Create a host user for an email no user has. Null reads ESCALATED_SSO_CREATE_USERS '
+                                .'(default false: unknown emails are refused). See user_provisioner.'
+                            )
+                        ->end()
+                        ->scalarNode('sync_roles')
+                            ->defaultNull()
+                            ->info(
+                                'With roles & permissions on, replace the user\'s Escalated roles with the role the IdP '
+                                .'asserts (by slug). Null reads ESCALATED_SSO_SYNC_ROLES (default false).'
+                            )
+                        ->end()
+                        ->scalarNode('user_provisioner')
+                            ->defaultNull()
+                            ->info(
+                                'Service id of an Escalated\\Symfony\\Contract\\SsoUserProvisionerInterface that creates '
+                                .'host users (create_users). Null builds user_class with its email (constructor argument '
+                                .'or setEmail()), setName() and an unusable random password when the user class has them.'
+                            )
+                        ->end()
+                        ->scalarNode('firewall')
+                            ->defaultNull()
+                            ->info('The firewall to sign in on. Null is the firewall the SSO routes are behind.')
+                        ->end()
+                        ->scalarNode('authenticator')
+                            ->defaultNull()
+                            ->info(
+                                'The authenticator Security::login() signs in with. Null works when the firewall has one '
+                                .'authenticator; name one (e.g. form_login, or a service id) when it has several.'
+                            )
+                        ->end()
+                        ->scalarNode('redirect_to')
+                            ->defaultNull()
+                            ->info('Where to land after sign-in when no page was asked for. Null: the agent dashboard (admin reports for admins who are not agents).')
+                        ->end()
                     ->end()
                 ->end()
                 ->arrayNode('two_factor')

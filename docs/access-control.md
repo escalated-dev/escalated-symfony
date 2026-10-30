@@ -14,10 +14,7 @@ screen or stored setting changes them.
 |---|---|---|
 | Roles & permissions | `escalated.access.roles_permissions` | `ESCALATED_ROLES_PERMISSIONS` |
 | Two-factor authentication | `escalated.access.two_factor` | `ESCALATED_TWO_FACTOR` |
-| Single sign-on | not available yet | |
-
-This bundle does not enforce SSO yet, so `features.sso` is always false and no
-screen for it is shown.
+| Single sign-on | `escalated.access.sso` | `ESCALATED_SSO` |
 
 ```yaml
 # config/packages/escalated.yaml
@@ -25,6 +22,7 @@ escalated:
     access:
         roles_permissions: true   # or leave unset and set ESCALATED_ROLES_PERMISSIONS=true
         two_factor: true          # or leave unset and set ESCALATED_TWO_FACTOR=true
+        sso: true                 # or leave unset and set ESCALATED_SSO=true
 ```
 
 ## Roles & permissions
@@ -165,7 +163,123 @@ the user's enrolment so they can set it up again.
    clear the cache.
 3. Only after telling staff, require it if you want to.
 
-### Shared props
+## Single sign-on
+
+With `escalated.access.sso` on, users sign in through the identity provider an
+admin chooses in **Admin > Settings > SSO** (`{route_prefix}/admin/settings/sso`,
+`Admin/Settings/SsoSettings`): `none`, `saml`, `oauth` or `jwt`, with that
+provider's fields. Those settings stay runtime-editable and only take effect
+while the switch is on. The page shows stored secrets (JWT secret, OAuth client
+secret) only as `********`; posting the mask back keeps the stored value. It
+also lists the read-only `endpoints` to give the identity provider:
+
+| Endpoint | Route | Use |
+|---|---|---|
+| `GET {route_prefix}/sso/login` | `escalated.sso.login` | Start sign-in with the chosen provider (404 while it is `none`) |
+| `GET {route_prefix}/sso/saml/metadata` | `escalated.sso.saml.metadata` | SP metadata XML; its URL is the default SP entity ID |
+| `POST {route_prefix}/sso/saml/acs` | `escalated.sso.saml.acs` | SAML assertion consumer (HTTP-POST binding) |
+| `GET {route_prefix}/sso/oauth/callback` | `escalated.sso.oauth.callback` | OAuth 2 / OIDC redirect URI |
+| `GET\|POST {route_prefix}/sso/jwt/callback` | `escalated.sso.jwt.callback` | JWT hand-off (`jwt` parameter) |
+
+A route of a provider other than the chosen one answers 404. The bundle puts no
+CSRF check on these routes; the IdP's cross-site POSTs are authenticated by the
+signed, single-use message.
+
+### What is checked
+
+- **SAML** (`onelogin/php-saml`, strict mode). Every response is refused while
+  no IdP certificate is configured. The assertion must be signed by that
+  certificate (a signed Response around an unsigned assertion is refused; keys
+  in `KeyInfo` are never trusted), exactly one assertion, no
+  `EncryptedAssertion`. `Issuer` must equal the IdP entity ID, `Audience` must
+  include the SP entity ID, the Response `Destination` and the bearer
+  `Recipient` must equal the ACS URL, and the validity windows must hold
+  (php-saml allows 180 seconds of drift). `InResponseTo` must name an
+  AuthnRequest this install issued in the last 10 minutes, and each is answered
+  once; the IDs are stored in the database because the IdP's cross-site POST
+  carries no SameSite=Lax session cookie. Unsolicited (IdP-initiated) responses
+  are refused unless `escalated.sso.allow_idp_initiated` is on. An assertion ID
+  is accepted once.
+- **OAuth 2 / OIDC** (`league/oauth2-client`). Authorization-code flow with a
+  single-use `state` kept in the session and PKCE (`S256`). The code is
+  exchanged server to server and the profile read from the userinfo URL. A
+  missing or mismatched `state`, an IdP `error`, or `email_verified: false` is
+  refused. The calls use the `escalated.sso.http_client` Guzzle service;
+  redefine it to add a proxy or other options.
+- **JWT** (`firebase/php-jwt`). The token's `alg` must be the configured one
+  (HS256/384/512 with the shared secret, RS256/384/512 with the public key in
+  the same field); `none` and algorithm switching are refused. `exp` is
+  required, `nbf`/`iat` are honoured with `escalated.sso.clock_skew` seconds of
+  drift, `aud` must equal `escalated.sso.jwt_audience`, and `jti` is required
+  and accepted once.
+
+Request IDs, assertion IDs and `jti`s live in `escalated_sso_message_ids` until
+they expire (plus drift), and expired rows are pruned on write.
+
+### Users and roles
+
+The email comes from the `sso_attr_email` attribute or claim (SAML falls back to
+an email-shaped `NameID`), the name from `sso_attr_name` and the role from
+`sso_attr_role`. The user is matched to a host user (`escalated.user_class`,
+which needs a mapped `email` field) by email, case-insensitively.
+
+- No match: refused, unless `escalated.sso.create_users` is on. Then a user is
+  created: by the service named in `escalated.sso.user_provisioner` (an
+  `Escalated\Symfony\Contract\SsoUserProvisionerInterface`) if set, otherwise by
+  building `user_class` with the email (a constructor `$email` argument or
+  `setEmail()`), `setName()` if it has one, and an unusable random password
+  through the host's password hasher if it has `setPassword()`.
+- With roles & permissions on and `escalated.sso.sync_roles` on, a role naming
+  an existing Escalated role slug replaces the user's roles with that one; an
+  unknown slug changes nothing.
+- SSO never grants `ROLE_ESCALATED_ADMIN` or an agent profile: it only signs the
+  user in.
+
+The user is signed in with `Security::login()` on the firewall the SSO routes
+sit behind (or `escalated.sso.firewall`). That dispatches the firewall's
+`LoginSuccessEvent`, so the session is migrated and, with two-factor on, an
+enrolled user still meets the challenge. A firewall with more than one
+authenticator needs `escalated.sso.authenticator` (for example `form_login`).
+They land on the page the firewall saved as the target path, else
+`escalated.sso.redirect_to`, else the agent dashboard (admin reports for an
+admin who is not an agent, the customer ticket list for everyone else). Every
+refusal answers a generic 403 and logs the reason at warning level.
+
+Escalated does not turn off your own password login; do that in your app if
+you want SSO only.
+
+### Settings
+
+```yaml
+escalated:
+    access:
+        sso: true
+    sso:
+        sp_entity_id: ~          # ESCALATED_SSO_SP_ENTITY_ID; empty = the metadata URL
+        allow_idp_initiated: ~   # ESCALATED_SSO_ALLOW_IDP_INITIATED, default false
+        jwt_audience: ~          # ESCALATED_SSO_JWT_AUDIENCE; empty = the request's scheme and host
+        clock_skew: 120          # seconds, 0 to 300 (JWT)
+        create_users: ~          # ESCALATED_SSO_CREATE_USERS, default false
+        sync_roles: ~            # ESCALATED_SSO_SYNC_ROLES, default false
+        user_provisioner: ~      # service id, see above
+        firewall: ~              # default: the firewall of the SSO routes
+        authenticator: ~         # needed when that firewall has several
+        redirect_to: ~
+```
+
+Set `jwt_audience` explicitly (and `framework.trusted_hosts`): the default
+comes from the request.
+
+### Turning it on
+
+1. Run the migrations (`Version20261101000001` adds `escalated_sso_message_ids`).
+2. Set `escalated.access.sso: true` or `ESCALATED_SSO=true`, and clear the cache.
+3. In Admin > Settings > SSO choose the provider and fill its fields (a SAML
+   install needs the IdP certificate), and give the IdP the endpoints listed
+   there.
+4. Decide on `create_users` and `sync_roles`.
+
+## Shared props
 
 Every page's shared data (`_escalated_shared`) has `features.roles_permissions`,
 `features.two_factor` and `features.sso` (booleans), `permissions` (the

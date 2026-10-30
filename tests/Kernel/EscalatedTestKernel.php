@@ -123,6 +123,7 @@ final class EscalatedTestKernel extends Kernel
     private function configureContainer(ContainerConfigurator $container): void
     {
         $container->services()->set(Fixtures\TestAccountResolver::class)->public();
+        $container->services()->set(Fixtures\TestLoginAuthenticator::class);
         // An import source, registered the way a host or plugin bundle registers one.
         $container->services()->set(Fixtures\FakeImportAdapter::class)->public()->tag('escalated.import_adapter');
         // Two native plugins, registered the way a host registers one. Both
@@ -150,7 +151,14 @@ final class EscalatedTestKernel extends Kernel
                 'providers' => [
                     'test_users' => ['entity' => ['class' => TestUser::class, 'property' => 'email']],
                 ],
-                'firewalls' => ['main' => ['lazy' => true, 'provider' => 'test_users']],
+                'firewalls' => ['main' => [
+                    'lazy' => true,
+                    'provider' => 'test_users',
+                    // A sign-in and sign-out through the firewall, as a host's
+                    // login form and logout route do (two-factor tests).
+                    'custom_authenticators' => [Fixtures\TestLoginAuthenticator::class],
+                    'logout' => ['path' => '/test-logout', 'invalidate_session' => false],
+                ]],
             ]
             : [
                 'providers' => ['in_memory' => ['memory' => null]],
@@ -200,5 +208,13 @@ final class EscalatedTestKernel extends Kernel
     private function configureRoutes(RoutingConfigurator $routes): void
     {
         $routes->import('@EscalatedBundle/config/routes.yaml');
+
+        // The firewall answers these before any controller runs; the router
+        // only has to match them.
+        foreach (['test_login' => Fixtures\TestLoginAuthenticator::PATH, 'test_logout' => '/test-logout'] as $name => $path) {
+            $routes->add($name, $path)
+                ->controller('Symfony\Bundle\FrameworkBundle\Controller\RedirectController::urlRedirectAction')
+                ->defaults(['path' => '/', 'permanent' => false]);
+        }
     }
 }

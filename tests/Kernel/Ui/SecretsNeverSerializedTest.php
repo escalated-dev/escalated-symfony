@@ -229,8 +229,8 @@ final class SecretsNeverSerializedTest extends EscalatedWebTestCase
         $job = $this->importJob();
         $twoFactor = (new TwoFactor())
             ->setUserId((string) $this->admin->getId())
-            ->setSecret('TOTPSECRETBASE32XX')
-            ->setRecoveryCodes(['rc-aaaa-bbbb']);
+            ->setSealedSecret('TOTPSECRETBASE32XX')
+            ->setSealedRecoveryCodes('rc-aaaa-bbbb');
         $apiToken = (new ApiToken())->setUserId('1')->setName('CI')->setToken('hash-0f1e2d3c4b5a');
 
         $normalized = [
@@ -242,8 +242,9 @@ final class SecretsNeverSerializedTest extends EscalatedWebTestCase
 
         self::assertArrayNotHasKey('secret', $normalized['webhook']);
         self::assertArrayNotHasKey('sealedCredentials', $normalized['import job']);
-        self::assertArrayNotHasKey('secret', $normalized['two factor']);
-        self::assertArrayNotHasKey('recoveryCodes', $normalized['two factor']);
+        self::assertArrayNotHasKey('sealedSecret', $normalized['two factor']);
+        self::assertArrayNotHasKey('lastUsedStep', $normalized['two factor']);
+        self::assertArrayNotHasKey('sealedRecoveryCodes', $normalized['two factor']);
         self::assertArrayNotHasKey('token', $normalized['api token']);
 
         $json = (string) json_encode($normalized);

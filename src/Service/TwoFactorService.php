@@ -6,113 +6,234 @@ namespace Escalated\Symfony\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Entity\TwoFactor;
+use Escalated\Symfony\Security\AccessFeatures;
+use Escalated\Symfony\Security\SecretSealer;
+use PragmaRX\Google2FA\Google2FA;
 
+/**
+ * TOTP (RFC 6238: SHA-1, 6 digits, 30 s steps) through pragmarx/google2fa,
+ * single-use recovery codes, and the enrolment records
+ * (ADR 2026-10-29-configurable-access-features, "Two-factor").
+ *
+ * Secrets and recovery codes are sealed at rest with {@see SecretSealer}.
+ */
 class TwoFactorService
 {
+    /** Steps of clock drift accepted either side of now. */
+    public const WINDOW = 1;
+
+    /** The runtime setting that wins over `escalated.two_factor.required` once saved. */
+    public const REQUIRED_SETTING = 'two_factor_required';
+
+    private const SECRET_CONTEXT = 'escalated-two-factor-secret';
+    private const RECOVERY_CONTEXT = 'escalated-two-factor-recovery-codes';
+
+    private readonly Google2FA $google2fa;
+    private readonly bool $required;
+
     public function __construct(
         private readonly EntityManagerInterface $em,
+        private readonly SecretSealer $sealer,
+        private readonly AccessFeatures $features = new AccessFeatures(),
+        private readonly ?SettingsService $settings = null,
+        mixed $required = false,
+        private readonly string $issuer = 'Escalated',
     ) {
+        $this->google2fa = new Google2FA();
+        $this->google2fa->setWindow(self::WINDOW);
+        $this->required = \is_bool($required) ? $required : (\is_scalar($required) && (filter_var($required, \FILTER_VALIDATE_BOOL, \FILTER_NULL_ON_FAILURE) ?? false));
     }
 
-    public function enable(int|string $userId, string $method = 'totp'): TwoFactor
+    /** A random 32-character base32 secret (160 bits). */
+    public function generateSecret(): string
     {
-        $twoFactor = new TwoFactor();
-        $twoFactor->setUserId($userId);
-        $twoFactor->setMethod($method);
-        $twoFactor->setSecret($this->generateSecret());
-        $twoFactor->setRecoveryCodes($this->generateRecoveryCodes());
-        $twoFactor->setIsEnabled(true);
+        return $this->google2fa->generateSecretKey(32);
+    }
 
+    /** The otpauth:// URI an authenticator app reads from a QR code. */
+    public function qrUri(string $secret, string $account): string
+    {
+        return $this->google2fa->getQRCodeUrl('' !== $this->issuer ? $this->issuer : 'Escalated', $account, $secret);
+    }
+
+    /** Eight random single-use recovery codes. */
+    public function generateRecoveryCodes(): array
+    {
+        $codes = [];
+        for ($i = 0; $i < 8; ++$i) {
+            $codes[] = strtoupper(bin2hex(random_bytes(4))).'-'.strtoupper(bin2hex(random_bytes(4)));
+        }
+
+        return $codes;
+    }
+
+    /**
+     * Start (or restart) a pending enrolment for the user: any earlier pending
+     * one is replaced. A confirmed enrolment is left alone; disable it first.
+     *
+     * @return array{secret: string, recovery_codes: list<string>}
+     */
+    public function begin(int|string $userId): array
+    {
+        foreach ($this->em->getRepository(TwoFactor::class)->findBy(['userId' => $userId, 'isEnabled' => false]) as $pending) {
+            $this->em->remove($pending);
+        }
+
+        $secret = $this->generateSecret();
+        $codes = $this->generateRecoveryCodes();
+
+        $twoFactor = (new TwoFactor())->setUserId($userId)->setMethod('totp');
+        $this->storeSecret($twoFactor, $secret);
+        $this->storeRecoveryCodes($twoFactor, $codes);
         $this->em->persist($twoFactor);
         $this->em->flush();
 
-        return $twoFactor;
+        return ['secret' => $secret, 'recovery_codes' => $codes];
     }
 
-    public function verify(TwoFactor $twoFactor, string $code): bool
+    public function confirm(TwoFactor $twoFactor): void
     {
-        if (!$twoFactor->isEnabled()) {
-            return false;
-        }
-
-        $valid = $this->verifyTotp($twoFactor->getSecret(), $code);
-
-        if ($valid && null === $twoFactor->getVerifiedAt()) {
-            $twoFactor->setVerifiedAt(new \DateTimeImmutable());
-            $this->em->flush();
-        }
-
-        return $valid;
-    }
-
-    public function verifyRecoveryCode(TwoFactor $twoFactor, string $code): bool
-    {
-        if ($twoFactor->useRecoveryCode($code)) {
-            $this->em->flush();
-
-            return true;
-        }
-
-        return false;
-    }
-
-    public function disable(TwoFactor $twoFactor): void
-    {
-        $twoFactor->setIsEnabled(false);
-        $twoFactor->setSecret(null);
-        $twoFactor->setRecoveryCodes(null);
+        $twoFactor->setIsEnabled(true)->setVerifiedAt(new \DateTimeImmutable());
         $this->em->flush();
     }
 
-    public function findByUser(int|string $userId): ?TwoFactor
+    /** Remove every enrolment the user has (confirmed or pending); the number removed. */
+    public function remove(int|string $userId): int
     {
+        $rows = $this->em->getRepository(TwoFactor::class)->findBy(['userId' => $userId]);
+        foreach ($rows as $row) {
+            $this->em->remove($row);
+        }
+        $this->em->flush();
+
+        return \count($rows);
+    }
+
+    public function confirmedFor(int|string|null $userId): ?TwoFactor
+    {
+        if (null === $userId) {
+            return null;
+        }
+
         return $this->em->getRepository(TwoFactor::class)->findOneBy(['userId' => $userId, 'isEnabled' => true]);
     }
 
-    public function regenerateRecoveryCodes(TwoFactor $twoFactor): array
+    public function pendingFor(int|string|null $userId): ?TwoFactor
     {
-        $codes = $this->generateRecoveryCodes();
-        $twoFactor->setRecoveryCodes($codes);
-        $this->em->flush();
-
-        return $codes;
-    }
-
-    private function generateSecret(int $length = 32): string
-    {
-        $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-        $secret = '';
-        for ($i = 0; $i < $length; ++$i) {
-            $secret .= $chars[random_int(0, 31)];
+        if (null === $userId) {
+            return null;
         }
 
-        return $secret;
+        return $this->em->getRepository(TwoFactor::class)->findOneBy(['userId' => $userId, 'isEnabled' => false], ['id' => 'DESC']);
     }
 
-    private function generateRecoveryCodes(int $count = 8): array
+    /** Whether the code is valid for the secret right now (no replay check). */
+    public function verify(string $secret, string $code): bool
     {
-        $codes = [];
-        for ($i = 0; $i < $count; ++$i) {
-            $codes[] = sprintf('%s-%s', bin2hex(random_bytes(4)), bin2hex(random_bytes(4)));
-        }
+        $code = self::normalizeCode($code);
 
-        return $codes;
+        return 1 === preg_match('/^\d{6}$/', $code) && true === $this->google2fa->verifyKey($secret, $code, self::WINDOW);
     }
 
-    private function verifyTotp(?string $secret, string $code): bool
+    /**
+     * Verify a code for an enrolment and record its time step, refusing a
+     * step at or before the last one accepted (so a code works once).
+     */
+    public function verifyAndConsume(TwoFactor $twoFactor, string $code): bool
     {
-        if (!$secret) {
+        $code = self::normalizeCode($code);
+        $secret = $this->secretOf($twoFactor);
+        if (null === $secret || 1 !== preg_match('/^\d{6}$/', $code)) {
             return false;
         }
-        // Simplified TOTP verification: in production, use a proper TOTP library
-        $timeSlice = (int) floor(time() / 30);
-        for ($i = -1; $i <= 1; ++$i) {
-            $expected = str_pad((string) (crc32($secret.($timeSlice + $i)) % 1000000), 6, '0', STR_PAD_LEFT);
-            if (hash_equals($expected, $code)) {
+
+        // 0, not null: with null the library returns true instead of the step.
+        $step = $this->google2fa->verifyKeyNewer($secret, $code, $twoFactor->getLastUsedStep() ?? 0, self::WINDOW);
+        if (!\is_int($step)) {
+            return false;
+        }
+
+        $twoFactor->setLastUsedStep($step);
+        $this->em->flush();
+
+        return true;
+    }
+
+    /** Use a recovery code: true, and the code is removed, when it matches one. */
+    public function useRecoveryCode(TwoFactor $twoFactor, string $code): bool
+    {
+        $code = strtoupper(trim($code));
+        if ('' === $code) {
+            return false;
+        }
+
+        $codes = $this->recoveryCodesOf($twoFactor);
+        foreach ($codes as $index => $candidate) {
+            if (hash_equals(strtoupper($candidate), $code)) {
+                unset($codes[$index]);
+                $this->storeRecoveryCodes($twoFactor, array_values($codes));
+                $this->em->flush();
+
                 return true;
             }
         }
 
         return false;
+    }
+
+    public function secretOf(TwoFactor $twoFactor): ?string
+    {
+        return $this->sealer->open($twoFactor->getSealedSecret(), self::SECRET_CONTEXT);
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function recoveryCodesOf(TwoFactor $twoFactor): array
+    {
+        $json = $this->sealer->open($twoFactor->getSealedRecoveryCodes(), self::RECOVERY_CONTEXT);
+        if (null === $json) {
+            return [];
+        }
+        $codes = json_decode($json, true);
+
+        return \is_array($codes) ? array_values(array_filter($codes, 'is_string')) : [];
+    }
+
+    /**
+     * Whether staff must enrol: the `two_factor_required` setting once an
+     * admin has saved it, else `escalated.two_factor.required`. Only while the
+     * two-factor switch is on.
+     */
+    public function required(): bool
+    {
+        if (!$this->features->twoFactor()) {
+            return false;
+        }
+
+        try {
+            return $this->settings?->getBool(self::REQUIRED_SETTING, $this->required) ?? $this->required;
+        } catch (\Throwable) {
+            // The settings table may not exist yet.
+            return $this->required;
+        }
+    }
+
+    private function storeSecret(TwoFactor $twoFactor, string $secret): void
+    {
+        $twoFactor->setSealedSecret($this->sealer->seal($secret, self::SECRET_CONTEXT));
+    }
+
+    /**
+     * @param list<string> $codes
+     */
+    private function storeRecoveryCodes(TwoFactor $twoFactor, array $codes): void
+    {
+        $twoFactor->setSealedRecoveryCodes($this->sealer->seal(json_encode($codes, \JSON_THROW_ON_ERROR), self::RECOVERY_CONTEXT));
+    }
+
+    private static function normalizeCode(string $code): string
+    {
+        return preg_replace('/\s+/', '', $code) ?? '';
     }
 }

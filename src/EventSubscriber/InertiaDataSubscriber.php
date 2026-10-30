@@ -8,7 +8,9 @@ use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Entity\AgentProfile;
 use Escalated\Symfony\Plugin\PluginRegistry;
 use Escalated\Symfony\Security\AccessFeatures;
+use Escalated\Symfony\Security\UserKeyResolver;
 use Escalated\Symfony\Security\UserPermissions;
+use Escalated\Symfony\Service\TwoFactorService;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\ControllerEvent;
@@ -32,6 +34,8 @@ class InertiaDataSubscriber implements EventSubscriberInterface
         private readonly ?PluginRegistry $plugins = null,
         private readonly AccessFeatures $accessFeatures = new AccessFeatures(),
         private readonly ?UserPermissions $userPermissions = null,
+        private readonly ?TwoFactorService $twoFactor = null,
+        private readonly ?UserKeyResolver $userKeys = null,
     ) {
     }
 
@@ -70,6 +74,7 @@ class InertiaDataSubscriber implements EventSubscriberInterface
                 'newsletters' => $this->newslettersEnabled,
                 ...$this->accessFeatures->shared(),
             ],
+            'two_factor_required' => $this->twoFactorRequired($user, $isAgent || $isAdmin),
         ];
 
         if ($user instanceof UserInterface) {
@@ -96,6 +101,26 @@ class InertiaDataSubscriber implements EventSubscriberInterface
 
         // Store shared data in the request attributes for Inertia renderers to pick up
         $request->attributes->set('_escalated_shared', $data);
+    }
+
+    /**
+     * Whether the signed-in staff user must still enrol in two-factor: it is
+     * required (only ever while the switch is on) and they have no confirmed
+     * enrolment.
+     */
+    private function twoFactorRequired(?UserInterface $user, bool $isStaff): bool
+    {
+        if (!$user instanceof UserInterface || !$isStaff || null === $this->twoFactor) {
+            return false;
+        }
+
+        try {
+            return $this->twoFactor->required()
+                && null === $this->twoFactor->confirmedFor($this->userKeys?->resolve($user));
+        } catch (\Throwable) {
+            // The two-factor table may not exist yet.
+            return false;
+        }
     }
 
     /**

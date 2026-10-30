@@ -32,7 +32,7 @@ final class EscalatedRouteLoader extends Loader
      */
     private const ALWAYS = ['Api/', 'Plugin/', 'InboundEmailController.php'];
 
-    private const UI = ['Customer/', 'Agent/', 'Admin/', 'Widget/', 'Guest/'];
+    private const UI = ['Customer/', 'Agent/', 'Admin/', 'Widget/', 'Guest/', 'Auth/'];
 
     private const NEWSLETTER = ['Newsletter/Admin/', 'Newsletter/Public/', 'Newsletter/Webhook/'];
 

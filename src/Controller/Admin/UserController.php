@@ -14,6 +14,7 @@ use Escalated\Symfony\Security\UserPermissions;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Session\FlashBagAwareSessionInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
@@ -76,6 +77,10 @@ class UserController extends AbstractController
             'filters' => ['search' => $search],
             'currentUserId' => $this->currentUserId(),
         ];
+        $errors = $this->flashedErrors($request);
+        if ([] !== $errors) {
+            $props['errors'] = $errors;
+        }
 
         // Escalated roles, only while roles & permissions is enforced: each
         // user's role slugs, and the roles an admin can give them.
@@ -103,18 +108,10 @@ class UserController extends AbstractController
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
 
-        $payload = $this->payload($request);
-        $ids = $payload['role_ids'] ?? null;
-        $roles = [];
-        $valid = \is_array($ids);
-        if ($valid) {
-            $wanted = array_values(array_unique(array_map(static fn (mixed $id): int => is_numeric($id) ? (int) $id : 0, $ids)));
-            $roles = [] === $wanted ? [] : $this->em->getRepository(Role::class)->findBy(['id' => $wanted]);
-            $valid = \count($roles) === \count($wanted);
-        }
-        if (!$valid) {
-            $this->addFlash('errors', ['role_ids' => 'The selected roles are invalid.']);
-            $this->addFlash('error', 'The selected roles are invalid.');
+        [$roles, $errors] = $this->validateRoleIds($this->payload($request));
+        if ([] !== $errors) {
+            $this->addFlash('errors', $errors);
+            $this->addFlash('error', (string) reset($errors));
 
             return $this->redirectToRoute('escalated.admin.users.index', [], Response::HTTP_SEE_OTHER);
         }
@@ -149,6 +146,78 @@ class UserController extends AbstractController
         $this->addFlash('success', 'User updated.');
 
         return $this->redirectToRoute('escalated.admin.users.index', [], Response::HTTP_SEE_OTHER);
+    }
+
+    /**
+     * escalated-laravel's rules for `role_ids` (`present|array`, each
+     * `integer|exists:roles,id`), answered the way Laravel answers them:
+     * errors keyed `role_ids` or `role_ids.N`, in Laravel's wording.
+     *
+     * @param array<mixed> $payload
+     *
+     * @return array{0: list<Role>, 1: array<string, string>}
+     */
+    private function validateRoleIds(array $payload): array
+    {
+        if (!\array_key_exists('role_ids', $payload)) {
+            return [[], ['role_ids' => 'The role ids field must be present.']];
+        }
+        $ids = $payload['role_ids'];
+        if (!\is_array($ids)) {
+            return [[], ['role_ids' => 'The role ids field must be an array.']];
+        }
+
+        $errors = [];
+        $wanted = [];
+        foreach ($ids as $index => $id) {
+            $int = filter_var($id, \FILTER_VALIDATE_INT, \FILTER_NULL_ON_FAILURE);
+            if (null === $int) {
+                $errors['role_ids.'.$index] = 'The role_ids.'.$index.' field must be an integer.';
+                continue;
+            }
+            $wanted[$index] = $int;
+        }
+
+        $found = [];
+        if ([] !== $wanted) {
+            foreach ($this->em->getRepository(Role::class)->findBy(['id' => array_values(array_unique($wanted))]) as $role) {
+                $found[(int) $role->getId()] = $role;
+            }
+        }
+        foreach ($wanted as $index => $id) {
+            if (!isset($found[$id])) {
+                $errors['role_ids.'.$index] = 'The selected role_ids.'.$index.' is invalid.';
+            }
+        }
+        ksort($errors, \SORT_NATURAL);
+
+        return [[] === $errors ? array_values($found) : [], $errors];
+    }
+
+    /**
+     * Errors flashed by a rejected role change, handed back to the page as
+     * `errors` (Inertia's convention) so the screen shows them.
+     *
+     * @return array<string, string>
+     */
+    private function flashedErrors(Request $request): array
+    {
+        if (!$request->hasSession()) {
+            return [];
+        }
+        $session = $request->getSession();
+        if (!$session instanceof FlashBagAwareSessionInterface) {
+            return [];
+        }
+
+        $errors = [];
+        foreach ($session->getFlashBag()->get('errors') as $set) {
+            if (\is_array($set)) {
+                $errors = [...$errors, ...$set];
+            }
+        }
+
+        return $errors;
     }
 
     /**

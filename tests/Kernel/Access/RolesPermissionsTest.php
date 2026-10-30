@@ -427,6 +427,48 @@ final class RolesPermissionsTest extends EscalatedWebTestCase
         self::assertSame(['admin'], $this->roleSlugsOf($this->admin));
     }
 
+    public function testABadRoleIdsGoesBackWithLaravelsErrorsByKey(): void
+    {
+        $this->boot(true);
+        $this->give($this->admin, 'admin');
+        $this->give($this->agent, 'light_agent');
+        $this->client->loginUser($this->admin);
+        $agentRole = $this->role('agent');
+
+        $cases = [
+            [[], ['role_ids' => 'The role ids field must be present.']],
+            [['role_ids' => null], ['role_ids' => 'The role ids field must be an array.']],
+            [['role_ids' => 'admin'], ['role_ids' => 'The role ids field must be an array.']],
+            [['role_ids' => ['x']], ['role_ids.0' => 'The role_ids.0 field must be an integer.']],
+            [['role_ids' => [$agentRole->getId(), 987654]], ['role_ids.1' => 'The selected role_ids.1 is invalid.']],
+            [['role_ids' => [1.5, 987654]], [
+                'role_ids.0' => 'The role_ids.0 field must be an integer.',
+                'role_ids.1' => 'The selected role_ids.1 is invalid.',
+            ]],
+        ];
+        foreach ($cases as [$body, $errors]) {
+            $this->client->request('PUT', '/support/admin/users/'.$this->agent->getId().'/roles', server: [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_X_INERTIA' => 'true',
+                'HTTP_ACCEPT' => 'text/html, application/xhtml+xml',
+            ], content: (string) json_encode($body));
+            self::assertResponseRedirects(null, 303, json_encode($body) ?: '');
+
+            // Inertia follows the redirect and shows the errors on the screen.
+            $page = $this->visit('/support/admin/users');
+            self::assertSame($errors, $page['props']['errors'] ?? null, json_encode($body) ?: '');
+        }
+
+        self::assertSame(['light_agent'], $this->roleSlugsOf($this->agent));
+
+        // Numeric strings are integers, as in Laravel, and [] clears the roles.
+        $this->send('PUT', '/support/admin/users/'.$this->agent->getId().'/roles', ['role_ids' => [(string) $agentRole->getId()]]);
+        self::assertResponseRedirects();
+        self::assertSame(['agent'], $this->roleSlugsOf($this->agent));
+        $this->send('PUT', '/support/admin/users/'.$this->agent->getId().'/roles', ['role_ids' => []]);
+        self::assertSame([], $this->roleSlugsOf($this->agent));
+    }
+
     public function testTheCommandsSeedAndAssignRoles(): void
     {
         $this->client = static::clientWithSchema(['escalated' => ['user_class' => TestUser::class]]);

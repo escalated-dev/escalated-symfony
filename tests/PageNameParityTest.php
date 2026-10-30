@@ -36,7 +36,6 @@ final class PageNameParityTest extends TestCase
     private const NOT_YET_RENDERED = [
         'Escalated/Admin/Settings/Sandbox',
         'Escalated/Admin/Workflows/Builder',
-        'Escalated/Error',
     ];
 
     public function testEveryRenderedPageNameResolvesToAComponent(): void

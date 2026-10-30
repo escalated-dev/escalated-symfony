@@ -124,6 +124,7 @@ final class EscalatedTestKernel extends Kernel
     {
         $container->services()->set(Fixtures\TestAccountResolver::class)->public();
         $container->services()->set(Fixtures\TestLoginAuthenticator::class);
+        $container->services()->set(Fixtures\ErrorProbeController::class)->public()->tag('controller.service_arguments');
         // An import source, registered the way a host or plugin bundle registers one.
         $container->services()->set(Fixtures\FakeImportAdapter::class)->public()->tag('escalated.import_adapter');
         // Two native plugins, registered the way a host registers one. Both
@@ -208,6 +209,13 @@ final class EscalatedTestKernel extends Kernel
     private function configureRoutes(RoutingConfigurator $routes): void
     {
         $routes->import('@EscalatedBundle/config/routes.yaml');
+
+        // Failures the suite cannot otherwise provoke, on Escalated route names
+        // and on one host route (InertiaErrorPageTest).
+        $probe = Fixtures\ErrorProbeController::class;
+        $routes->add('escalated.error_probe.thrown', '/support/error-probe/thrown/{status}')->controller($probe.'::thrown');
+        $routes->add('escalated.error_probe.returned', '/support/error-probe/returned/{status}')->controller($probe.'::returned');
+        $routes->add('host_missing', '/host/missing')->controller($probe.'::hostMissing');
 
         // The firewall answers these before any controller runs; the router
         // only has to match them.

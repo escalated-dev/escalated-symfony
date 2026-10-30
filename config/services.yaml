@@ -228,6 +228,12 @@ services:
 
     Escalated\Symfony\Rendering\InertiaUiRenderer: ~
 
+    # Escalated/Error for Inertia visits to Escalated routes that end in an error.
+    Escalated\Symfony\EventSubscriber\InertiaErrorPageSubscriber:
+        arguments:
+            $uiEnabled: '%escalated.ui_enabled%'
+            $debug: '%kernel.debug%'
+
     # Security Voters
     Escalated\Symfony\Security\EnsureAgentVoter:
         tags: ['security.voter']

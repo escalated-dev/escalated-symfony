@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+### Upgrading
+- **An Inertia visit to an Escalated route that ends in 403, 404, 419, 429,
+  500 or 503 now gets the shared `Escalated/Error` page** (props `status` and
+  a generic `message`, as Rails and Laravel send them) instead of Symfony's
+  HTML error page or a controller's JSON error, which the Inertia client
+  could only show in a modal. Both thrown errors (after the security
+  listener; a host `kernel.exception` listener with a priority above -64
+  still answers first) and returned error responses are covered. Full page
+  loads, JSON requests (no `X-Inertia`), the API, widget and inbound email
+  routes, responses that are already Inertia pages and the host's own routes
+  are untouched. An exception's or controller's own text never reaches the
+  page. While `kernel.debug` is on, a 500 is left to Symfony's exception
+  page. Does nothing while `ui_enabled` is false. No configuration change.
+
 ## [0.3.8] - 2026-10-30
 
 ### Upgrading

@@ -5,7 +5,12 @@ declare(strict_types=1);
 namespace Escalated\Symfony\Controller\Admin;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Escalated\Symfony\Entity\Role;
 use Escalated\Symfony\Rendering\UiRendererInterface;
+use Escalated\Symfony\Security\AccessFeatures;
+use Escalated\Symfony\Security\RequiresFeature;
+use Escalated\Symfony\Security\UserKeyResolver;
+use Escalated\Symfony\Security\UserPermissions;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -32,6 +37,8 @@ class UserController extends AbstractController
         private readonly EntityManagerInterface $em,
         private readonly UiRendererInterface $renderer,
         private readonly string $userClass,
+        private readonly AccessFeatures $accessFeatures = new AccessFeatures(),
+        private readonly ?UserPermissions $userPermissions = null,
     ) {
     }
 
@@ -64,11 +71,84 @@ class UserController extends AbstractController
             'last_page' => (int) max(1, ceil($total / $perPage)),
         ];
 
-        return $this->renderer->render('Escalated/Admin/Users/Index', [
+        $props = [
             'users' => $users,
             'filters' => ['search' => $search],
             'currentUserId' => $this->currentUserId(),
-        ]);
+        ];
+
+        // Escalated roles, only while roles & permissions is enforced: each
+        // user's role slugs, and the roles an admin can give them.
+        if ($this->accessFeatures->rolesPermissions() && null !== $this->userPermissions) {
+            $held = $this->userPermissions->roleSlugsOf(array_column($items, 'id'));
+            foreach ($users['data'] as $i => $row) {
+                $users['data'][$i]['roles'] = $held[(string) $row['id']] ?? [];
+            }
+            $props['users'] = $users;
+            $props['roles'] = array_map(
+                static fn (Role $role): array => ['id' => $role->getId(), 'name' => $role->getName(), 'slug' => $role->getSlug()],
+                $this->em->getRepository(Role::class)->findBy([], ['name' => 'ASC']),
+            );
+        }
+
+        return $this->renderer->render('Escalated/Admin/Users/Index', $props);
+    }
+
+    /**
+     * Replace a user's Escalated roles (roles & permissions on only).
+     */
+    #[Route('/{user}/roles', name: 'roles', methods: ['PUT'])]
+    #[RequiresFeature(AccessFeatures::ROLES_PERMISSIONS)]
+    public function updateRoles(int|string $user, Request $request): Response
+    {
+        $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
+
+        $payload = $this->payload($request);
+        $ids = $payload['role_ids'] ?? null;
+        $roles = [];
+        $valid = \is_array($ids);
+        if ($valid) {
+            $wanted = array_values(array_unique(array_map(static fn (mixed $id): int => is_numeric($id) ? (int) $id : 0, $ids)));
+            $roles = [] === $wanted ? [] : $this->em->getRepository(Role::class)->findBy(['id' => $wanted]);
+            $valid = \count($roles) === \count($wanted);
+        }
+        if (!$valid) {
+            $this->addFlash('errors', ['role_ids' => 'The selected roles are invalid.']);
+            $this->addFlash('error', 'The selected roles are invalid.');
+
+            return $this->redirectToRoute('escalated.admin.users.index', [], Response::HTTP_SEE_OTHER);
+        }
+
+        $target = $this->em->getRepository($this->userClass)->find($user);
+        if (null === $target) {
+            throw $this->createNotFoundException('User not found.');
+        }
+        $targetKey = UserKeyResolver::normalize($this->extractId($target));
+        if (null === $targetKey || null === $this->userPermissions) {
+            throw $this->createNotFoundException('User not found.');
+        }
+
+        // Taking away your own role management would leave nobody able to undo it.
+        $currentId = $this->currentUserId();
+        if (null !== $currentId && (string) $currentId === (string) $targetKey) {
+            $keepsRoleManagement = false;
+            foreach ($roles as $role) {
+                foreach ($role->getPermissions() as $permission) {
+                    $keepsRoleManagement = $keepsRoleManagement || 'role.manage' === $permission->getSlug();
+                }
+            }
+            if (!$keepsRoleManagement) {
+                $this->addFlash('error', 'You cannot remove your own role management.');
+
+                return $this->redirectToRoute('escalated.admin.users.index', [], Response::HTTP_SEE_OTHER);
+            }
+        }
+
+        $this->userPermissions->replace($targetKey, array_values($roles));
+
+        $this->addFlash('success', 'User updated.');
+
+        return $this->redirectToRoute('escalated.admin.users.index', [], Response::HTTP_SEE_OTHER);
     }
 
     /**

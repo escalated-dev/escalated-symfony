@@ -45,6 +45,7 @@ class EscalatedBundle extends AbstractBundle
         $builder->setParameter('escalated.ui_enabled', $config['ui_enabled']);
         $builder->setParameter('escalated.enable_newsletters', $config['enable_newsletters']);
         $builder->setParameter('escalated.table_prefix', $config['table_prefix']);
+        self::setAccessFeatures($builder, $config['access']);
         $this->aliasEntityManager($builder, $config['entity_manager'] ?? null);
 
         // Storage config
@@ -152,6 +153,22 @@ class EscalatedBundle extends AbstractBundle
                 ],
             ]);
         }
+    }
+
+    /**
+     * The install-level access switches (ADR 2026-10-29-configurable-access-features)
+     * for Security\AccessFeatures: an explicit config value wins; otherwise the
+     * ESCALATED_* env var decides at runtime, defaulting to off.
+     *
+     * @param array<string, mixed> $access
+     */
+    public static function setAccessFeatures(ContainerBuilder $builder, array $access): void
+    {
+        $builder->setParameter('escalated.access.off', false);
+        $builder->setParameter(
+            'escalated.access.roles_permissions',
+            $access['roles_permissions'] ?? '%env(bool:default:escalated.access.off:ESCALATED_ROLES_PERMISSIONS)%',
+        );
     }
 
     public static function setTicketAccess(ContainerBuilder $builder, array $config): void

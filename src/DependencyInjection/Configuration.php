@@ -49,6 +49,26 @@ class Configuration implements ConfigurationInterface
                     ->defaultFalse()
                     ->info('Enable/disable the newsletter HTTP routes and dispatch worker.')
                 ->end()
+                ->arrayNode('access')
+                    ->addDefaultsIfNotSet()
+                    ->info(
+                        'Install-level access switches (ADR 2026-10-29-configurable-access-features), all off by '
+                        .'default. Off: the feature\'s screens and routes answer 404 and nothing is enforced; the '
+                        .'ESCALATED_ADMIN / ESCALATED_AGENT gates decide everything. On: the feature is enforced. '
+                        .'Read from configuration (or the env var) only; no admin setting changes them.'
+                    )
+                    ->children()
+                        ->scalarNode('roles_permissions')
+                            ->defaultNull()
+                            ->info(
+                                'Enforce roles & permissions: every admin, agent and staff API route also needs its '
+                                .'permission from the user\'s Escalated roles. Null reads ESCALATED_ROLES_PERMISSIONS '
+                                .'(default false). Seed the permissions and give every staff user a role first '
+                                .'(escalated:permissions:seed, escalated:roles:assign). See docs/access-control.md.'
+                            )
+                        ->end()
+                    ->end()
+                ->end()
                 ->scalarNode('table_prefix')
                     ->defaultValue('escalated_')
                     ->info('Prefix for all Escalated database tables.')

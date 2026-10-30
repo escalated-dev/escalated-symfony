@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Escalated\Symfony\Tests\Security;
 
+use Escalated\Symfony\Security\AccessFeatures;
 use Escalated\Symfony\Security\NewsletterPermissions;
 use Escalated\Symfony\Security\NewsletterPermissionVoter;
 use PHPUnit\Framework\TestCase;
@@ -36,6 +37,25 @@ class NewsletterPermissionVoterTest extends TestCase
         $voter = new NewsletterPermissionVoter();
 
         $this->assertSame(VoterInterface::ACCESS_DENIED, $voter->vote($this->tokenWithRoles(['ROLE_USER']), null, [NewsletterPermissions::MANAGE]));
+    }
+
+    /**
+     * ADR 2026-10-29-configurable-access-features: with roles & permissions
+     * off, the admin gate alone decides; a host role is not that gate.
+     */
+    public function testWithRolesOffOnlyTheAdminGateDecides(): void
+    {
+        $voter = new NewsletterPermissionVoter(new AccessFeatures(false));
+
+        $this->assertSame(VoterInterface::ACCESS_DENIED, $voter->vote($this->tokenWithRoles(['ROLE_ESCALATED_NEWSLETTERS_MANAGE']), null, [NewsletterPermissions::MANAGE]));
+        $this->assertSame(VoterInterface::ACCESS_DENIED, $voter->vote($this->tokenWithRoles(['ROLE_ESCALATED_NEWSLETTERS_SEND']), null, [NewsletterPermissions::SEND]));
+    }
+
+    public function testWithRolesOnTheAdminGateAloneIsNotEnough(): void
+    {
+        $voter = new NewsletterPermissionVoter(new AccessFeatures(true));
+
+        $this->assertSame(VoterInterface::ACCESS_DENIED, $voter->vote($this->tokenWithRoles(['ROLE_ESCALATED_ADMIN']), null, [NewsletterPermissions::MANAGE]));
     }
 
     /**

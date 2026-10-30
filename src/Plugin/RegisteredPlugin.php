@@ -184,6 +184,19 @@ final class RegisteredPlugin
     }
 
     /**
+     * The plugin's cron schedules (five-field expressions, UTC): an SDK
+     * plugin's `cron` keys, or a native plugin's manifest `cronSchedules`.
+     *
+     * @return list<string>
+     */
+    public function cronSchedules(): array
+    {
+        $schedules = $this->manifest['cronSchedules'] ?? [];
+
+        return \is_array($schedules) ? array_values(array_filter($schedules, 'is_string')) : [];
+    }
+
+    /**
      * @param array<string, mixed> $item
      */
     public static function capability(array $item): ?string

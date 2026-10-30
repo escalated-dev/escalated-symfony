@@ -6,6 +6,8 @@ namespace Escalated\Symfony\Tests\Kernel\Plugins;
 
 use Escalated\Symfony\Entity\PluginStoreRecord;
 use Escalated\Symfony\Tests\Kernel\Fixtures\Plugin\CrmPlugin;
+use Symfony\Bundle\FrameworkBundle\Console\Application;
+use Symfony\Component\Console\Tester\CommandTester;
 
 /**
  * SDK plugins behind the bridge, with a stand-in runtime
@@ -47,7 +49,7 @@ final class PluginBridgeTest extends PluginTestCase
         self::assertSame('0.4.0', $sdk['version']);
         self::assertSame('composer', $sdk['source']);
         self::assertFalse($sdk['is_active']);
-        self::assertSame(['menu_items' => 1, 'widgets' => 1, 'page_components' => 0], $sdk['provides']);
+        self::assertSame(['menu_items' => 1, 'widgets' => 4, 'page_components' => 0], $sdk['provides']);
 
         $handshake = $this->sent('handshake')[0];
         self::assertSame(['protocol_version' => '1.0', 'host' => 'symfony'], array_intersect_key($handshake, ['protocol_version' => 1, 'host' => 1]));
@@ -128,6 +130,44 @@ final class PluginBridgeTest extends PluginTestCase
         $rows = static::entityManager()->getRepository(PluginStoreRecord::class)->findBy(['collection' => 'notes']);
         self::assertCount(1, $rows);
         self::assertSame(self::NAME, $rows[0]->getPlugin(), 'stored under the plugin being served, not the one it named');
+    }
+
+    public function testDueCronSchedulesOfActiveSdkPluginsRunThroughTheRuntime(): void
+    {
+        $nine = new \DateTimeImmutable('2026-10-29T09:00:20Z');
+        $this->registry()->runDueCron($nine);
+        self::assertSame([], $this->sent('cron'), 'an inactive plugin runs nothing');
+
+        $this->loginAdmin();
+        $this->activate(self::SLUG);
+        $tester = new CommandTester((new Application(static::$kernel))->find('escalated:plugins:cron'));
+        self::assertSame(0, $tester->execute(['--at' => '2026-10-29T09:00:20Z']));
+
+        $schedules = array_column($this->sent('cron'), 'schedule');
+        sort($schedules);
+        self::assertSame(['* * * * *', '0 9 * * *'], $schedules);
+        self::assertSame([self::NAME, self::NAME], array_column($this->sent('cron'), 'plugin'));
+        self::assertCount(2, static::entityManager()->getRepository(PluginStoreRecord::class)->findBy(['collection' => 'cron']));
+
+        $this->registry()->runDueCron($nine->modify('+1 minute'));
+        self::assertCount(3, $this->sent('cron'));
+    }
+
+    public function testSdkWidgetBadgesAreAskedAsTheViewer(): void
+    {
+        $admin = $this->loginAdmin();
+        $this->activate(self::SLUG);
+
+        $this->visit('/support/admin/plugins');
+        $shared = $this->client->getRequest()->attributes->get('_escalated_shared');
+        self::assertIsArray($shared);
+        $widgets = array_column($shared['plugins']['dashboardWidgets'], null, 'component');
+
+        self::assertSame('for '.$admin->getId(), $widgets['SdkInbox']['badge']);
+        self::assertSame(7, $widgets['SdkCount']['badge']);
+        self::assertArrayHasKey('badge', $widgets['SdkBroken']);
+        self::assertNull($widgets['SdkBroken']['badge']);
+        self::assertArrayNotHasKey('badge', $widgets['SdkWidget']);
     }
 
     public function testAnInactiveSdkPluginIsNeverCalled(): void

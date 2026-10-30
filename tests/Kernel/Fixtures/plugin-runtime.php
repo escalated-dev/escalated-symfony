@@ -11,6 +11,10 @@ declare(strict_types=1);
  *
  * `--die` exits at once, like a runtime that cannot start;
  * `--die-on-endpoint` dies when an endpoint or webhook is called.
+ *
+ * `cron` stores {schedule} in the plugin's `cron` collection. `badge`:
+ * `SdkInbox` answers "for " plus ctx.currentUser's id (or "nobody"),
+ * `SdkCount` answers 7, anything else fails.
  */
 
 if (in_array('--die', $argv, true)) {
@@ -66,7 +70,12 @@ while (($line = fgets(STDIN)) !== false) {
                 'config' => [],
                 'pages' => [['route' => 'dash', 'component' => 'SdkDash', 'menu' => ['label' => 'SDK', 'section' => 'admin', 'position' => 1]]],
                 'components' => [],
-                'widgets' => [['component' => 'SdkWidget', 'label' => 'SDK', 'size' => 'full', 'hasBadge' => false]],
+                'widgets' => [
+                    ['component' => 'SdkWidget', 'label' => 'SDK', 'size' => 'full', 'hasBadge' => false],
+                    ['component' => 'SdkInbox', 'label' => 'Inbox', 'order' => 101, 'hasBadge' => true],
+                    ['component' => 'SdkCount', 'label' => 'Count', 'order' => 102, 'hasBadge' => true],
+                    ['component' => 'SdkBroken', 'label' => 'Broken', 'order' => 103, 'hasBadge' => true],
+                ],
                 'actionHooks' => ['ticket.created', 'plugin.activated', 'plugin.deactivated'],
                 'filterHooks' => [['hook' => 'demo.value', 'priority' => 15]],
                 'endpoints' => [
@@ -76,7 +85,7 @@ while (($line = fgets(STDIN)) !== false) {
                     ['method' => 'GET', 'path' => '/boom'],
                 ],
                 'webhooks' => [['method' => 'POST', 'path' => '/hook']],
-                'cronSchedules' => [],
+                'cronSchedules' => ['* * * * *', '0 9 * * *', 'not a schedule'],
             ]];
             break;
 
@@ -103,6 +112,22 @@ while (($line = fgets(STDIN)) !== false) {
                     'body' => $params['body'] ?? null,
                     'header_names' => array_keys($params['headers'] ?? []),
                 ]];
+            }
+            break;
+
+        case 'cron':
+            $ask('ctx.store.insert', ['plugin' => $name, 'collection' => 'cron', 'data' => ['schedule' => $params['schedule'] ?? null]]);
+            break;
+
+        case 'badge':
+            $component = $params['component'] ?? null;
+            if ('SdkInbox' === $component) {
+                $user = $ask('ctx.currentUser', ['plugin' => $name]);
+                $result = 'for '.(is_array($user) && isset($user['id']) ? $user['id'] : 'nobody');
+            } elseif ('SdkCount' === $component) {
+                $result = 7;
+            } else {
+                $error = ['code' => -32000, 'message' => 'badge failed'];
             }
             break;
 

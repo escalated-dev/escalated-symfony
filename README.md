@@ -164,6 +164,7 @@ Several features run from console commands rather than on a request. Run them fr
 */5 * * * * php bin/console escalated:chat:close-idle        # close idle live chats
 * * * * *  php bin/console escalated:newsletters:dispatch    # only with enable_newsletters
 0 3 * * *  php bin/console escalated:purge-expired          # data retention (Admin > Settings > Data retention)
+* * * * *  php bin/console escalated:plugins:cron            # SDK plugins' cron schedules (with the plugin runtime)
 ```
 
 Without the first two, SLA breaches are never recorded and delayed workflow actions never run.

@@ -60,6 +60,9 @@ class ContextHandler
 
     private ?PluginRegistry $registry = null;
 
+    /** While above 0, plugin calls act for no user (cron). */
+    private int $noUser = 0;
+
     public function __construct(
         private readonly PluginStore $store,
         private readonly PluginPayloads $payloads,
@@ -135,10 +138,33 @@ class ContextHandler
     }
 
     /**
+     * Runs `$work` with plugin calls acting for no user, whoever is signed in
+     * (cron schedules run as no user).
+     *
+     * @template T
+     *
+     * @param callable(): T $work
+     *
+     * @return T
+     */
+    public function asNoUser(callable $work): mixed
+    {
+        ++$this->noUser;
+        try {
+            return $work();
+        } finally {
+            --$this->noUser;
+        }
+    }
+
+    /**
      * The id of the signed-in user of the request being served, or null.
      */
     public function actorId(): int|string|null
     {
+        if ($this->noUser > 0) {
+            return null;
+        }
         $user = $this->security->getUser();
 
         return $user instanceof UserInterface ? $this->userKeys->resolve($user) : null;

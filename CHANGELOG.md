@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.3.8] - 2026-10-30
+
 ### Upgrading
 - **Single sign-on is an install-level switch, off by default, and signs
   users in when on** (`escalated.access.sso`, or `ESCALATED_SSO` when the key

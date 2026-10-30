@@ -181,6 +181,14 @@
     `menuItems`, `pageComponents` and `dashboardWidgets`, filtered by
     capability, admin menu items for admins only.
 
+### Fixed
+- **Admin > Users roles picker validation now answers like escalated-laravel.**
+  A bad `role_ids` on `PUT {route_prefix}/admin/users/{user}/roles` used to
+  flash one generic `role_ids` message; it now flashes Laravel's errors keyed
+  `role_ids` (missing / not an array) or `role_ids.N` (not an integer / not a
+  role), and the users page hands them back as `errors` so the screen shows
+  them.
+
 ## [0.3.7] - 2026-10-28
 
 ### Upgrading

@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.3.9] - 2026-10-30
+
 ### Upgrading
 - **An Inertia visit to an Escalated route that ends in 403, 404, 419, 429,
   500 or 503 now gets the shared `Escalated/Error` page** (props `status` and

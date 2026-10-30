@@ -127,6 +127,10 @@ Admins activate and deactivate plugins in **Admin > Plugins**. Native plugins ar
 
 Off by default. Set `escalated.access.roles_permissions: true` (or `ESCALATED_ROLES_PERMISSIONS=true`) after running the migrations, `bin/console escalated:permissions:seed` and `bin/console escalated:roles:assign you@example.com admin`; every admin, agent and staff API route then needs its permission from the user's Escalated roles as well as the `ESCALATED_ADMIN` / `ESCALATED_AGENT` gate. While it is off, **Admin > Roles** answers 404 and the gates decide everything. See [docs/access-control.md](docs/access-control.md).
 
+### Two-factor authentication
+
+Off by default. Set `escalated.access.two_factor: true` (or `ESCALATED_TWO_FACTOR=true`) after running the migrations. Staff then enrol in TOTP at `{route_prefix}/admin/settings/two-factor`, and a staff user with an enrolment must pass `{route_prefix}/two-factor/challenge` after each sign-in before any admin or agent page. `escalated.two_factor.required` (or `ESCALATED_TWO_FACTOR_REQUIRED`, or the `two_factor_required` admin setting) makes every staff user enrol. `bin/console escalated:two-factor:reset you@example.com` clears a lost device. See [docs/access-control.md](docs/access-control.md#two-factor-authentication).
+
 ### Embedding the widget on other sites
 
 Load the widget on another site with `<script src="https://help.example.com/support/widget/api/embed.js" async></script>` after listing that site's origin, either in the `WidgetSettings` service's `$allowedOrigins` argument (for example `'%env(csv:ESCALATED_WIDGET_ALLOWED_ORIGINS)%'`) or in the admin setting `widget_allowed_origins`. An empty list allows no other site. See [docs/embedding-the-widget.md](docs/embedding-the-widget.md).

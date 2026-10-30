@@ -9,6 +9,12 @@ use Doctrine\ORM\Mapping as ORM;
 use Escalated\Symfony\Doctrine\UserIdType;
 use Symfony\Component\Serializer\Attribute\Ignore;
 
+/**
+ * A user's TOTP enrolment. Pending until confirmed with a code
+ * (`isEnabled`, `verifiedAt`). The secret and the recovery codes are stored
+ * sealed (Security\SecretSealer); Service\TwoFactorService seals and opens
+ * them, so this entity only ever holds ciphertext.
+ */
 #[ORM\Entity]
 #[ORM\Table(name: 'escalated_two_factors')]
 #[ORM\Index(columns: ['user_id'], name: 'idx_two_factor_user')]
@@ -26,17 +32,22 @@ class TwoFactor
     #[ORM\Column(type: Types::STRING, length: 32, options: ['default' => 'totp'])]
     private string $method = 'totp';
 
-    #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
-    private ?string $secret = null;
+    #[ORM\Column(name: 'secret', type: Types::STRING, length: 255, nullable: true)]
+    private ?string $sealedSecret = null;
 
-    #[ORM\Column(type: Types::JSON, nullable: true)]
-    private ?array $recoveryCodes = null;
+    #[ORM\Column(name: 'recovery_codes', type: Types::TEXT, nullable: true)]
+    private ?string $sealedRecoveryCodes = null;
 
+    /** Confirmed: the user proved the secret with a code. */
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
     private bool $isEnabled = false;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $verifiedAt = null;
+
+    /** The TOTP time step of the last code accepted; it and earlier steps are refused. */
+    #[ORM\Column(type: Types::BIGINT, nullable: true)]
+    private int|string|null $lastUsedStep = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
@@ -85,30 +96,30 @@ class TwoFactor
         return $this;
     }
 
-    /** The TOTP seed; never serialized. */
+    /** The sealed TOTP seed; never serialized. */
     #[Ignore]
-    public function getSecret(): ?string
+    public function getSealedSecret(): ?string
     {
-        return $this->secret;
+        return $this->sealedSecret;
     }
 
-    public function setSecret(?string $secret): self
+    public function setSealedSecret(?string $sealedSecret): self
     {
-        $this->secret = $secret;
+        $this->sealedSecret = $sealedSecret;
 
         return $this;
     }
 
-    /** Never serialized. */
+    /** The sealed JSON list of recovery codes; never serialized. */
     #[Ignore]
-    public function getRecoveryCodes(): ?array
+    public function getSealedRecoveryCodes(): ?string
     {
-        return $this->recoveryCodes;
+        return $this->sealedRecoveryCodes;
     }
 
-    public function setRecoveryCodes(?array $recoveryCodes): self
+    public function setSealedRecoveryCodes(?string $sealedRecoveryCodes): self
     {
-        $this->recoveryCodes = $recoveryCodes;
+        $this->sealedRecoveryCodes = $sealedRecoveryCodes;
 
         return $this;
     }
@@ -125,6 +136,11 @@ class TwoFactor
         return $this;
     }
 
+    public function isConfirmed(): bool
+    {
+        return $this->isEnabled;
+    }
+
     public function getVerifiedAt(): ?\DateTimeImmutable
     {
         return $this->verifiedAt;
@@ -137,6 +153,19 @@ class TwoFactor
         return $this;
     }
 
+    #[Ignore]
+    public function getLastUsedStep(): ?int
+    {
+        return null === $this->lastUsedStep ? null : (int) $this->lastUsedStep;
+    }
+
+    public function setLastUsedStep(?int $step): self
+    {
+        $this->lastUsedStep = $step;
+
+        return $this;
+    }
+
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
@@ -145,20 +174,5 @@ class TwoFactor
     public function getUpdatedAt(): \DateTimeImmutable
     {
         return $this->updatedAt;
-    }
-
-    public function useRecoveryCode(string $code): bool
-    {
-        if (!$this->recoveryCodes) {
-            return false;
-        }
-        $key = array_search($code, $this->recoveryCodes, true);
-        if (false === $key) {
-            return false;
-        }
-        unset($this->recoveryCodes[$key]);
-        $this->recoveryCodes = array_values($this->recoveryCodes);
-
-        return true;
     }
 }

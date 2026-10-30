@@ -132,12 +132,19 @@ class StringUserKeyTest extends TestCase
         $repository->expects($this->once())->method('findOneBy')
             ->with(['userId' => self::UUID, 'isEnabled' => true])
             ->willReturn(null);
+        $repository->method('findBy')->willReturn([]);
+        $persisted = [];
         $em = $this->createMock(EntityManagerInterface::class);
         $em->method('getRepository')->with(TwoFactor::class)->willReturn($repository);
-        $service = new TwoFactorService($em);
+        $em->method('persist')->willReturnCallback(static function (object $entity) use (&$persisted): void {
+            $persisted[] = $entity;
+        });
+        $service = new TwoFactorService($em, new \Escalated\Symfony\Security\SecretSealer('test-secret'));
 
-        $this->assertSame(self::UUID, $service->enable(self::UUID)->getUserId());
-        $this->assertNull($service->findByUser(self::UUID));
+        $service->begin(self::UUID);
+        $this->assertInstanceOf(TwoFactor::class, $persisted[0] ?? null);
+        $this->assertSame(self::UUID, $persisted[0]->getUserId());
+        $this->assertNull($service->confirmedFor(self::UUID));
     }
 
     public function testMentionsAcceptAUuidUserKey(): void

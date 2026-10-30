@@ -11,9 +11,9 @@ namespace Escalated\Symfony\Security;
  * only, never from the settings table: each one changes who may sign in or
  * what they may do, so it must not be something a stored setting can flip.
  *
- * Two-factor and SSO are not enforced by this bundle yet, so they report off
- * and their screens stay hidden; a port must not show a screen for a feature
- * it does not enforce.
+ * SSO is not enforced by this bundle yet, so it reports off and its screens
+ * stay hidden; a port must not show a screen for a feature it does not
+ * enforce.
  */
 class AccessFeatures
 {
@@ -22,10 +22,12 @@ class AccessFeatures
     public const SSO = 'sso';
 
     private readonly bool $rolesPermissions;
+    private readonly bool $twoFactor;
 
-    public function __construct(mixed $rolesPermissions = false)
+    public function __construct(mixed $rolesPermissions = false, mixed $twoFactor = false)
     {
         $this->rolesPermissions = self::toBool($rolesPermissions);
+        $this->twoFactor = self::toBool($twoFactor);
     }
 
     public function rolesPermissions(): bool
@@ -35,7 +37,7 @@ class AccessFeatures
 
     public function twoFactor(): bool
     {
-        return false;
+        return $this->twoFactor;
     }
 
     public function sso(): bool

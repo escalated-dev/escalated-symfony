@@ -67,6 +67,32 @@ class Configuration implements ConfigurationInterface
                                 .'(escalated:permissions:seed, escalated:roles:assign). See docs/access-control.md.'
                             )
                         ->end()
+                        ->scalarNode('two_factor')
+                            ->defaultNull()
+                            ->info(
+                                'Enforce two-factor authentication: staff with a confirmed TOTP enrolment must pass the '
+                                .'Auth/TwoFactorChallenge page after signing in, before any admin or agent route. Null '
+                                .'reads ESCALATED_TWO_FACTOR (default false). Run the migrations first. See docs/access-control.md.'
+                            )
+                        ->end()
+                    ->end()
+                ->end()
+                ->arrayNode('two_factor')
+                    ->addDefaultsIfNotSet()
+                    ->info('Used while access.two_factor is on.')
+                    ->children()
+                        ->scalarNode('required')
+                            ->defaultNull()
+                            ->info(
+                                'Send every staff user without an enrolment to set one up. Null reads '
+                                .'ESCALATED_TWO_FACTOR_REQUIRED (default false). The two_factor_required admin setting '
+                                .'wins once saved.'
+                            )
+                        ->end()
+                        ->scalarNode('issuer')
+                            ->defaultValue('Escalated')
+                            ->info('The name authenticator apps show for the account.')
+                        ->end()
                     ->end()
                 ->end()
                 ->scalarNode('table_prefix')

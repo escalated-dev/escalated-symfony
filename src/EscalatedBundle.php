@@ -45,7 +45,7 @@ class EscalatedBundle extends AbstractBundle
         $builder->setParameter('escalated.ui_enabled', $config['ui_enabled']);
         $builder->setParameter('escalated.enable_newsletters', $config['enable_newsletters']);
         $builder->setParameter('escalated.table_prefix', $config['table_prefix']);
-        self::setAccessFeatures($builder, $config['access']);
+        self::setAccessFeatures($builder, $config['access'], $config['two_factor']);
         $this->aliasEntityManager($builder, $config['entity_manager'] ?? null);
 
         // Storage config
@@ -161,14 +161,24 @@ class EscalatedBundle extends AbstractBundle
      * ESCALATED_* env var decides at runtime, defaulting to off.
      *
      * @param array<string, mixed> $access
+     * @param array<string, mixed> $twoFactor
      */
-    public static function setAccessFeatures(ContainerBuilder $builder, array $access): void
+    public static function setAccessFeatures(ContainerBuilder $builder, array $access, array $twoFactor = []): void
     {
         $builder->setParameter('escalated.access.off', false);
         $builder->setParameter(
             'escalated.access.roles_permissions',
             $access['roles_permissions'] ?? '%env(bool:default:escalated.access.off:ESCALATED_ROLES_PERMISSIONS)%',
         );
+        $builder->setParameter(
+            'escalated.access.two_factor',
+            $access['two_factor'] ?? '%env(bool:default:escalated.access.off:ESCALATED_TWO_FACTOR)%',
+        );
+        $builder->setParameter(
+            'escalated.two_factor.required',
+            $twoFactor['required'] ?? '%env(bool:default:escalated.access.off:ESCALATED_TWO_FACTOR_REQUIRED)%',
+        );
+        $builder->setParameter('escalated.two_factor.issuer', (string) ($twoFactor['issuer'] ?? 'Escalated'));
     }
 
     public static function setTicketAccess(ContainerBuilder $builder, array $config): void

@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Escalated\Symfony\Controller\Admin;
 
 use Escalated\Symfony\Rendering\UiRendererInterface;
+use Escalated\Symfony\Security\AccessFeatures;
 use Escalated\Symfony\Service\SettingsService;
+use Escalated\Symfony\Service\TwoFactorService;
 use Escalated\Symfony\Widget\WidgetOrigins;
 use Escalated\Symfony\Widget\WidgetSettings;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -26,7 +28,21 @@ class SettingsController extends AbstractController
         private readonly UiRendererInterface $renderer,
         private readonly SettingsService $settings,
         private readonly WidgetSettings $widgetSettings,
+        private readonly AccessFeatures $features = new AccessFeatures(),
+        private readonly ?TwoFactorService $twoFactor = null,
     ) {
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function supported(): array
+    {
+        // `two_factor_required` (Admin/Settings/TwoFactor saves it on its own)
+        // only while two-factor is switched on.
+        return $this->features->twoFactor()
+            ? [...self::SUPPORTED, TwoFactorService::REQUIRED_SETTING]
+            : self::SUPPORTED;
     }
 
     #[Route('', name: 'index', methods: ['GET'])]
@@ -34,14 +50,19 @@ class SettingsController extends AbstractController
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
 
+        $settings = [
+            // Read-only here: the widget is switched on in the
+            // WidgetSettings service configuration.
+            'widget_enabled' => $this->widgetSettings->isEnabled(),
+            WidgetOrigins::SETTING => $this->settings->get(WidgetOrigins::SETTING, '') ?? '',
+        ];
+        if ($this->features->twoFactor() && null !== $this->twoFactor) {
+            $settings[TwoFactorService::REQUIRED_SETTING] = $this->twoFactor->required();
+        }
+
         return $this->renderer->render('Escalated/Admin/Settings', [
-            'settings' => [
-                // Read-only here: the widget is switched on in the
-                // WidgetSettings service configuration.
-                'widget_enabled' => $this->widgetSettings->isEnabled(),
-                WidgetOrigins::SETTING => $this->settings->get(WidgetOrigins::SETTING, '') ?? '',
-            ],
-            'supported_settings' => self::SUPPORTED,
+            'settings' => $settings,
+            'supported_settings' => $this->supported(),
             'update_url' => $this->generateUrl('escalated.admin.settings.update'),
         ]);
     }
@@ -75,7 +96,25 @@ class SettingsController extends AbstractController
             $this->settings->set(WidgetOrigins::SETTING, $value);
         }
 
+        if ($this->features->twoFactor() && \array_key_exists(TwoFactorService::REQUIRED_SETTING, $payload)) {
+            $required = $payload[TwoFactorService::REQUIRED_SETTING];
+            $required = \is_bool($required) ? $required : (\is_scalar($required) ? filter_var($required, \FILTER_VALIDATE_BOOL, \FILTER_NULL_ON_FAILURE) : null);
+            if (null === $required) {
+                $this->addFlash('errors', [TwoFactorService::REQUIRED_SETTING => 'Requiring two-factor must be true or false.']);
+                $this->addFlash('error', 'Requiring two-factor must be true or false.');
+
+                return $this->redirectToRoute('escalated.admin.settings.index');
+            }
+
+            $this->settings->set(TwoFactorService::REQUIRED_SETTING, $required ? '1' : '0');
+        }
+
         $this->addFlash('success', 'Settings updated.');
+
+        // The two-factor page saves `two_factor_required` from its own screen.
+        if ([TwoFactorService::REQUIRED_SETTING] === array_keys($payload) && $this->features->twoFactor()) {
+            return $this->redirectToRoute('escalated.admin.two-factor.index');
+        }
 
         return $this->redirectToRoute('escalated.admin.settings.index');
     }

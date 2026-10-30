@@ -35,7 +35,7 @@ class EscalatedExtension extends Extension implements PrependExtensionInterface
         $container->setParameter('escalated.ui_enabled', $config['ui_enabled']);
         $container->setParameter('escalated.enable_newsletters', $config['enable_newsletters']);
         $container->setParameter('escalated.table_prefix', $config['table_prefix']);
-        EscalatedBundle::setAccessFeatures($container, $config['access']);
+        EscalatedBundle::setAccessFeatures($container, $config['access'], $config['two_factor']);
         foreach ($config['newsletters'] as $key => $value) {
             $container->setParameter('escalated.newsletters.'.$key, $value);
         }

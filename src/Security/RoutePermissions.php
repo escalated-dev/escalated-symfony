@@ -69,6 +69,8 @@ final class RoutePermissions
         return [
             // ---- Personal ------------------------------------------------
             'escalated.api.auth.me' => [],
+            // Every staff member's own two-factor enrolment.
+            'escalated.admin.two-factor.*' => [],
 
             // ---- Tickets (admin and agent panels, staff API) --------------
             'escalated.agent.dashboard' => ['ticket.view'],

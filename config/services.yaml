@@ -45,6 +45,7 @@ services:
             # Attribute and static map, not services.
             - '../src/Security/RequiresFeature.php'
             - '../src/Security/RoutePermissions.php'
+            - '../src/Security/TwoFactorSession.php'
             - '../src/Doctrine/TicketVisibilityFilter.php'
             # Plugin values built by the registry, not services.
             - '../src/Plugin/PluginContext.php'
@@ -57,6 +58,30 @@ services:
     Escalated\Symfony\Security\AccessFeatures:
         arguments:
             $rolesPermissions: '%escalated.access.roles_permissions%'
+            $twoFactor: '%escalated.access.two_factor%'
+
+    # Two-factor (ADR 2026-10-29-configurable-access-features): TOTP through
+    # pragmarx/google2fa, secrets and recovery codes sealed under kernel.secret,
+    # and the verify route limited to 5 attempts per minute per user (counters
+    # in the guest rate limit cache pool).
+    Escalated\Symfony\Security\SecretSealer:
+        arguments:
+            $secret: '%kernel.secret%'
+
+    Escalated\Symfony\Service\TwoFactorService:
+        arguments:
+            $required: '%escalated.two_factor.required%'
+            $issuer: '%escalated.two_factor.issuer%'
+
+    escalated.two_factor.limiter_storage:
+        class: Symfony\Component\RateLimiter\Storage\CacheStorage
+        arguments: ['@escalated.guest_rate_limit.cache']
+
+    escalated.two_factor.limiter:
+        class: Symfony\Component\RateLimiter\RateLimiterFactory
+        arguments:
+            $config: { id: 'escalated_two_factor', policy: 'fixed_window', limit: 5, interval: '1 minute' }
+            $storage: '@escalated.two_factor.limiter_storage'
 
     # Route loader behind @EscalatedBundle/config/routes.yaml. Applies ui_enabled,
     # enable_newsletters and route_prefix when the host's router loads it.

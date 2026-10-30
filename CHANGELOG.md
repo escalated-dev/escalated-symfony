@@ -3,6 +3,37 @@
 ## [Unreleased]
 
 ### Upgrading
+- **Two-factor authentication is an install-level switch, off by default, and
+  is now enforced when on** (`escalated.access.two_factor`, or
+  `ESCALATED_TWO_FACTOR` when the key is unset; ADR
+  2026-10-29-configurable-access-features). Off is how every install already
+  behaved: nobody is challenged, and the new routes answer 404.
+  - Run the migrations (`Version20261031000001`): it adds
+    `escalated_two_factors.last_used_step`, turns `recovery_codes` into a TEXT
+    column holding the encrypted codes, and **removes existing rows**. Those
+    were written by the old `TwoFactorService`, which no route used, stored the
+    secret and codes in plain text and checked codes with `crc32()` rather than
+    RFC 6238, so no authenticator app could have passed it.
+  - `Service\TwoFactorService` is rewritten on `pragmarx/google2fa` (new
+    dependency, as is `symfony/rate-limiter`): `enable()`, `findByUser()` and
+    `regenerateRecoveryCodes()` are gone (use `begin()`, `confirm()`,
+    `confirmedFor()`, `remove()`), and `Entity\TwoFactor` holds only sealed
+    values (`getSealedSecret()`, `getSealedRecoveryCodes()`).
+  - With the switch on: staff enrol at `{route_prefix}/admin/settings/two-factor`
+    (`Admin/Settings/TwoFactor`); a staff user with an enrolment is sent to
+    `{route_prefix}/two-factor/challenge` (`Auth/TwoFactorChallenge`) after each
+    sign-in before any admin or agent route (JSON: 403 with
+    `two_factor_required: true`); codes cannot be replayed, recovery codes work
+    once, and verification is limited to 5 attempts per minute per user.
+    `escalated.two_factor.required` / `ESCALATED_TWO_FACTOR_REQUIRED` (or the
+    `two_factor_required` setting, which wins once saved) makes every staff user
+    enrol. `bin/console escalated:two-factor:reset <user>` clears an enrolment.
+  - Shared props: `features.two_factor` follows the switch, and
+    `two_factor_required` is new.
+
+  To turn it on: run the migrations, then set `ESCALATED_TWO_FACTOR=true`. Set
+  `ESCALATED_TWO_FACTOR_REQUIRED=true` only after telling staff. See
+  `docs/access-control.md`.
 - **Roles & permissions is an install-level switch, off by default**
   (`escalated.access.roles_permissions`, or `ESCALATED_ROLES_PERMISSIONS`
   when the key is unset; ADR 2026-10-29-configurable-access-features). Off is
@@ -19,8 +50,8 @@
     `newsletters.send` from their Escalated roles.
   - The shared `permissions` is `['*']` for staff while the switch is off (it
     listed the newsletter slugs), and `features` carries `roles_permissions`,
-    `two_factor` and `sso` (the last two always false: this bundle does not
-    enforce them yet, so it shows no screen for them).
+    `two_factor` and `sso` (`sso` always false: this bundle does not enforce
+    it yet, so it shows no screen for it).
 
   To enforce roles: run the migrations, `bin/console escalated:permissions:seed`,
   give every staff user a role (`bin/console escalated:roles:assign you@example.com admin`),

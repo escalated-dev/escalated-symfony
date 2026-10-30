@@ -79,8 +79,10 @@ final class TwoFactorSubscriber implements EventSubscriberInterface
 
     public function onLoginOrLogout(LoginSuccessEvent|LogoutEvent $event): void
     {
+        // Only a session that already existed can hold a pass; touching none
+        // keeps stateless firewalls (token or JWT sign-ins) session-free.
         $request = $event->getRequest();
-        if ($request->hasSession()) {
+        if ($request->hasPreviousSession()) {
             TwoFactorSession::forget($request->getSession());
         }
     }

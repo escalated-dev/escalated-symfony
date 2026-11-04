@@ -7,7 +7,9 @@ namespace Escalated\Symfony\Controller\Agent;
 use Escalated\Symfony\Controller\TicketDeskController;
 use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Event\TicketCustomActionTriggeredEvent;
+use Escalated\Symfony\Service\AgentInbox;
 use Escalated\Symfony\Service\TicketActionRegistry;
+use Escalated\Symfony\Service\TicketListFilters;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,6 +27,13 @@ class TicketController extends TicketDeskController
 {
     private TicketActionRegistry $ticketActions;
     private EventDispatcherInterface $dispatcher;
+    private AgentInbox $inbox;
+
+    #[Required]
+    public function setInbox(AgentInbox $inbox): void
+    {
+        $this->inbox = $inbox;
+    }
 
     #[Required]
     public function setCustomActions(TicketActionRegistry $ticketActions, EventDispatcherInterface $dispatcher): void
@@ -67,7 +76,22 @@ class TicketController extends TicketDeskController
     {
         $this->denyAccessUnlessGranted($this->gate());
 
-        return $this->renderer->render('Escalated/Agent/TicketIndex', $this->indexProps($request));
+        $query = $request->query->all();
+        $errors = TicketListFilters::errors($query);
+        if ([] !== $errors) {
+            return new JsonResponse(['message' => 'The given data was invalid.', 'errors' => $errors], 422);
+        }
+
+        $me = $this->currentUserKey() ?? '';
+        $filters = $this->inbox->normaliseFilters($query, $me);
+        $queue = $this->inbox->queueFor($filters, $me);
+        $this->inbox->remember($request, $queue);
+
+        return $this->renderer->render('Escalated/Agent/TicketIndex', [
+            ...$this->indexProps($request, $this->inbox->listFilters($filters, $queue)),
+            'queue' => $this->inbox->queueProp($queue),
+            'inbox' => $this->inbox->summary($me, $queue),
+        ]);
     }
 
     #[Route('/bulk', name: 'bulk', methods: ['POST'], priority: 10)]
@@ -79,15 +103,19 @@ class TicketController extends TicketDeskController
     }
 
     #[Route('/{reference}', name: 'show', methods: ['GET'])]
-    public function show(string $reference): Response
+    public function show(string $reference, Request $request): Response
     {
         $this->denyAccessUnlessGranted($this->gate());
 
         $ticket = $this->ticketOr404($reference);
+        $me = $this->currentUserKey() ?? '';
+        $queue = $this->inbox->recalled($request, $me);
 
         return $this->renderer->render('Escalated/Agent/TicketShow', [
             ...$this->showProps($ticket),
             'customActions' => $this->customActionsForTicket($ticket, $this->getUser()),
+            'queue' => $this->inbox->queueProp($queue),
+            'inbox' => $this->inbox->summary($me, $queue),
         ]);
     }
 

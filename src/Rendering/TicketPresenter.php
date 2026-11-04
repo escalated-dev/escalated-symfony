@@ -53,7 +53,14 @@ class TicketPresenter
      */
     public function row(Ticket $ticket): array
     {
-        $latest = $this->replies($ticket)[0] ?? null;
+        // The latest public reply: an internal note is never previewed in a list.
+        $latest = null;
+        foreach ($this->replies($ticket) as $reply) {
+            if (!$reply->isInternalNote()) {
+                $latest = $reply;
+                break;
+            }
+        }
 
         return [
             'id' => $ticket->getId(),
@@ -87,6 +94,7 @@ class TicketPresenter
             'updated_at' => self::iso($ticket->getUpdatedAt()),
             'latest_reply' => null === $latest ? null : [
                 'id' => $latest->getId(),
+                'body' => $latest->getBody(),
                 'is_internal_note' => $latest->isInternalNote(),
                 'author' => ['name' => $this->replyAuthorName($ticket, $latest)],
                 'created_at' => self::iso($latest->getCreatedAt()),

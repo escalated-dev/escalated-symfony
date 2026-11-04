@@ -115,8 +115,12 @@ class TicketController extends TicketDeskController
         $me = $this->currentUserKey() ?? '';
         $queue = $this->inbox->recalled($request, $me);
 
+        $props = $this->showProps($ticket);
+        $props['ticket']['requester_tickets'] = $this->presenter->requesterTickets($ticket);
+
         return $this->renderer->render('Escalated/Agent/TicketShow', [
-            ...$this->showProps($ticket),
+            ...$props,
+            'agents' => $this->assignableAgents($ticket),
             'customActions' => $this->customActionsForTicket($ticket, $this->getUser()),
             'queue' => $this->inbox->queueProp($queue),
             'inbox' => $this->inbox->summary($me, $queue),

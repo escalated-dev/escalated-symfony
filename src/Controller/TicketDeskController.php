@@ -121,6 +121,27 @@ abstract class TicketDeskController extends UiController
         ];
     }
 
+    /**
+     * The staff a ticket can be assigned to, as `{id, name}`: every agent
+     * the ESCALATED_AGENT voter knows (users with an agent profile) who may
+     * receive this ticket under department visibility and account scoping,
+     * as escalated-laravel's AssignableAgents.
+     *
+     * @return list<array{id: int|string, name: string}>
+     */
+    protected function assignableAgents(Ticket $ticket): array
+    {
+        $agents = [];
+        foreach ($this->users->agents() as $user) {
+            if (null !== $this->access && !$this->access->canAssign($ticket, $user['id'])) {
+                continue;
+            }
+            $agents[] = ['id' => $user['id'], 'name' => $user['name']];
+        }
+
+        return $agents;
+    }
+
     protected function doReply(string $reference, Request $request, bool $note): Response
     {
         $ticket = $this->ticketOr404($reference);

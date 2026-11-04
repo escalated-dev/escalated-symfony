@@ -750,6 +750,42 @@ class TicketPresenter
         return array_map(static fn (array $r): array => ['reference' => $r['reference'], 'subject' => $r['subject'], 'status' => $r['status']], $rows);
     }
 
+    /**
+     * The requester's five most recent other tickets, newest first, matched
+     * as `requester_ticket_count` is (the requester, or a guest's email). The
+     * ticket visibility filter applies, so an agent only sees tickets they
+     * may open. The agent panel lists them as previous conversations.
+     *
+     * @return list<array{id: int|null, reference: string|null, subject: string|null, status: string|null, created_at: string|null, updated_at: string|null}>
+     */
+    public function requesterTickets(Ticket $ticket): array
+    {
+        $qb = $this->sameRequester($ticket);
+        if (null === $qb) {
+            return [];
+        }
+
+        if (null !== $ticket->getId()) {
+            $qb->andWhere('t.id != :current')->setParameter('current', $ticket->getId());
+        }
+
+        $rows = $qb->select('t.id', 't.reference', 't.subject', 't.status', 't.createdAt', 't.updatedAt')
+            ->orderBy('t.createdAt', 'DESC')
+            ->addOrderBy('t.id', 'DESC')
+            ->setMaxResults(5)
+            ->getQuery()
+            ->getArrayResult();
+
+        return array_map(static fn (array $r): array => [
+            'id' => $r['id'],
+            'reference' => $r['reference'],
+            'subject' => $r['subject'],
+            'status' => $r['status'],
+            'created_at' => self::iso($r['createdAt']),
+            'updated_at' => self::iso($r['updatedAt']),
+        ], $rows);
+    }
+
     private function sameRequester(Ticket $ticket): ?QueryBuilder
     {
         $qb = $this->em->getRepository(Ticket::class)->createQueryBuilder('t')->where('t.deletedAt IS NULL');

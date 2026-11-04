@@ -79,7 +79,10 @@ class TicketController extends TicketDeskController
         $query = $request->query->all();
         $errors = TicketListFilters::errors($query);
         if ([] !== $errors) {
-            return new JsonResponse(['message' => 'The given data was invalid.', 'errors' => $errors], 422);
+            // escalated-laravel's $request->validate(): a JSON client gets a 422;
+            // a page visit goes back with the errors for the next page's `errors`
+            // prop (a raw 422 is what the Inertia client shows as an error modal).
+            return $this->invalid($request, $errors, 'escalated.agent.tickets.index');
         }
 
         $me = $this->currentUserKey() ?? '';
@@ -91,6 +94,7 @@ class TicketController extends TicketDeskController
             ...$this->indexProps($request, $this->inbox->listFilters($filters, $queue)),
             'queue' => $this->inbox->queueProp($queue),
             'inbox' => $this->inbox->summary($me, $queue),
+            ...$this->errorsProp($request),
         ]);
     }
 
@@ -116,7 +120,21 @@ class TicketController extends TicketDeskController
             'customActions' => $this->customActionsForTicket($ticket, $this->getUser()),
             'queue' => $this->inbox->queueProp($queue),
             'inbox' => $this->inbox->summary($me, $queue),
+            ...$this->errorsProp($request),
         ]);
+    }
+
+    /**
+     * `errors` when a malformed list filter was sent back here (the queue rail
+     * links to the list from both agent ticket pages).
+     *
+     * @return array<string, array<string, string>>
+     */
+    private function errorsProp(Request $request): array
+    {
+        $errors = $this->flashedFieldErrors($request);
+
+        return [] === $errors ? [] : ['errors' => $errors];
     }
 
     #[Route('/{reference}/actions/{actionKey}', name: 'custom-action', methods: ['POST'])]

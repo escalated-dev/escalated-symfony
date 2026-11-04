@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Session\FlashBagAwareSessionInterface;
 
 /**
  * What the shared Inertia pages need from a controller that takes their
@@ -53,6 +54,32 @@ abstract class UiController extends AbstractController
         }
 
         return $this->redirectToRoute($fallbackRoute, $parameters, Response::HTTP_SEE_OTHER);
+    }
+
+    /**
+     * Field errors a request was sent back with by invalid(), for the page it
+     * went back to (Inertia's `errors` prop). Read once.
+     *
+     * @return array<string, string>
+     */
+    protected function flashedFieldErrors(Request $request): array
+    {
+        if (!$request->hasSession()) {
+            return [];
+        }
+        $session = $request->getSession();
+        if (!$session instanceof FlashBagAwareSessionInterface) {
+            return [];
+        }
+
+        $errors = [];
+        foreach ($session->getFlashBag()->get('errors') as $set) {
+            if (\is_array($set)) {
+                $errors = [...$errors, ...$set];
+            }
+        }
+
+        return $errors;
     }
 
     /**

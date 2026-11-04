@@ -21,6 +21,7 @@ use Escalated\Symfony\Service\CannedResponseService;
 use Escalated\Symfony\Service\CustomFieldService;
 use Escalated\Symfony\Service\MacroService;
 use Escalated\Symfony\Service\SnoozeService;
+use Escalated\Symfony\Service\TicketListFilters;
 use Escalated\Symfony\Service\TicketService;
 use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -28,6 +29,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Contracts\Service\Attribute\Required;
 
 /**
  * The agent and admin ticket desks: the queue, the ticket, and every write
@@ -41,8 +43,6 @@ abstract class TicketDeskController extends UiController
 {
     private const BULK_ACTIONS = ['status', 'priority', 'assign', 'tags', 'department', 'delete'];
     private const BULK_LIMIT = 50;
-    private const LIST_FILTERS = ['status', 'priority', 'ticket_type', 'assigned_to', 'department_id', 'search'];
-    private const SORTS = ['created_at' => 'createdAt', 'updated_at' => 'updatedAt', 'subject' => 'subject', 'reference' => 'reference', 'status' => 'status', 'priority' => 'priority'];
 
     public function __construct(
         protected readonly TicketService $tickets,
@@ -63,6 +63,14 @@ abstract class TicketDeskController extends UiController
     ) {
     }
 
+    protected TicketListFilters $listFilters;
+
+    #[Required]
+    public function setListFilters(TicketListFilters $listFilters): void
+    {
+        $this->listFilters = $listFilters;
+    }
+
     /** The voter attribute that guards this desk. */
     abstract protected function gate(): string;
 
@@ -72,29 +80,12 @@ abstract class TicketDeskController extends UiController
     /**
      * @return array<string, mixed>
      */
-    protected function indexProps(Request $request): array
+    protected function indexProps(Request $request, ?array $filters = null): array
     {
         $query = $request->query->all();
-        $filters = array_intersect_key($query, array_flip(self::LIST_FILTERS));
-        $filters = array_filter($filters, static fn (mixed $v): bool => \is_scalar($v) && '' !== (string) $v);
-        if (isset($query['sort_by']) && \is_string($query['sort_by'])) {
-            $filters['sort_by'] = self::SORTS[$query['sort_by']] ?? $query['sort_by'];
-        }
-        if (isset($query['sort_dir']) && \is_string($query['sort_dir'])) {
-            $filters['sort_dir'] = $query['sort_dir'];
-        }
-        if (isset($filters['assigned_to'])) {
-            $filters['assigned_to'] = UserKeyResolver::normalize($filters['assigned_to']);
-        }
-
-        $qb = $this->em->getRepository(Ticket::class)->createFilteredQueryBuilder($filters);
-        if (isset($query['unassigned']) && '' !== $query['unassigned'] && '0' !== $query['unassigned']) {
-            $qb->andWhere('t.assignedTo IS NULL');
-        }
-        if (!empty($query['following']) && null !== $me = $this->currentUserKey()) {
-            $qb->andWhere('t.id IN (SELECT tf.ticketId FROM '.TicketFollower::class.' tf WHERE tf.userId = :followerId)')
-                ->setParameter('followerId', $me);
-        }
+        // The admin list keeps showing snoozed tickets, as it always has; the
+        // agent list passes its own filters, which leave them out.
+        $qb = $this->listFilters->query($filters ?? ['include_snoozed' => '1'] + $query, $this->currentUserKey());
 
         return [
             'tickets' => $this->presenter->paginate(

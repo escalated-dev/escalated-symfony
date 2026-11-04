@@ -308,15 +308,49 @@ final class AgentInboxPropsTest extends EscalatedWebTestCase
      * @param array<string, string> $query
      */
     #[DataProvider('malformed')]
-    public function testRejectsMalformedValuesForTheNewFilters(array $query): void
+    public function testSendsMalformedValuesForTheNewFiltersBackWithErrors(array $query): void
+    {
+        // escalated-laravel's $request->validate(): a page visit goes back with
+        // the errors for the next page's `errors` prop, never a raw 422 (which
+        // the Inertia client shows as an error modal).
+        $this->boot();
+
+        $this->client->request('GET', '/support/agent/tickets?'.http_build_query($query), server: [
+            'HTTP_X_INERTIA' => 'true',
+            'HTTP_REFERER' => 'http://localhost/support/agent/tickets?assigned=me',
+        ]);
+
+        self::assertResponseRedirects('/support/agent/tickets?assigned=me');
+        $errors = $this->visit('/support/agent/tickets?assigned=me')['props']['errors'] ?? null;
+        self::assertIsArray($errors);
+        self::assertSame(array_keys($query), array_keys($errors));
+        self::assertContainsOnly('string', $errors);
+        self::assertArrayNotHasKey('errors', $this->visit('/support/agent/tickets')['props']);
+    }
+
+    /**
+     * @param array<string, string> $query
+     */
+    #[DataProvider('malformed')]
+    public function testAnswersAJsonClientsMalformedFilterWithA422(array $query): void
     {
         $this->boot();
 
-        $this->client->request('GET', '/support/agent/tickets?'.http_build_query($query), server: ['HTTP_X_INERTIA' => 'true']);
+        $this->client->request('GET', '/support/agent/tickets?'.http_build_query($query), server: ['HTTP_ACCEPT' => 'application/json']);
 
         self::assertResponseStatusCodeSame(422);
         $body = json_decode((string) $this->client->getResponse()->getContent(), true);
         self::assertSame(array_keys($query), array_keys($body['errors']));
+        self::assertIsString($body['message']);
+    }
+
+    public function testSendsAMalformedFilterWithNoRefererBackToTheList(): void
+    {
+        $this->boot();
+
+        $this->client->request('GET', '/support/agent/tickets?sla_at_risk=soon', server: ['HTTP_ACCEPT' => 'text/html']);
+
+        self::assertResponseRedirects('/support/agent/tickets');
     }
 
     public function testPreviewsTheLatestCustomerVisibleMessageNeverAnInternalNote(): void

@@ -1298,6 +1298,10 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  * @psalm-type EscalatedConfig = array{
  *     visibility?: "all"|"department"|Param, // Default: "all"
  *     targeted_slas?: bool|Param, // Default: false
+ *     presence?: array{
+ *         online_window_seconds?: int|Param, // Agent pages show a customer as online when the portal or the widget saw them within this many seconds. // Default: 120
+ *     },
+ *     agent_notifications?: bool|Param, // The agents' in-app notifications feed and bell. // Default: true
  *     agent_inbox?: array{
  *         cache_seconds?: int|Param, // Seconds the agent panel inbox counts are cached per agent and queue; 0 turns the cache off. // Default: 10
  *     },

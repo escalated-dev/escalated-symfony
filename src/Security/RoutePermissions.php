@@ -29,6 +29,9 @@ final class RoutePermissions
         'tags' => ['ticket.edit'],
         'department' => ['ticket.edit'],
         'delete' => ['ticket.delete'],
+        // Personal read markers: viewing is enough.
+        'mark_read' => [],
+        'mark_unread' => [],
     ];
 
     /**
@@ -71,6 +74,12 @@ final class RoutePermissions
             'escalated.api.auth.me' => [],
             // Every staff member's own two-factor enrolment.
             'escalated.admin.two-factor.*' => [],
+            // The agent panel's personal routes (ADR 2026-11-05-agent-panel-data).
+            'escalated.agent.status' => [],
+            'escalated.agent.notifications.*' => [],
+            'escalated.agent.tickets.read' => ['ticket.view'],
+            'escalated.agent.tickets.unread' => ['ticket.view'],
+            'escalated.agent.kb.search' => ['kb.view'],
 
             // ---- Tickets (admin and agent panels, staff API) --------------
             'escalated.agent.dashboard' => ['ticket.view'],

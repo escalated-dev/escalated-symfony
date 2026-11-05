@@ -72,8 +72,9 @@ class KnowledgeBaseService
             ->orderBy('a.createdAt', 'DESC');
 
         if (null !== $search && '' !== $search) {
-            $qb->andWhere('a.title LIKE :term OR a.body LIKE :term')
-               ->setParameter('term', '%'.$search.'%');
+            // Case-insensitive on every database, `%` and `_` taken literally.
+            $qb->andWhere("LOWER(a.title) LIKE :term ESCAPE '!' OR LOWER(a.body) LIKE :term ESCAPE '!'")
+               ->setParameter('term', self::likePattern($search));
         }
         if (null !== $status && '' !== $status) {
             $qb->andWhere('a.status = :status')->setParameter('status', $status);
@@ -86,6 +87,42 @@ class KnowledgeBaseService
         $result = $qb->getQuery()->getResult();
 
         return $result;
+    }
+
+    /**
+     * Knowledge-base search for agents (ADR 2026-11-05-agent-panel-data,
+     * section 5): published articles whose title or body contains the term,
+     * title matches first, then the most recently updated.
+     *
+     * @return Article[]
+     */
+    public function searchForAgents(string $term, int $limit): array
+    {
+        $pattern = self::likePattern($term);
+
+        /** @var Article[] $result */
+        $result = $this->em->createQueryBuilder()
+            ->select('a')
+            ->addSelect("CASE WHEN LOWER(a.title) LIKE :term ESCAPE '!' THEN 0 ELSE 1 END AS HIDDEN titleRank")
+            ->from(Article::class, 'a')
+            ->where('a.status = :published')
+            ->andWhere("LOWER(a.title) LIKE :term ESCAPE '!' OR LOWER(a.body) LIKE :term ESCAPE '!'")
+            ->setParameter('published', Article::STATUS_PUBLISHED)
+            ->setParameter('term', $pattern)
+            ->orderBy('titleRank', 'ASC')
+            ->addOrderBy('a.updatedAt', 'DESC')
+            ->addOrderBy('a.id', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+
+        return $result;
+    }
+
+    /** `%term%`, lower-cased, with `%`, `_` and the escape character `!` escaped. */
+    public static function likePattern(string $term): string
+    {
+        return '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], mb_strtolower($term)).'%';
     }
 
     /**

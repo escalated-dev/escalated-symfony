@@ -13,6 +13,7 @@ use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Security\GuestAccess;
 use Escalated\Symfony\Security\GuestEmailVerification;
 use Escalated\Symfony\Security\GuestVerificationException;
+use Escalated\Symfony\Service\AgentPanel;
 use Escalated\Symfony\Service\GuestRateLimiter;
 use Escalated\Symfony\Service\KnowledgeBaseService;
 use Escalated\Symfony\Service\TicketService;
@@ -38,6 +39,7 @@ class WidgetController extends AbstractController
         private readonly GuestEmailVerification $verification,
         private readonly GuestAccess $guestAccess,
         private readonly GuestVerificationEndpoints $endpoints,
+        private readonly ?AgentPanel $agentPanel = null,
     ) {
     }
 
@@ -265,6 +267,9 @@ class WidgetController extends AbstractController
         if (null === $ticket) {
             return self::noStore(WidgetRequest::error('Ticket not found.', Response::HTTP_NOT_FOUND));
         }
+
+        // The customer is on the site (only agent pages ever show it).
+        $this->agentPanel?->quietly(fn () => $this->agentPanel->seeTicketCustomer($ticket));
 
         $repliesArray = [];
         foreach ($ticket->getPublicReplies() as $r) {

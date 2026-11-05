@@ -10,6 +10,7 @@ use Escalated\Symfony\Entity\GuestVerification;
 use Escalated\Symfony\Entity\Ticket;
 use Escalated\Symfony\Security\GuestEmailVerification;
 use Escalated\Symfony\Security\GuestVerificationException;
+use Escalated\Symfony\Service\AgentPanel;
 use Escalated\Symfony\Service\ChatAvailabilityService;
 use Escalated\Symfony\Service\ChatSessionService;
 use Escalated\Symfony\Service\GuestRateLimiter;
@@ -44,7 +45,16 @@ class WidgetChatController extends AbstractController
         private readonly EntityManagerInterface $em,
         private readonly GuestRateLimiter $guestRateLimiter,
         private readonly GuestEmailVerification $verification,
+        private readonly ?AgentPanel $agentPanel = null,
     ) {
+    }
+
+    /** The visitor is on the site: agent pages show the chat's customer online. */
+    private function seen(?ChatSession $session): void
+    {
+        if (null !== $session && null !== $this->agentPanel) {
+            $this->agentPanel->quietly(fn () => $this->agentPanel->seeTicketCustomer($session->getTicket()));
+        }
     }
 
     #[Route('/availability', name: 'availability', methods: ['GET'])]
@@ -126,6 +136,7 @@ class WidgetChatController extends AbstractController
 
         $ticket = $result['ticket'];
         $session = $result['session'];
+        $this->seen($session);
         $token = $result['visitor_token'];
         $expiresAt = $session->getVisitorTokenExpiresAt()?->format(\DateTimeInterface::ATOM);
         $agent = $this->agent($session);
@@ -399,7 +410,10 @@ class WidgetChatController extends AbstractController
     /** Unknown and expired tokens are both null (404), as in escalated-laravel. */
     private function sessionByToken(string $token): ?ChatSession
     {
-        return $this->chatSessionService->findByVisitorToken($token);
+        $session = $this->chatSessionService->findByVisitorToken($token);
+        $this->seen($session);
+
+        return $session;
     }
 
     private function findSessionByReferenceAndToken(string $reference, string $token): ?ChatSession

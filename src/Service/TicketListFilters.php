@@ -140,6 +140,19 @@ final class TicketListFilters
      *
      * @param array<string, mixed> $filters
      */
+    /**
+     * Of the tickets these filters list, those unread for the agent (ADR
+     * 2026-11-05-agent-panel-data).
+     */
+    public function countUnread(array $filters, int|string $me): int
+    {
+        $qb = $this->query($filters, $me);
+        $qb->select('COUNT(DISTINCT t.id)')->resetDQLPart('orderBy');
+        AgentPanel::onlyUnreadQuery($qb, $me);
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
     public function count(array $filters, int|string|null $me): int
     {
         $qb = $this->query($filters, $me);

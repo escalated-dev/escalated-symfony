@@ -44,6 +44,8 @@ class EscalatedExtension extends Extension implements PrependExtensionInterface
         EscalatedBundle::setGuestAccess($container, $config['guest_access']);
         $container->setParameter('escalated.sla.enabled', $config['sla']['enabled']);
         $container->setParameter('escalated.agent_inbox.cache_seconds', $config['agent_inbox']['cache_seconds']);
+        $container->setParameter('escalated.presence.online_window_seconds', $config['presence']['online_window_seconds']);
+        $container->setParameter('escalated.agent_notifications', $config['agent_notifications']);
         $container->setParameter('escalated.sla.business_hours_only', $config['sla']['business_hours_only']);
         $container->setParameter('escalated.sla.business_hours', $config['sla']['business_hours']);
         $container->setParameter('escalated.storage.base_url', $config['storage']['base_url']);

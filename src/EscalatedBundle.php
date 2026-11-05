@@ -57,6 +57,11 @@ class EscalatedBundle extends AbstractBundle
         $builder->setParameter('escalated.sla.business_hours_only', $config['sla']['business_hours_only']);
         $builder->setParameter('escalated.sla.business_hours', $config['sla']['business_hours']);
 
+        // The agent panel's data (ADR 2026-11-05-agent-panel-data)
+        $builder->setParameter('escalated.presence.online_window_seconds', $config['presence']['online_window_seconds']);
+        $builder->setParameter('escalated.agent_notifications', $config['agent_notifications']);
+        $builder->setParameter('escalated.agent_inbox.cache_seconds', $config['agent_inbox']['cache_seconds']);
+
         // Ticket config
         $builder->setParameter('escalated.tickets.allow_customer_close', $config['tickets']['allow_customer_close']);
         $builder->setParameter('escalated.tickets.default_priority', $config['tickets']['default_priority']);

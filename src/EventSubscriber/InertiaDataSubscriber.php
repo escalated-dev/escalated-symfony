@@ -13,6 +13,7 @@ use Escalated\Symfony\Security\AccessFeatures;
 use Escalated\Symfony\Security\EnsureAdminVoter;
 use Escalated\Symfony\Security\UserKeyResolver;
 use Escalated\Symfony\Security\UserPermissions;
+use Escalated\Symfony\Service\AgentPanel;
 use Escalated\Symfony\Service\TwoFactorService;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -41,6 +42,7 @@ class InertiaDataSubscriber implements EventSubscriberInterface
         private readonly ?UserKeyResolver $userKeys = null,
         private readonly ?EmbedConfig $embed = null,
         private readonly ?AdminNavigation $navigation = null,
+        private readonly ?AgentPanel $agentPanel = null,
     ) {
     }
 
@@ -95,6 +97,20 @@ class InertiaDataSubscriber implements EventSubscriberInterface
                 $data['agent_type'] = $profile?->getAgentType() ?? 'full';
             } catch (\Throwable) {
                 // Agent profiles table may not exist yet
+            }
+        }
+
+        // The agent panel's data (ADR 2026-11-05-agent-panel-data), staff only.
+        if (($isAgent || $isAdmin) && $user instanceof UserInterface && null !== $this->agentPanel) {
+            try {
+                $key = $this->userKeys?->resolve($user) ?? $user->getUserIdentifier();
+                $data['agent_status'] = $this->agentPanel->status($key);
+                $data['agent_statuses'] = AgentPanel::STATUSES;
+                if ($this->agentPanel->notificationsAvailable()) {
+                    $data['notifications'] = ['unread_count' => $this->agentPanel->unreadCount($key)];
+                }
+            } catch (\Throwable) {
+                // The agent panel tables may not exist yet.
             }
         }
 

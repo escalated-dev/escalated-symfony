@@ -248,6 +248,13 @@ class AgentInbox
                 'unassigned' => $this->countOpen(['unassigned' => 1], $me),
                 'all' => $this->countOpen([], $me),
             ],
+            // Of the same open tickets, those unread for this agent
+            // (ADR 2026-11-05-agent-panel-data).
+            'unread' => [
+                'mine' => $this->countOpen(['assigned_to' => $me], $me, true),
+                'unassigned' => $this->countOpen(['unassigned' => 1], $me, true),
+                'all' => $this->countOpen([], $me, true),
+            ],
             'views' => array_map(
                 fn (array $view): array => [
                     'id' => $view['id'],
@@ -268,13 +275,13 @@ class AgentInbox
     }
 
     /** Unresolved tickets, unless the filters ask for a status themselves. */
-    private function countOpen(array $filters, int|string $me): int
+    private function countOpen(array $filters, int|string $me, bool $unread = false): int
     {
         if (empty($filters['status'])) {
             $filters['open'] = 1;
         }
 
-        return $this->filters->count($filters, $me);
+        return $unread ? $this->filters->countUnread($filters, $me) : $this->filters->count($filters, $me);
     }
 
     private function viewQueue(array $view): array

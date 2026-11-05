@@ -16,6 +16,7 @@ use Escalated\Symfony\Rendering\UserDirectory;
 use Escalated\Symfony\Repository\SavedViewRepository;
 use Escalated\Symfony\Security\TicketAccess;
 use Escalated\Symfony\Security\UserKeyResolver;
+use Escalated\Symfony\Service\AgentPanel;
 use Escalated\Symfony\Service\AssignmentService;
 use Escalated\Symfony\Service\CannedResponseService;
 use Escalated\Symfony\Service\CustomFieldService;
@@ -41,7 +42,7 @@ use Symfony\Contracts\Service\Attribute\Required;
  */
 abstract class TicketDeskController extends UiController
 {
-    private const BULK_ACTIONS = ['status', 'priority', 'assign', 'tags', 'department', 'delete'];
+    private const BULK_ACTIONS = ['status', 'priority', 'assign', 'tags', 'department', 'delete', 'mark_read', 'mark_unread'];
     private const BULK_LIMIT = 50;
 
     public function __construct(
@@ -64,6 +65,19 @@ abstract class TicketDeskController extends UiController
     }
 
     protected TicketListFilters $listFilters;
+
+    private ?AgentPanel $agentPanel = null;
+
+    #[Required]
+    public function setAgentPanel(AgentPanel $agentPanel): void
+    {
+        $this->agentPanel = $agentPanel;
+    }
+
+    protected function panel(): AgentPanel
+    {
+        return $this->agentPanel ?? throw new \LogicException('The agent panel service is not set.');
+    }
 
     #[Required]
     public function setListFilters(TicketListFilters $listFilters): void
@@ -376,7 +390,7 @@ abstract class TicketDeskController extends UiController
         }
         if (!\is_string($action) || !\in_array($action, self::BULK_ACTIONS, true)) {
             $errors['action'] = 'The selected action is invalid.';
-        } elseif ('delete' !== $action && (null === $value || '' === $value || [] === $value)) {
+        } elseif (!\in_array($action, ['delete', 'mark_read', 'mark_unread'], true) && (null === $value || '' === $value || [] === $value)) {
             $errors['value'] = 'The value field is required unless action is delete.';
         }
         if ([] !== $errors) {
@@ -405,6 +419,9 @@ abstract class TicketDeskController extends UiController
                         ? $this->tickets->changeDepartment($ticket, (int) $value, $me)
                         : throw new \InvalidArgumentException('No department.'),
                     'delete' => $this->softDelete($ticket),
+                    // Per-agent read markers (ADR 2026-11-05-agent-panel-data).
+                    'mark_read' => $this->panel()->markRead($me ?? throw new \InvalidArgumentException('No agent.'), $ticket),
+                    'mark_unread' => $this->panel()->markUnread($me ?? throw new \InvalidArgumentException('No agent.'), $ticket),
                 };
                 ++$count;
             } catch (\InvalidArgumentException|\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {

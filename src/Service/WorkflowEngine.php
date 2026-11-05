@@ -474,6 +474,8 @@ class WorkflowEngine
         $reply->setBody($body);
         $reply->setIsInternalNote(false);
         $reply->setType('reply');
+        // Written by a workflow, not the customer (agent unread markers).
+        $reply->setMetadata(['workflow_id' => true]);
         $this->em->persist($reply);
         $this->em->flush();
 

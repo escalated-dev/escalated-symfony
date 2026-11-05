@@ -31,6 +31,13 @@ class AgentProfile
     #[ORM\Column(type: Types::INTEGER, nullable: true)]
     private ?int $maxTickets = null;
 
+    /**
+     * The agent's own Online / Away / Offline status (ADR
+     * 2026-11-05-agent-panel-data); `offline` until they set one.
+     */
+    #[ORM\Column(type: Types::STRING, length: 16, options: ['default' => 'offline'])]
+    private string $chatStatus = 'offline';
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
 
@@ -47,6 +54,18 @@ class AgentProfile
     public function onPreUpdate(): void
     {
         $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    public function getChatStatus(): string
+    {
+        return $this->chatStatus;
+    }
+
+    public function setChatStatus(string $status): self
+    {
+        $this->chatStatus = $status;
+
+        return $this;
     }
 
     public function isLightAgent(): bool

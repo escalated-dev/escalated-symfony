@@ -90,8 +90,13 @@ class TicketController extends TicketDeskController
         $queue = $this->inbox->queueFor($filters, $me);
         $this->inbox->remember($request, $queue);
 
+        $props = $this->indexProps($request, $this->inbox->listFilters($filters, $queue));
+        // is_unread and the customer's presence on every row (ADR
+        // 2026-11-05-agent-panel-data), one query each for the page.
+        $props['tickets']['data'] = $this->withPanelFields($props['tickets']['data'] ?? [], $me);
+
         return $this->renderer->render('Escalated/Agent/TicketIndex', [
-            ...$this->indexProps($request, $this->inbox->listFilters($filters, $queue)),
+            ...$props,
             'queue' => $this->inbox->queueProp($queue),
             'inbox' => $this->inbox->summary($me, $queue),
             ...$this->errorsProp($request),
@@ -115,8 +120,14 @@ class TicketController extends TicketDeskController
         $me = $this->currentUserKey() ?? '';
         $queue = $this->inbox->recalled($request, $me);
 
+        // Opening the ticket in the agent panel is reading it.
+        if ('' !== $me) {
+            $this->panel()->markRead($me, $ticket);
+        }
+
         $props = $this->showProps($ticket);
         $props['ticket']['requester_tickets'] = $this->presenter->requesterTickets($ticket);
+        $props['ticket'] = [...$props['ticket'], ...($this->panel()->rowFields($me, [$ticket])[(int) $ticket->getId()] ?? [])];
 
         return $this->renderer->render('Escalated/Agent/TicketShow', [
             ...$props,
@@ -126,6 +137,48 @@ class TicketController extends TicketDeskController
             'inbox' => $this->inbox->summary($me, $queue),
             ...$this->errorsProp($request),
         ]);
+    }
+
+    /**
+     * @param list<array<string, mixed>> $rows
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function withPanelFields(array $rows, int|string $me): array
+    {
+        $ids = array_values(array_filter(array_map(static fn (array $row): mixed => $row['id'] ?? null, $rows)));
+        $tickets = [] === $ids ? [] : $this->em->getRepository(Ticket::class)->findBy(['id' => $ids]);
+        $fields = $this->panel()->rowFields($me, $tickets);
+
+        return array_map(static fn (array $row): array => [...$row, ...($fields[(int) ($row['id'] ?? 0)] ?? [])], $rows);
+    }
+
+    /** POST /agent/tickets/{reference}/read */
+    #[Route('/{reference}/read', name: 'read', methods: ['POST'])]
+    public function markRead(string $reference, Request $request): Response
+    {
+        return $this->mark($reference, $request, false);
+    }
+
+    /** POST /agent/tickets/{reference}/unread */
+    #[Route('/{reference}/unread', name: 'unread', methods: ['POST'])]
+    public function markUnread(string $reference, Request $request): Response
+    {
+        return $this->mark($reference, $request, true);
+    }
+
+    private function mark(string $reference, Request $request, bool $unread): Response
+    {
+        $this->denyAccessUnlessGranted($this->gate());
+        $ticket = $this->ticketOr404($reference);
+        $me = $this->currentUserKey() ?? throw $this->createAccessDeniedException();
+        $unread ? $this->panel()->markUnread($me, $ticket) : $this->panel()->markRead($me, $ticket);
+
+        if (!$request->headers->has('X-Inertia') && 'json' === $request->getPreferredFormat()) {
+            return new JsonResponse(['is_unread' => $unread]);
+        }
+
+        return $this->back($request, 'escalated.agent.tickets.index');
     }
 
     /**

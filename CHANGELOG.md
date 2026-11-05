@@ -3,14 +3,28 @@
 ## [Unreleased]
 
 ### Upgrading
+- **Run the migration `Version20261105000001`** (the agent panel's data, ADR 2026-11-05-agent-panel-data): it adds `tickets.last_customer_activity_at`, `agent_profiles.chat_status` (default `offline`) and the `ticket_reads`, `customer_presence` and `notifications` tables, on SQLite, MySQL/MariaDB and PostgreSQL. Existing tickets get no customer activity, so none turn unread on upgrade.
+- **Agents get in-app notifications** (`escalated.agent_notifications`, on by default). As escalated-laravel now does, an agent is never notified of their own action: **assigning a ticket to yourself sends no notification**, and **the in-app reply notification is only for customer-side replies** (not agents' replies, internal notes or workflow replies). This bundle sent no assignment or reply emails before, so no email changes. Set `escalated.agent_notifications: false` to switch the feed off.
+- **`inbox` gains `unread`** and the agent ticket rows gain `is_unread`, `requester_online` and `requester_last_seen_at`; the 0.3.10 "Not sent" note no longer applies. Older frontends ignore them.
+- **`escalated.agent_inbox.cache_seconds` now takes effect.** The bundle never copied it into the container, so the inbox was always cached for 10 seconds whatever it was set to.
 - **Optional: embed the admin in your own admin panel (off by default; no change unless configured).** With no `escalated.ui.embed` configuration (and no `ESCALATED_EMBED` env var) every route, page, shared prop, header and gate is unchanged; a test compares the whole route table with a snapshot taken before this change. See docs/embedding-admin.md.
 
 ### Added
+- **The agent panel's data** (ADR 2026-11-05-agent-panel-data; docs/agent-panel.md):
+  - agent status: `PUT`/`POST /agent/status` (`escalated.agent.status`), shared `escalated.agent_status` and `escalated.agent_statuses`. The status is stored on the agent profile; this bundle's chat routing does not read it yet;
+  - knowledge-base search for agents: `GET /agent/kb/search` (`escalated.agent.kb.search`, `kb.view`), published articles, title matches first, `%`/`_` taken literally. The customer KB and API searches now escape `%`/`_` too and match case-insensitively on every database;
+  - unread tickets: `ticket_reads`, `escalated.agent.tickets.read` / `.unread`, bulk `mark_read` / `mark_unread`, `is_unread` on list rows and the ticket page (one query per page), `inbox.unread` `{ mine, unassigned, all }`;
+  - customer presence: the customer portal and the widget record when the customer was last seen (throttled to 30 s); agent pages only show `requester_online` (within `escalated.presence.online_window_seconds`, default 120) and `requester_last_seen_at`;
+  - notifications: `escalated.agent.notifications.index` / `.read` / `.read-all`, shared `escalated.notifications.unread_count`, types `ticket_assigned`, `ticket_reply`, `sla_breached`, `sla_warning`, `chat_transferred`; notifications about tickets the agent can no longer see are redacted; with broadcasting on, `notification.created` on `escalated.agents.{id}`.
+- Replies written by a workflow carry `metadata.workflow_id`, so they never count as customer activity.
 - **Embedding the admin in your own admin panel** (optional; ADR 2026-11-05-embeddable-admin). The `escalated.ui.embed` bundle configuration (`enabled`, `mode`, `prefix`, `guards`, `replace_admin_gate`, `layout`, `root_view`, `frame_ancestors`; env vars `ESCALATED_EMBED`, `ESCALATED_EMBED_MODE`, `ESCALATED_EMBED_PREFIX`, `ESCALATED_EMBED_FRAME_ANCESTORS`), or `EmbedConfig::embedAdmin()` for PHP config files:
   - the admin routes under `{route_prefix}/admin` (admin screens and settings, plugin admin and plugin pages, API tokens, import) move under the host's prefix with the same route names and controllers; the old URLs answer 404. `guards` (security attributes) run first, then Escalated's feature switches, two-factor, route permissions and admin gate; `replace_admin_gate` (needs `guards`) drops only the admin gate, only there. The agent panel, customer, guest, KB, widget, API, plugin endpoints, SSO, the two-factor enrolment page and challenge, and the newsletter admin do not move;
   - the shared `escalated` data gains `embed` (`enabled`, `mode`, `layout`, `route`, `base_url`, `allowed_origins`) and `navigation` (the admin menu, filtered by the admin gate, feature switches and route permissions, with plugin admin items); `AdminNavigation::adminNavigation()` and the Twig functions `escalated_admin_navigation()` / `escalated_embed()` give the same to host templates. While embedding is on, `InertiaUiRenderer` shares it with the Inertia service as `escalated`;
   - `root_view` renders embedded admin pages in the host's Twig template;
   - iframe mode sends `Content-Security-Policy: frame-ancestors 'self' <origins>` and drops `X-Frame-Options` on embedded responses only, after every other response listener.
+
+### Not sent
+- `mention` notifications: the bundle does not detect @mentions in replies yet. `sla_warning` is wired but nothing in the bundle emits `sla.warning` yet. Notification titles are English (the bundle wires no translator for its pages).
 
 ## [0.3.10] - 2026-11-04
 

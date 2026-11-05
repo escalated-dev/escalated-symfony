@@ -73,7 +73,7 @@ final class AgentInboxPropsTest extends EscalatedWebTestCase
         self::assertSame('Escalated/Agent/TicketIndex', $page['component']);
 
         $inbox = $page['props']['inbox'];
-        self::assertSame(['counts', 'views', 'stats'], array_keys($inbox));
+        self::assertSame(['counts', 'unread', 'views', 'stats'], array_keys($inbox));
         // Unresolved, unsnoozed tickets in each queue.
         self::assertSame(['mine' => 2, 'unassigned' => 1, 'all' => 4], $inbox['counts']);
         self::assertSame(self::BUILT_IN_VIEW_IDS, array_column($inbox['views'], 'id'));
@@ -364,9 +364,9 @@ final class AgentInboxPropsTest extends EscalatedWebTestCase
 
         self::assertSame('Customer-visible answer', $row['latest_reply']['body']);
         self::assertFalse($row['latest_reply']['is_internal_note']);
-        // Escalated tracks no per-agent read state or customer presence, so it sends neither.
-        self::assertArrayNotHasKey('is_unread', $row);
-        self::assertArrayNotHasKey('requester_online', $row);
+        // Per-agent read state and the customer's presence (ADR 2026-11-05-agent-panel-data).
+        self::assertArrayHasKey('is_unread', $row);
+        self::assertArrayHasKey('requester_online', $row);
     }
 
     public function testSendsInboxAndTheQueueTheAgentLastOpenedOnTheTicketPage(): void
@@ -380,7 +380,7 @@ final class AgentInboxPropsTest extends EscalatedWebTestCase
         self::assertSame('Escalated/Agent/TicketShow', $page['component']);
         self::assertSame(['key' => 'all', 'title' => 'All tickets'], $page['props']['queue']);
         self::assertSame(['mine' => 1, 'unassigned' => 1, 'all' => 2], $page['props']['inbox']['counts']);
-        self::assertSame(['counts', 'views', 'stats'], array_keys($page['props']['inbox']));
+        self::assertSame(['counts', 'unread', 'views', 'stats'], array_keys($page['props']['inbox']));
 
         $this->visit('/support/agent/tickets?assigned_to='.$this->agent->getId());
 

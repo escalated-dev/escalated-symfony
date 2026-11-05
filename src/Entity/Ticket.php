@@ -24,6 +24,7 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Index(columns: ['requester_id'], name: 'idx_ticket_requester')]
 #[ORM\Index(columns: ['merged_into_id'], name: 'idx_ticket_merged_into')]
 #[ORM\Index(columns: ['ticket_status_id'], name: 'idx_ticket_custom_status')]
+#[ORM\Index(columns: ['last_customer_activity_at'], name: 'idx_ticket_customer_activity')]
 #[ORM\HasLifecycleCallbacks]
 class Ticket
 {
@@ -254,6 +255,14 @@ class Ticket
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $deletedAt = null;
 
+    /**
+     * The last customer-side activity: creation, or a public reply or chat
+     * message from the customer side (ADR 2026-11-05-agent-panel-data).
+     * Agents' own work never moves it, so it drives per-agent unread markers.
+     */
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $lastCustomerActivityAt = null;
+
     public function __construct()
     {
         $this->replies = new ArrayCollection();
@@ -281,6 +290,18 @@ class Ticket
     public function onPreUpdate(): void
     {
         $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    public function getLastCustomerActivityAt(): ?\DateTimeImmutable
+    {
+        return $this->lastCustomerActivityAt;
+    }
+
+    public function setLastCustomerActivityAt(?\DateTimeImmutable $at): self
+    {
+        $this->lastCustomerActivityAt = $at;
+
+        return $this;
     }
 
     public function generateReference(string $prefix = 'ESC'): string

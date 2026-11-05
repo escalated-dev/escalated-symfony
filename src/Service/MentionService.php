@@ -4,62 +4,125 @@ declare(strict_types=1);
 
 namespace Escalated\Symfony\Service;
 
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Entity\Reply;
-use Escalated\Symfony\Entity\TicketActivity;
+use Escalated\Symfony\Rendering\UserDirectory;
 
+/**
+ * @mentions in replies and internal notes, as escalated-laravel's
+ * MentionService: `@{Full Name}` (what the composer's mention picker inserts)
+ * and `@name` match an agent (a user with an agent profile) by name or email,
+ * ignoring case. Each mentioned agent who may see the ticket gets a `mention`
+ * notification in the agent feed, and a row in the host's `escalated_mentions`
+ * table when it has one.
+ */
 class MentionService
 {
-    private const MENTION_REGEX = '/@(\w+(?:\.\w+)*)/';
+    /** `@{Full Name}`. */
+    private const BRACED = '/@\{([^}]+)\}/';
+
+    /** `@name`, outside braces. */
+    private const SIMPLE = '/@([a-zA-Z0-9_.-]+)(?![^{]*\})/';
+
+    public const SUGGESTIONS_LIMIT = 10;
+
+    private ?bool $hasMentionsTable = null;
 
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly string $tablePrefix = 'escalated_',
         private readonly ?\Escalated\Symfony\Security\TicketAccess $access = null,
+        private readonly ?UserDirectory $users = null,
+        private readonly ?AgentPanel $panel = null,
     ) {
     }
 
+    /**
+     * Records and notifies the agents a reply mentions. The author is never
+     * notified of their own mention.
+     *
+     * @return list<array{reply_id: int|null, user_id: int|string}>
+     */
     public function processMentions(Reply $reply): array
     {
         $this->access?->assertVisible($reply->getTicket());
-        $usernames = $this->extractMentions($reply->getBody());
-        if (empty($usernames)) {
+        $authorId = $reply->getAuthorId();
+        $agents = array_values(array_filter(
+            $this->mentionedAgents($reply->getBody()),
+            static fn (array $agent) => null === $authorId || (string) $agent['id'] !== (string) $authorId,
+        ));
+        if ([] === $agents) {
             return [];
         }
-        $users = $this->findUsers($usernames);
-        $mentions = $this->createMentions($reply, $users);
+        $mentions = $this->createMentions($reply, $agents);
         $this->notifyMentionedUsers($reply, $mentions);
 
         return $mentions;
     }
 
+    /**
+     * The names a body mentions, braced and simple, trimmed and unique.
+     *
+     * @return list<string>
+     */
     public function extractMentions(string $text): array
     {
         if ('' === trim($text)) {
             return [];
         }
-        preg_match_all(self::MENTION_REGEX, $text, $matches);
-
-        return array_unique($matches[1] ?? []);
-    }
-
-    public function searchAgents(string $query, int $limit = 10): array
-    {
-        if ('' === trim($query)) {
-            return [];
-        }
-        $conn = $this->em->getConnection();
-        $users = $conn->fetchAllAssociative(
-            'SELECT id, email, COALESCE(name, email) as name FROM users WHERE email LIKE ? OR name LIKE ? LIMIT ?',
-            ["%{$query}%", "%{$query}%", $limit]
+        preg_match_all(self::BRACED, $text, $braced);
+        preg_match_all(self::SIMPLE, $text, $simple);
+        $names = array_filter(
+            array_map('trim', [...$braced[1], ...$simple[1]]),
+            static fn (string $name) => '' !== $name,
         );
 
-        return array_map(fn ($u) => [
-            'id' => $u['id'],
-            'name' => $u['name'],
-            'email' => $u['email'],
-            'username' => explode('@', $u['email'])[0],
-        ], $users);
+        return array_values(array_unique($names));
+    }
+
+    /**
+     * The agents a body mentions, by name or email (case-insensitive).
+     *
+     * @return list<array{id: int|string, name: string, email: string}>
+     */
+    public function mentionedAgents(string $text): array
+    {
+        $names = array_map('mb_strtolower', $this->extractMentions($text));
+        if ([] === $names || null === $this->users) {
+            return [];
+        }
+        $wanted = array_flip($names);
+
+        return array_values(array_filter(
+            $this->users->agents(),
+            static fn (array $agent) => isset($wanted[mb_strtolower($agent['name'])])
+                || ('' !== $agent['email'] && isset($wanted[mb_strtolower($agent['email'])])),
+        ));
+    }
+
+    /**
+     * The mention picker (escalated-laravel's AgentSearchController): up to
+     * `$limit` agents whose name or email contains the query.
+     *
+     * @return list<array{id: int|string, name: string, email: string}>
+     */
+    public function searchAgents(string $query, int $limit = self::SUGGESTIONS_LIMIT): array
+    {
+        $needle = mb_strtolower(trim($query));
+        if ('' === $needle || null === $this->users) {
+            return [];
+        }
+        $found = array_filter(
+            $this->users->agents(),
+            static fn (array $agent) => str_contains(mb_strtolower($agent['name']), $needle)
+                || str_contains(mb_strtolower($agent['email']), $needle),
+        );
+
+        return array_map(
+            static fn (array $agent) => ['id' => $agent['id'], 'name' => $agent['name'], 'email' => $agent['email']],
+            \array_slice(array_values($found), 0, $limit),
+        );
     }
 
     public function unreadMentions(int|string $userId): array
@@ -87,61 +150,62 @@ class MentionService
         );
     }
 
-    private function findUsers(array $usernames): array
-    {
-        $conn = $this->em->getConnection();
-        $users = [];
-        foreach ($usernames as $username) {
-            $user = $conn->fetchAssociative(
-                'SELECT id, email FROM users WHERE username = ? OR email LIKE ?',
-                [$username, "{$username}@%"]
-            );
-            if ($user) {
-                $users[] = $user;
-            }
-        }
-
-        return $users;
-    }
-
-    private function createMentions(Reply $reply, array $users): array
+    /**
+     * @param list<array{id: int|string, name: string, email: string}> $agents
+     *
+     * @return list<array{reply_id: int|null, user_id: int|string}>
+     */
+    private function createMentions(Reply $reply, array $agents): array
     {
         $conn = $this->em->getConnection();
         $mentions = [];
-        foreach ($users as $user) {
-            if (null !== $this->access && !$this->access->canReceive($reply->getTicket(), $user['id'])) {
+        foreach ($agents as $agent) {
+            if (null !== $this->access && !$this->access->canReceive($reply->getTicket(), $agent['id'])) {
                 continue;
             }
-            try {
-                $conn->insert($this->sql('escalated_mentions'), [
-                    'reply_id' => $reply->getId(),
-                    'user_id' => $user['id'],
-                    'created_at' => (new \DateTime())->format('Y-m-d H:i:s'),
-                ]);
-                $mentions[] = ['reply_id' => $reply->getId(), 'user_id' => $user['id']];
-            } catch (\Throwable) {
-                // Duplicate - skip
+            // The mentions table is the host's (unreadMentions); without it
+            // the notification is the record.
+            if ($this->hasMentionsTable()) {
+                try {
+                    $conn->insert($this->sql('escalated_mentions'), [
+                        'reply_id' => $reply->getId(),
+                        'user_id' => $agent['id'],
+                        'created_at' => (new \DateTime())->format('Y-m-d H:i:s'),
+                    ]);
+                } catch (UniqueConstraintViolationException) {
+                    continue; // already recorded for this reply
+                }
             }
+            $mentions[] = ['reply_id' => $reply->getId(), 'user_id' => $agent['id']];
         }
 
         return $mentions;
     }
 
+    /**
+     * @param list<array{reply_id: int|null, user_id: int|string}> $mentions
+     */
     private function notifyMentionedUsers(Reply $reply, array $mentions): void
     {
-        $ticket = $reply->getTicket();
+        $mentionedBy = $this->users?->name($reply->getAuthorId()) ?? 'Someone';
         foreach ($mentions as $mention) {
-            $activity = new TicketActivity();
-            $activity->setTicket($ticket);
-            $activity->setType('mention');
-            $activity->setProperties([
-                'mentioned_user_id' => $mention['user_id'],
-                'reply_id' => $reply->getId(),
-                'message' => "You were mentioned in ticket #{$ticket->getReference()}",
-            ]);
-            $this->em->persist($activity);
+            $this->panel?->notify(
+                $mention['user_id'],
+                'mention',
+                $reply->getTicket(),
+                ['reply_id' => $reply->getId(), 'mentioned_by' => $mentionedBy],
+                $reply->getAuthorId(),
+            );
         }
-        $this->em->flush();
+    }
+
+    private function hasMentionsTable(): bool
+    {
+        try {
+            return $this->hasMentionsTable ??= $this->em->getConnection()->createSchemaManager()->tablesExist([$this->sql('escalated_mentions')]);
+        } catch (\Throwable) {
+            return $this->hasMentionsTable = false;
+        }
     }
 
     private function sql(string $sql): string

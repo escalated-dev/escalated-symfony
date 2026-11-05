@@ -91,6 +91,7 @@ final class RoutePermissions
             'escalated.*.tickets.index' => ['ticket.view'],
             'escalated.*.tickets.show' => ['ticket.view'],
             'escalated.admin.tickets.merge-search' => ['ticket.view'],
+            'escalated.admin.agents.search' => ['ticket.view'],
             'escalated.*.tickets.follow' => ['ticket.view'],
             'escalated.*.tickets.presence' => ['ticket.view'],
             'escalated.admin.ticket_links.index' => ['ticket.view'],

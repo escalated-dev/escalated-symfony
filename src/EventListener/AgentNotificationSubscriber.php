@@ -8,13 +8,15 @@ use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Entity\Reply;
 use Escalated\Symfony\Event\TicketWorkflowEvent;
 use Escalated\Symfony\Service\AgentPanel;
+use Escalated\Symfony\Service\MentionService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 /**
  * Turns ticket events into the agents' in-app notifications (ADR
  * 2026-11-05-agent-panel-data, section 4): assignment, customer-side replies
- * (to the assignee and followers), SLA breaches and chat transfers. The agent
+ * (to the assignee and followers), @mentions in agents' replies and notes,
+ * SLA warnings and breaches and chat transfers. The agent
  * who caused an event is never notified of it, and a failure here never fails
  * the change that raised the event.
  */
@@ -24,6 +26,7 @@ class AgentNotificationSubscriber implements EventSubscriberInterface
         private readonly AgentPanel $panel,
         private readonly EntityManagerInterface $em,
         private readonly LoggerInterface $logger,
+        private readonly ?MentionService $mentions = null,
     ) {
     }
 
@@ -49,6 +52,7 @@ class AgentNotificationSubscriber implements EventSubscriberInterface
         match ($event->triggerName) {
             'ticket.assigned' => $this->panel->notify($context['agent_id'] ?? null, 'ticket_assigned', $ticket, [], $context['causer_id'] ?? null),
             'reply.created' => $this->reply($event),
+            'note.created' => $this->mentions($event),
             'sla.warning' => $this->panel->notify($ticket->getAssignedTo(), 'sla_warning', $ticket, ['sla_type' => $context['warning_type'] ?? null]),
             'sla.breached' => $this->panel->notify($ticket->getAssignedTo(), 'sla_breached', $ticket, ['sla_type' => $context['breach_type'] ?? null]),
             'chat.transferred' => $this->panel->notify($context['to_agent_id'] ?? null, 'chat_transferred', $ticket, ['session_id' => $context['chat_session_id'] ?? null], $context['from_agent_id'] ?? null),
@@ -56,11 +60,30 @@ class AgentNotificationSubscriber implements EventSubscriberInterface
         };
     }
 
+    /**
+     * @mentions in an agent's reply or note (escalated-laravel's
+     * MentionService); a customer's reply mentions nobody.
+     */
+    private function mentions(TicketWorkflowEvent $event): void
+    {
+        $id = $event->context['reply_id'] ?? null;
+        $reply = null !== $id ? $this->em->find(Reply::class, $id) : null;
+        if (null === $reply || null === $this->mentions || $this->panel->isCustomerSide($reply)) {
+            return;
+        }
+        $this->mentions->processMentions($reply);
+    }
+
     private function reply(TicketWorkflowEvent $event): void
     {
         $id = $event->context['reply_id'] ?? null;
         $reply = null !== $id ? $this->em->find(Reply::class, $id) : null;
-        if (null === $reply || !$this->panel->isCustomerSide($reply)) {
+        if (null === $reply) {
+            return;
+        }
+        if (!$this->panel->isCustomerSide($reply)) {
+            $this->mentions($event);
+
             return;
         }
         foreach ($this->panel->replyRecipients($event->ticket) as $agentId) {

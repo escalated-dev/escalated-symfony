@@ -48,6 +48,22 @@ class MentionServiceTest extends TestCase
         $this->assertEmpty($this->service->extractMentions('No mentions here'));
     }
 
+    public function testExtractsBracedFullNamesAsLaravel(): void
+    {
+        $this->assertSame(['John Doe', 'alice'], $this->service->extractMentions('Hey @{John Doe}, and @alice'));
+    }
+
+    public function testAWordInsideBracesIsNotASimpleMention(): void
+    {
+        $this->assertSame(['Mary @Ann Lee'], $this->service->extractMentions('@{Mary @Ann Lee}'));
+    }
+
+    public function testNobodyIsMentionedWithoutAUserDirectory(): void
+    {
+        $this->assertSame([], $this->service->mentionedAgents('@alice'));
+        $this->assertSame([], $this->service->searchAgents('alice'));
+    }
+
     public function testEmptyForEmptyString(): void
     {
         $this->assertEmpty($this->service->extractMentions(''));

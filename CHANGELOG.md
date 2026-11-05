@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.3.10] - 2026-11-04
+
 ### Upgrading
 - **The agent ticket pages send the agent panel's optional `inbox` and `queue` props** (shared frontend `docs/agent-panel.md`). Each page view runs a few extra count queries (3 counts, 5 built-in views, 4 stats and one per saved view, up to 50 views), cached in `cache.app` per agent and queue for `escalated.agent_inbox.cache_seconds` (default 10; 0 turns the cache off), so counts can lag a change by that long. Older frontends ignore the props.
 - **The agent ticket list (`Agent/TicketIndex`) now leaves snoozed tickets out**, as escalated-laravel's list does, so a list and the counts that label it agree. `snoozed=1` lists only snoozed tickets and `include_snoozed=1` lists both.
@@ -21,6 +23,9 @@
 
 ### Not sent
 - `is_unread` and `requester_online`: Escalated tracks no per-agent read state or customer presence, so the list rows carry neither. Live chat tickets are still marked through `is_live_chat`.
+
+### Changed
+- The bundled widget is now `@escalated-dev/escalated` 0.12.8. The widget's source did not change in 0.12.8; the bundle is rebuilt with Vue 3.5.44, so it behaves as before.
 
 ## [0.3.9] - 2026-10-30
 

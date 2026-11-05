@@ -1312,6 +1312,18 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     inbound_secret?: scalar|Param|null, // Shared secret for inbound email. Providers must send it in the X-Escalated-Inbound-Secret header to the inbound webhook, and it signs the Reply-To address on outbound mail so replies thread back to their ticket. Only that signed address links inbound mail to a ticket, and only the requester may reply. Empty keeps the inbound webhook disabled. // Default: ""
  *     ui_enabled?: bool|Param, // Enable/disable the built-in Inertia UI. When disabled, only API routes and services are available. // Default: true
  *     enable_newsletters?: bool|Param, // Enable/disable the newsletter HTTP routes and dispatch worker. // Default: false
+ *     ui?: array{
+ *         embed?: array{ // Optional: show Escalated's admin inside your own admin panel instead of the standalone admin at {route_prefix}/admin. Off by default; nothing changes unless it is turned on. See docs/embedding-admin.md.
+ *             enabled?: scalar|Param|null, // Master switch. Null reads ESCALATED_EMBED (default false). // Default: null
+ *             mode?: scalar|Param|null, // "layout" (Vue + Inertia or Twig host) or "iframe". Null reads ESCALATED_EMBED_MODE (default layout). // Default: null
+ *             prefix?: scalar|Param|null, // URL prefix the admin moves under. Null reads ESCALATED_EMBED_PREFIX (default admin/support). // Default: null
+ *             guards?: mixed, // Security attributes (roles such as ROLE_ADMIN, or attributes your voters decide) every embedded admin route requires, checked before Escalated's own gates. Null adds none: your firewall and access_control decide, as on the standalone admin. // Default: null
+ *             replace_admin_gate?: bool|Param, // Drop Escalated's admin gate (ESCALATED_ADMIN) from the embedded admin, so your guards alone decide who reaches it. Needs guards. Two-factor and route permissions still apply. // Default: false
+ *             layout?: scalar|Param|null, // Name of your Vue admin layout, matched against the frontend plugin's `layouts` option. // Default: null
+ *             root_view?: scalar|Param|null, // Twig template your Inertia bundle renders embedded admin pages in (Twig host). Null: your normal root view. // Default: null
+ *             frame_ancestors?: mixed, // iframe mode: exact origins allowed to frame the admin (https://admin.example.com), as a list or a comma-separated string; wildcards and * are ignored. Null reads ESCALATED_EMBED_FRAME_ANCESTORS (default none). // Default: null
+ *         },
+ *     },
  *     access?: array{ // Install-level access switches (ADR 2026-10-29-configurable-access-features), all off by default. Off: the feature's screens and routes answer 404 and nothing is enforced; the ESCALATED_ADMIN / ESCALATED_AGENT gates decide everything. On: the feature is enforced. Read from configuration (or the env var) only; no admin setting changes them.
  *         roles_permissions?: scalar|Param|null, // Enforce roles & permissions: every admin, agent and staff API route also needs its permission from the user's Escalated roles. Null reads ESCALATED_ROLES_PERMISSIONS (default false). Seed the permissions and give every staff user a role first (escalated:permissions:seed, escalated:roles:assign). See docs/access-control.md. // Default: null
  *         two_factor?: scalar|Param|null, // Enforce two-factor authentication: staff with a confirmed TOTP enrolment must pass the Auth/TwoFactorChallenge page after signing in, before any admin or agent route. Null reads ESCALATED_TWO_FACTOR (default false). Run the migrations first. See docs/access-control.md. // Default: null

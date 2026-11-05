@@ -100,14 +100,30 @@ services:
             $config: { id: 'escalated_two_factor', policy: 'fixed_window', limit: 5, interval: '1 minute' }
             $storage: '@escalated.two_factor.limiter_storage'
 
+    # Embedding the admin in the host's own admin panel (ADR
+    # 2026-11-05-embeddable-admin): the `ui.embed` configuration, or its env
+    # vars. Off by default.
+    Escalated\Symfony\Embed\EmbedConfig:
+        arguments:
+            $enabled: '%escalated.ui.embed.enabled%'
+            $mode: '%escalated.ui.embed.mode%'
+            $prefix: '%escalated.ui.embed.prefix%'
+            $guards: '%escalated.ui.embed.guards%'
+            $replaceAdminGate: '%escalated.ui.embed.replace_admin_gate%'
+            $layout: '%escalated.ui.embed.layout%'
+            $rootView: '%escalated.ui.embed.root_view%'
+            $frameAncestors: '%escalated.ui.embed.frame_ancestors%'
+            $uiEnabled: '%escalated.ui_enabled%'
+
     # Route loader behind @EscalatedBundle/config/routes.yaml. Applies ui_enabled,
-    # enable_newsletters and route_prefix when the host's router loads it.
+    # enable_newsletters, route_prefix and ui.embed when the host's router loads it.
     Escalated\Symfony\Routing\EscalatedRouteLoader:
         arguments:
             $routePrefix: '%escalated.route_prefix%'
             $uiEnabled: '%escalated.ui_enabled%'
             $newslettersEnabled: '%escalated.enable_newsletters%'
             $env: '%kernel.environment%'
+            $embed: '@Escalated\Symfony\Embed\EmbedConfig'
         tags: ['routing.loader']
 
     # Repositories (override to attach the Doctrine tag)

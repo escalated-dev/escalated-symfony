@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Escalated\Symfony\Plugin;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Escalated\Symfony\Embed\EmbedConfig;
 use Escalated\Symfony\Entity\Plugin;
 use Escalated\Symfony\Event\EventNames;
 use Escalated\Symfony\Plugin\Bridge\BridgeException;
@@ -48,6 +49,7 @@ class PluginRegistry
         private readonly AuthorizationCheckerInterface $auth,
         private readonly LoggerInterface $logger,
         private readonly string $routePrefix = '/support',
+        private readonly ?EmbedConfig $embed = null,
     ) {
         $this->contexts->setRegistry($this);
     }
@@ -505,9 +507,17 @@ class PluginRegistry
         return null === $capability || $this->auth->isGranted($capability);
     }
 
+    /**
+     * Where a plugin page is mounted: beside the admin, or under the host's
+     * prefix while the admin is embedded (ADR 2026-11-05-embeddable-admin).
+     */
     public function pageUrl(RegisteredPlugin $plugin, string $route): string
     {
-        return rtrim($this->routePrefix, '/').'/admin/plugins/'.$plugin->slug.'/'.ltrim($route, '/');
+        $admin = null !== $this->embed && $this->embed->enabled()
+            ? '/'.$this->embed->prefix()
+            : rtrim($this->routePrefix, '/').'/admin';
+
+        return $admin.'/plugins/'.$plugin->slug.'/'.ltrim($route, '/');
     }
 
     /**

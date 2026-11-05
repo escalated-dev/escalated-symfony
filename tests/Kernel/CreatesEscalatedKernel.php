@@ -17,6 +17,7 @@ use Symfony\Component\HttpKernel\KernelInterface;
  *  - `escalated`:  the `escalated:` configuration block
  *  - `extensions`: extra extension configs, keyed by extension name
  *  - `host_user`:  map the fixture host user entity (default true)
+ *  - `embed_host`: a host that embeds the admin (default false)
  */
 trait CreatesEscalatedKernel
 {
@@ -36,6 +37,7 @@ trait CreatesEscalatedKernel
             $options['escalated'] ?? [],
             $options['extensions'] ?? [],
             (bool) ($options['host_user'] ?? true),
+            (bool) ($options['embed_host'] ?? false),
         );
     }
 

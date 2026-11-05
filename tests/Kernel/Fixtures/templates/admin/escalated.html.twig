@@ -1,0 +1,26 @@
+{# templates/admin/escalated.html.twig #}
+<!DOCTYPE html>
+<html lang="{{ app.request.locale }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Support - Acme Admin</title>
+    {# your stylesheets and the Inertia entry, e.g. {{ vite_entry_link_tags('app') }} {{ vite_entry_script_tags('app') }} #}
+    {{ inertiaHead(page) }}
+</head>
+<body>
+    <header class="host-header">Acme Admin</header>
+    <div class="host-shell">
+        <nav class="host-sidebar" aria-label="Administration">
+            <a href="/admin">Dashboard</a>
+            <p class="menu-heading">Support</p>
+            <ul>
+                {% for item in escalated_admin_navigation() %}
+                    <li><a href="{{ item.url }}"{% if item.active %} class="active" aria-current="page"{% endif %}>{{ item.label }}</a></li>
+                {% endfor %}
+            </ul>
+        </nav>
+        <main class="host-main">{{ inertia(page) }}</main>
+    </div>
+</body>
+</html>

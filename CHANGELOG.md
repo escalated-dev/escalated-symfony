@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Upgrading
+- **Optional: embed the admin in your own admin panel (off by default; no change unless configured).** With no `escalated.ui.embed` configuration (and no `ESCALATED_EMBED` env var) every route, page, shared prop, header and gate is unchanged; a test compares the whole route table with a snapshot taken before this change. See docs/embedding-admin.md.
+
+### Added
+- **Embedding the admin in your own admin panel** (optional; ADR 2026-11-05-embeddable-admin). The `escalated.ui.embed` bundle configuration (`enabled`, `mode`, `prefix`, `guards`, `replace_admin_gate`, `layout`, `root_view`, `frame_ancestors`; env vars `ESCALATED_EMBED`, `ESCALATED_EMBED_MODE`, `ESCALATED_EMBED_PREFIX`, `ESCALATED_EMBED_FRAME_ANCESTORS`), or `EmbedConfig::embedAdmin()` for PHP config files:
+  - the admin routes under `{route_prefix}/admin` (admin screens and settings, plugin admin and plugin pages, API tokens, import) move under the host's prefix with the same route names and controllers; the old URLs answer 404. `guards` (security attributes) run first, then Escalated's feature switches, two-factor, route permissions and admin gate; `replace_admin_gate` (needs `guards`) drops only the admin gate, only there. The agent panel, customer, guest, KB, widget, API, plugin endpoints, SSO, the two-factor enrolment page and challenge, and the newsletter admin do not move;
+  - the shared `escalated` data gains `embed` (`enabled`, `mode`, `layout`, `route`, `base_url`, `allowed_origins`) and `navigation` (the admin menu, filtered by the admin gate, feature switches and route permissions, with plugin admin items); `AdminNavigation::adminNavigation()` and the Twig functions `escalated_admin_navigation()` / `escalated_embed()` give the same to host templates. While embedding is on, `InertiaUiRenderer` shares it with the Inertia service as `escalated`;
+  - `root_view` renders embedded admin pages in the host's Twig template;
+  - iframe mode sends `Content-Security-Policy: frame-ancestors 'self' <origins>` and drops `X-Frame-Options` on embedded responses only, after every other response listener.
+
 ## [0.3.10] - 2026-11-04
 
 ### Upgrading

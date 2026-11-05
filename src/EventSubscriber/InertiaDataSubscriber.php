@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace Escalated\Symfony\EventSubscriber;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Escalated\Symfony\Embed\AdminNavigation;
+use Escalated\Symfony\Embed\EmbedConfig;
 use Escalated\Symfony\Entity\AgentProfile;
 use Escalated\Symfony\Plugin\PluginRegistry;
 use Escalated\Symfony\Security\AccessFeatures;
+use Escalated\Symfony\Security\EnsureAdminVoter;
 use Escalated\Symfony\Security\UserKeyResolver;
 use Escalated\Symfony\Security\UserPermissions;
 use Escalated\Symfony\Service\TwoFactorService;
@@ -36,6 +39,8 @@ class InertiaDataSubscriber implements EventSubscriberInterface
         private readonly ?UserPermissions $userPermissions = null,
         private readonly ?TwoFactorService $twoFactor = null,
         private readonly ?UserKeyResolver $userKeys = null,
+        private readonly ?EmbedConfig $embed = null,
+        private readonly ?AdminNavigation $navigation = null,
     ) {
     }
 
@@ -64,11 +69,17 @@ class InertiaDataSubscriber implements EventSubscriberInterface
 
         $isAgent = $this->authChecker->isGranted('ESCALATED_AGENT');
         $isAdmin = $this->authChecker->isGranted('ESCALATED_ADMIN');
+        // On an embedded admin route whose admin gate the host replaced, the
+        // admin attribute is granted by the host's guards; `is_admin` keeps
+        // meaning Escalated's own gate (ADR 2026-11-05-embeddable-admin).
+        $isEscalatedAdmin = null !== $this->embed && $this->embed->replacesAdminGateFor($request)
+            ? EnsureAdminVoter::hasAdminRole($user)
+            : $isAdmin;
 
         $data = [
             'prefix' => $this->routePrefix,
             'is_agent' => $isAgent,
-            'is_admin' => $isAdmin,
+            'is_admin' => $isEscalatedAdmin,
             'permissions' => $this->sharedPermissions($user, $isAgent || $isAdmin),
             'features' => [
                 'newsletters' => $this->newslettersEnabled,
@@ -97,6 +108,13 @@ class InertiaDataSubscriber implements EventSubscriberInterface
             }
         } catch (\Throwable) {
             // The plugin tables may not exist yet.
+        }
+
+        // Embedding the admin in the host's admin panel (optional; ADR
+        // 2026-11-05-embeddable-admin). Neither key exists while it is off.
+        if (null !== $this->embed && $this->embed->enabled()) {
+            $data['embed'] = $this->embed->shared($request);
+            $data['navigation'] = $this->navigation?->adminNavigation($user, $request) ?? [];
         }
 
         // Store shared data in the request attributes for Inertia renderers to pick up

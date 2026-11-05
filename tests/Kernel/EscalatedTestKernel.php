@@ -7,6 +7,8 @@ namespace Escalated\Symfony\Tests\Kernel;
 use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
 use Doctrine\Bundle\MigrationsBundle\DoctrineMigrationsBundle;
 use Escalated\Symfony\EscalatedBundle;
+use Escalated\Symfony\Rendering\InertiaUiRenderer;
+use Escalated\Symfony\Rendering\UiRendererInterface;
 use Escalated\Symfony\Tests\Kernel\Fixtures\Entity\TestUser;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
@@ -35,6 +37,9 @@ final class EscalatedTestKernel extends Kernel
      * @param array<string, mixed> $extensionConfig extra extension configs, keyed by extension name
      * @param bool                 $withHostUser    map the fixture host user entity and use it as the
      *                                              firewall's user provider
+     * @param bool                 $embedHost       a host that embeds the admin (ADR 2026-11-05): its admin
+     *                                              voter, its security headers, and an Inertia service whose
+     *                                              root views are Twig templates in Fixtures/templates
      */
     public function __construct(
         string $environment,
@@ -42,6 +47,7 @@ final class EscalatedTestKernel extends Kernel
         private readonly array $escalatedConfig = [],
         private readonly array $extensionConfig = [],
         private readonly bool $withHostUser = true,
+        private readonly bool $embedHost = false,
     ) {
         parent::__construct($environment, $debug);
     }
@@ -114,6 +120,7 @@ final class EscalatedTestKernel extends Kernel
             $this->escalatedConfig,
             $this->extensionConfig,
             $this->withHostUser,
+            $this->embedHost,
             self::databaseUrl(),
         ])), 0, 16);
 
@@ -200,6 +207,16 @@ final class EscalatedTestKernel extends Kernel
         }
 
         $container->extension('escalated', $this->escalatedConfig);
+
+        if ($this->embedHost) {
+            $services = $container->services();
+            $services->set(Fixtures\Embed\HostAdminVoter::class)->autowire()->tag('security.voter');
+            $services->set(Fixtures\Embed\HostHeadersSubscriber::class)->tag('kernel.event_subscriber');
+            $services->set(Fixtures\Embed\TwigInertia::class)->autowire()->public();
+            $services->set(Fixtures\Embed\InertiaTwigExtension::class)->tag('twig.extension');
+            $services->set(UiRendererInterface::class, InertiaUiRenderer::class)->autowire()->arg('$inertia', \Symfony\Component\DependencyInjection\Loader\Configurator\service(Fixtures\Embed\TwigInertia::class));
+            $container->extension('twig', ['default_path' => __DIR__.'/Fixtures/templates']);
+        }
 
         foreach ($this->extensionConfig as $extension => $config) {
             $container->extension($extension, $config);

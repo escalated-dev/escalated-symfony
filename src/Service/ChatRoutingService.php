@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Escalated\Symfony\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Escalated\Symfony\Entity\AgentProfile;
 use Escalated\Symfony\Entity\ChatRoutingRule;
 use Escalated\Symfony\Entity\ChatSession;
 use Escalated\Symfony\Entity\Department;
@@ -40,6 +41,35 @@ class ChatRoutingService
         }
 
         return null;
+    }
+
+    /**
+     * The agents among `$agentIds` whose own status (the agent profile's
+     * `chat_status`, ADR 2026-11-05-agent-panel-data) is `online`, in the
+     * given order. Away and offline agents, and agents with no profile, get
+     * no new chats, as escalated-laravel's chat routing.
+     *
+     * @param list<int|string> $agentIds
+     *
+     * @return list<int|string>
+     */
+    public function onlineAgents(array $agentIds): array
+    {
+        if ([] === $agentIds) {
+            return [];
+        }
+        $online = $this->em->createQueryBuilder()
+            ->select('p.userId')
+            ->from(AgentProfile::class, 'p')
+            ->where('p.userId IN (:ids)')
+            ->andWhere('p.chatStatus = :online')
+            ->setParameter('ids', $agentIds)
+            ->setParameter('online', 'online')
+            ->getQuery()
+            ->getSingleColumnResult();
+        $online = array_flip(array_map('strval', $online));
+
+        return array_values(array_filter($agentIds, static fn ($id) => isset($online[(string) $id])));
     }
 
     /**
@@ -83,6 +113,7 @@ class ChatRoutingService
             array_map(UserKeyResolver::normalize(...), $rule->getAgentIds() ?? []),
             static fn ($id) => null !== $id,
         ));
+        $agentIds = $this->onlineAgents($agentIds);
         if ($this->access?->restricted()) {
             if (null === $ticket) {
                 return null;

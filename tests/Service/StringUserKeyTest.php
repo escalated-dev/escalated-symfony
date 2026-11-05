@@ -85,6 +85,11 @@ class StringUserKeyTest extends TestCase
             {
                 return 0;
             }
+
+            public function onlineAgents(array $agentIds): array
+            {
+                return $agentIds;
+            }
         };
         $rule = (new ChatRoutingRule())->setAgentIds([self::UUID])->setMaxConcurrentChats(3);
 

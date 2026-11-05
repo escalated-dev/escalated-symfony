@@ -95,7 +95,7 @@ final class ChatTransferTest extends EscalatedWebTestCase
     public function testDepartmentOnlyTransferRequeuesAndReroutes(): void
     {
         $from = $this->agent('from@example.com');
-        $online = $this->agent('online@example.com');
+        $online = $this->agent('online@example.com', 'online');
         $department = $this->department('Billing');
         $rule = (new ChatRoutingRule())
             ->setDepartment($department)
@@ -252,7 +252,7 @@ final class ChatTransferTest extends EscalatedWebTestCase
         $this->client->jsonRequest('POST', '/support/agent/chat/'.$session->getId().'/transfer', $body);
     }
 
-    private function agent(string $email): TestUser
+    private function agent(string $email, string $status = 'offline'): TestUser
     {
         $user = new TestUser($email);
         $em = static::entityManager();
@@ -260,6 +260,7 @@ final class ChatTransferTest extends EscalatedWebTestCase
         $em->flush();
         $profile = new AgentProfile();
         $profile->setUserId($user->getId());
+        $profile->setChatStatus($status);
         $em->persist($profile);
         $em->flush();
 

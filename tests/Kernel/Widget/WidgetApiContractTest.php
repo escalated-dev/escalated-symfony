@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Escalated\Symfony\Tests\Kernel\Widget;
 
+use Escalated\Symfony\Entity\AgentProfile;
 use Escalated\Symfony\Entity\Article;
 use Escalated\Symfony\Entity\ChatRoutingRule;
 use Escalated\Symfony\Entity\ChatSession;
@@ -238,11 +239,41 @@ final class WidgetApiContractTest extends EscalatedWebTestCase
 
         $rule = (new ChatRoutingRule())->setName('Everyone')->setAgentIds([1]);
         static::entityManager()->persist($rule);
+        static::entityManager()->persist((new AgentProfile())->setUserId(1)->setChatStatus('online'));
         static::entityManager()->flush();
 
         $availability = $this->api($client, 'GET', '/chat/availability');
         self::assertTrue($availability['available']);
         self::assertTrue($availability['data']['available']);
+    }
+
+    /**
+     * Only agents whose own status is `online` get new chats, as
+     * escalated-laravel's chat routing (ADR 2026-11-05-agent-panel-data, the
+     * status agents set themselves). Away and offline agents, and agents
+     * with no profile, keep live chat unavailable and get nothing.
+     */
+    public function testChatRoutingOnlyGivesChatsToOnlineAgents(): void
+    {
+        $client = $this->client();
+        $em = static::entityManager();
+        $em->persist((new ChatRoutingRule())->setName('Everyone')->setAgentIds([11, 12, 13]));
+        $em->persist((new AgentProfile())->setUserId(11)->setChatStatus('away'));
+        $em->persist((new AgentProfile())->setUserId(12)->setChatStatus('offline'));
+        $em->flush();
+
+        self::assertFalse($this->api($client, 'GET', '/chat/availability')['available']);
+        $waiting = $this->api($client, 'POST', '/chat/start', ['name' => 'Ada', 'email' => 'ada@example.com']);
+        self::assertNull($waiting['agent']);
+
+        $em->persist((new AgentProfile())->setUserId(13)->setChatStatus('online'));
+        $em->flush();
+
+        self::assertTrue($this->api($client, 'GET', '/chat/availability')['available']);
+        $this->api($client, 'POST', '/chat/start', ['name' => 'Bea', 'email' => 'bea@example.com']);
+        $em->clear();
+        $sessions = $em->getRepository(ChatSession::class)->findBy([], ['id' => 'ASC']);
+        self::assertSame([null, 13], array_map(static fn (ChatSession $s) => $s->getAgentId(), $sessions));
     }
 
     public function testRunsALiveChatTheWayTheWidgetDoes(): void

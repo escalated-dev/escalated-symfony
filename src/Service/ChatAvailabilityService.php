@@ -19,8 +19,9 @@ class ChatAvailabilityService
     /**
      * Check whether live chat is currently available.
      *
-     * Chat is available when at least one routing rule is active
-     * and at least one agent in those rules is below their concurrent-chat limit.
+     * Chat is available when at least one routing rule is active and at
+     * least one of its agents is online (their own status) and below their
+     * concurrent-chat limit.
      */
     public function isAvailable(): bool
     {
@@ -33,7 +34,7 @@ class ChatAvailabilityService
                 continue;
             }
 
-            foreach ($agentIds as $agentId) {
+            foreach ($this->routingService->onlineAgents(array_values($agentIds)) as $agentId) {
                 if ($this->routingService->getAgentActiveChatCount($agentId) < $rule->getMaxConcurrentChats()) {
                     return true;
                 }

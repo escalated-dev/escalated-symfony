@@ -13,11 +13,13 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
  * Marks open tickets whose first-response or resolution due time has passed as
- * breached, firing `sla.breached` for each. Schedule it every minute.
+ * breached, firing `sla.breached` for each, and fires `sla.warning` for each
+ * deadline due within the next 30 minutes (escalated-laravel's
+ * escalated:check-sla). Schedule it every minute.
  */
 #[AsCommand(
     name: 'escalated:check-sla-breaches',
-    description: 'Mark tickets past their SLA due times as breached and fire sla.breached',
+    description: 'Mark tickets past their SLA due times as breached (sla.breached) and warn of deadlines due soon (sla.warning)',
 )]
 class CheckSlaBreachesCommand extends Command
 {
@@ -32,14 +34,15 @@ class CheckSlaBreachesCommand extends Command
         $io = new SymfonyStyle($input, $output);
 
         $breached = $this->slaService->checkBreaches();
+        $warned = $this->slaService->checkWarnings();
 
-        if (0 === $breached) {
+        if (0 === $breached && 0 === $warned) {
             $io->info('No new SLA breaches.');
 
             return Command::SUCCESS;
         }
 
-        $io->success(sprintf('Marked %d new SLA breach(es).', $breached));
+        $io->success(sprintf('Marked %d new SLA breach(es); %d SLA warning(s).', $breached, $warned));
 
         return Command::SUCCESS;
     }

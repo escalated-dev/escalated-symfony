@@ -41,6 +41,7 @@ class AgentPanel
     private const TITLES = [
         'ticket_assigned' => '%s was assigned to you',
         'ticket_reply' => 'New reply on %s',
+        'mention' => '%2$s mentioned you on %1$s',
         'sla_warning' => 'SLA due soon on %s',
         'sla_breached' => 'SLA breached on %s',
         'chat_transferred' => 'A chat was transferred to you (%s)',
@@ -517,7 +518,7 @@ class AgentPanel
 
         return [
             ...$base,
-            'title' => sprintf(self::TITLES[$row->getType()] ?? 'Update on %s', $reference),
+            'title' => sprintf(self::TITLES[$row->getType()] ?? 'Update on %s', $reference, (string) ($data['mentioned_by'] ?? 'Someone')),
             'body' => $ticket?->getSubject(),
             'ticket' => null !== $ticket ? ['id' => $ticket->getId(), 'reference' => $ticket->getReference(), 'subject' => $ticket->getSubject()] : null,
             'url' => null !== $ticket ? $this->urls->generate('escalated.agent.tickets.show', ['reference' => $ticket->getReference()]) : null,

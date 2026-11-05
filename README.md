@@ -236,6 +236,23 @@ composer require skipthedragon/inertia-bundle
 
 Set `ui_enabled: false` if you want to use only the API and services with a custom frontend.
 
+## Embedding the admin in your own admin panel (optional)
+
+Escalated's admin is a standalone panel at `{route_prefix}/admin` by default, and nothing changes unless you configure this. If your app already has an admin panel, you can show Escalated's admin screens inside it instead: under your URL prefix and security, inside your Vue/Inertia layout or Twig template (or an allow-listed iframe), with its menu listed in your own sidebar.
+
+```yaml
+# config/packages/escalated.yaml
+escalated:
+    ui:
+        embed:
+            enabled: true             # or ESCALATED_EMBED=true
+            prefix: admin/support     # the admin moves to /admin/support/...
+            guards: [ROLE_ADMIN]      # checked before Escalated's own admin gate, which stays on
+            layout: Layouts/AdminLayout
+```
+
+Route names do not change, and Escalated's admin gate, two-factor and route permissions stay in place. See [docs/embedding-admin.md](docs/embedding-admin.md) for the Vue + Inertia, Twig and iframe setups.
+
 ## Ticket subjects
 
 A ticket has a **requester** (who raised it) and a **subject line** (free text). You can also attach host-app entities the ticket is *about* — a Project, Customer, asset, and so on — so agents see context and can jump into your app.

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Escalated\Symfony\DependencyInjection;
 
+use Escalated\Symfony\Embed\EmbedConfig;
+use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 
@@ -53,6 +55,12 @@ class Configuration implements ConfigurationInterface
                 ->booleanNode('enable_newsletters')
                     ->defaultFalse()
                     ->info('Enable/disable the newsletter HTTP routes and dispatch worker.')
+                ->end()
+                ->arrayNode('ui')
+                    ->addDefaultsIfNotSet()
+                    ->children()
+                        ->append($this->embedNode())
+                    ->end()
                 ->end()
                 ->arrayNode('access')
                     ->addDefaultsIfNotSet()
@@ -398,5 +406,85 @@ class Configuration implements ConfigurationInterface
         ;
 
         return $treeBuilder;
+    }
+
+    /**
+     * `ui.embed`: embedding the admin in the host's own admin panel
+     * (ADR 2026-11-05-embeddable-admin, docs/embedding-admin.md). Off by
+     * default; a key left null reads its env var at runtime.
+     */
+    private function embedNode(): ArrayNodeDefinition
+    {
+        $node = (new TreeBuilder('embed'))->getRootNode();
+        \assert($node instanceof ArrayNodeDefinition);
+
+        $node
+            ->addDefaultsIfNotSet()
+            ->info(
+                'Optional: show Escalated\'s admin inside your own admin panel instead of the standalone admin at '
+                .'{route_prefix}/admin. Off by default; nothing changes unless it is turned on. See docs/embedding-admin.md.'
+            )
+            ->validate()
+                ->ifTrue(static fn (array $v): bool => true === $v['replace_admin_gate'] && [] === ($v['guards'] ?? []))
+                ->thenInvalid('ui.embed.replace_admin_gate needs ui.embed.guards: with Escalated\'s admin gate replaced, your guards are the only check on who reaches the admin.')
+            ->end()
+            ->children()
+                ->scalarNode('enabled')
+                    ->defaultNull()
+                    ->info('Master switch. Null reads ESCALATED_EMBED (default false).')
+                ->end()
+                ->scalarNode('mode')
+                    ->defaultNull()
+                    ->info('"layout" (Vue + Inertia or Twig host) or "iframe". Null reads ESCALATED_EMBED_MODE (default layout).')
+                    ->validate()
+                        ->ifTrue(static fn (mixed $v): bool => null !== $v && !\in_array($v, EmbedConfig::MODES, true))
+                        ->thenInvalid('ui.embed.mode must be "layout" or "iframe", got %s.')
+                    ->end()
+                ->end()
+                ->scalarNode('prefix')
+                    ->defaultNull()
+                    ->info('URL prefix the admin moves under. Null reads ESCALATED_EMBED_PREFIX (default admin/support).')
+                ->end()
+                ->variableNode('guards')
+                    ->defaultNull()
+                    ->info(
+                        'Security attributes (roles such as ROLE_ADMIN, or attributes your voters decide) every embedded '
+                        .'admin route requires, checked before Escalated\'s own gates. Null adds none: your firewall and '
+                        .'access_control decide, as on the standalone admin.'
+                    )
+                    ->validate()
+                        ->ifTrue(static fn (mixed $v): bool => null !== $v && (!\is_array($v) || !array_is_list($v) || [] !== array_filter($v, static fn (mixed $g): bool => !\is_string($g) || '' === $g)))
+                        ->thenInvalid('ui.embed.guards must be null or a list of security attributes, got %s.')
+                    ->end()
+                ->end()
+                ->booleanNode('replace_admin_gate')
+                    ->defaultFalse()
+                    ->info(
+                        'Drop Escalated\'s admin gate (ESCALATED_ADMIN) from the embedded admin, so your guards alone decide '
+                        .'who reaches it. Needs guards. Two-factor and route permissions still apply.'
+                    )
+                ->end()
+                ->scalarNode('layout')
+                    ->defaultNull()
+                    ->info('Name of your Vue admin layout, matched against the frontend plugin\'s `layouts` option.')
+                ->end()
+                ->scalarNode('root_view')
+                    ->defaultNull()
+                    ->info('Twig template your Inertia bundle renders embedded admin pages in (Twig host). Null: your normal root view.')
+                ->end()
+                ->variableNode('frame_ancestors')
+                    ->defaultNull()
+                    ->info(
+                        'iframe mode: exact origins allowed to frame the admin (https://admin.example.com), as a list or a '
+                        .'comma-separated string; wildcards and * are ignored. Null reads ESCALATED_EMBED_FRAME_ANCESTORS (default none).'
+                    )
+                    ->validate()
+                        ->ifTrue(static fn (mixed $v): bool => null !== $v && !\is_string($v) && !(\is_array($v) && array_is_list($v)))
+                        ->thenInvalid('ui.embed.frame_ancestors must be a list of origins or a comma-separated string, got %s.')
+                    ->end()
+                ->end()
+            ->end();
+
+        return $node;
     }
 }

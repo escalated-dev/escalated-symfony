@@ -46,6 +46,7 @@ class EscalatedBundle extends AbstractBundle
         $builder->setParameter('escalated.enable_newsletters', $config['enable_newsletters']);
         $builder->setParameter('escalated.table_prefix', $config['table_prefix']);
         self::setAccessFeatures($builder, $config['access'], $config['two_factor'], $config['sso']);
+        self::setEmbed($builder, $config['ui']['embed'] ?? []);
         $this->aliasEntityManager($builder, $config['entity_manager'] ?? null);
 
         // Storage config
@@ -201,6 +202,31 @@ class EscalatedBundle extends AbstractBundle
         if (\is_string($provisioner) && '' !== $provisioner) {
             $builder->setAlias('escalated.sso.user_provisioner', $provisioner);
         }
+    }
+
+    /**
+     * Parameters for Embed\EmbedConfig (ADR 2026-11-05-embeddable-admin): an
+     * explicit config value wins; a key left null reads its env var at
+     * runtime (ESCALATED_EMBED, ESCALATED_EMBED_MODE, ESCALATED_EMBED_PREFIX,
+     * ESCALATED_EMBED_FRAME_ANCESTORS), then the default. All off by default.
+     *
+     * @param array<string, mixed> $embed
+     */
+    public static function setEmbed(ContainerBuilder $builder, array $embed): void
+    {
+        $builder->setParameter('escalated.access.off', false);
+        $builder->setParameter('escalated.ui.embed.default_mode', 'layout');
+        $builder->setParameter('escalated.ui.embed.default_prefix', Embed\EmbedConfig::DEFAULT_PREFIX);
+        $builder->setParameter('escalated.ui.embed.no_origins', '');
+
+        $builder->setParameter('escalated.ui.embed.enabled', $embed['enabled'] ?? '%env(bool:default:escalated.access.off:ESCALATED_EMBED)%');
+        $builder->setParameter('escalated.ui.embed.mode', $embed['mode'] ?? '%env(default:escalated.ui.embed.default_mode:ESCALATED_EMBED_MODE)%');
+        $builder->setParameter('escalated.ui.embed.prefix', $embed['prefix'] ?? '%env(default:escalated.ui.embed.default_prefix:ESCALATED_EMBED_PREFIX)%');
+        $builder->setParameter('escalated.ui.embed.frame_ancestors', $embed['frame_ancestors'] ?? '%env(default:escalated.ui.embed.no_origins:ESCALATED_EMBED_FRAME_ANCESTORS)%');
+        $builder->setParameter('escalated.ui.embed.guards', $embed['guards'] ?? null);
+        $builder->setParameter('escalated.ui.embed.replace_admin_gate', (bool) ($embed['replace_admin_gate'] ?? false));
+        $builder->setParameter('escalated.ui.embed.layout', $embed['layout'] ?? null);
+        $builder->setParameter('escalated.ui.embed.root_view', $embed['root_view'] ?? null);
     }
 
     public static function setTicketAccess(ContainerBuilder $builder, array $config): void

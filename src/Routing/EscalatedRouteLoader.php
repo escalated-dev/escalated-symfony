@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Escalated\Symfony\Routing;
 
+use Escalated\Symfony\Embed\EmbedConfig;
 use Symfony\Component\Config\Loader\Loader;
 use Symfony\Component\DependencyInjection\Config\ContainerParametersResource;
 use Symfony\Component\Routing\RouteCollection;
@@ -21,7 +22,12 @@ use Symfony\Component\Routing\RouteCollection;
  *  - the newsletter admin, public and webhook routes, when `ui_enabled` and
  *    `enable_newsletters` are both true.
  *
- * Every route is mounted under `route_prefix`.
+ * Every route is mounted under `route_prefix`, except while the admin is
+ * embedded in the host's admin panel (`ui.embed`, ADR
+ * 2026-11-05-embeddable-admin): then the admin screens are mounted under the
+ * host's `ui.embed.prefix` instead, with the same names, controllers and
+ * everything else, and marked as embedded. The two-factor enrolment page
+ * (personal, every staff member's) and the newsletter admin stay where they are.
  */
 final class EscalatedRouteLoader extends Loader
 {
@@ -36,11 +42,18 @@ final class EscalatedRouteLoader extends Loader
 
     private const NEWSLETTER = ['Newsletter/Admin/', 'Newsletter/Public/', 'Newsletter/Webhook/'];
 
+    /** The controllers whose `/admin` routes move while the admin is embedded. */
+    private const EMBEDDABLE = 'Admin/';
+
+    /** Admin routes that stay at their standalone URL while the admin is embedded. */
+    private const NOT_EMBEDDED = ['escalated.admin.two-factor.'];
+
     public function __construct(
         private readonly string $routePrefix,
         private readonly bool $uiEnabled,
         private readonly bool $newslettersEnabled,
         ?string $env = null,
+        private readonly ?EmbedConfig $embed = null,
     ) {
         parent::__construct($env);
     }
@@ -53,15 +66,28 @@ final class EscalatedRouteLoader extends Loader
     public function load(mixed $resource, ?string $type = null): RouteCollection
     {
         $routes = new RouteCollection();
+        $embedded = [];
+        $embedding = null !== $this->embed && $this->embed->enabled();
 
         foreach ($this->controllerResources() as $controllerResource) {
             $imported = $this->import(\dirname(__DIR__).'/Controller/'.$controllerResource, 'attribute');
             if ($imported instanceof RouteCollection) {
+                if ($embedding && self::EMBEDDABLE === $controllerResource) {
+                    $embedded = self::embeddable($imported);
+                }
                 $routes->addCollection($imported);
             }
         }
 
         $routes->addPrefix($this->routePrefix);
+
+        foreach ($embedded as $name => $path) {
+            $route = $routes->get($name);
+            if (null !== $route) {
+                $route->setPath('/'.$this->embed?->prefix().substr($path, \strlen('/admin')));
+                $route->setDefault(EmbedConfig::REQUEST_ATTRIBUTE, true);
+            }
+        }
 
         // The set of routes depends on bundle configuration, not only on the
         // controller files, so a configuration change must invalidate the
@@ -70,9 +96,36 @@ final class EscalatedRouteLoader extends Loader
             'escalated.route_prefix' => $this->routePrefix,
             'escalated.ui_enabled' => $this->uiEnabled,
             'escalated.enable_newsletters' => $this->newslettersEnabled,
+            ...($this->embed?->parameters() ?? []),
         ]));
 
         return $routes;
+    }
+
+    /**
+     * The admin routes that move under the host prefix while the admin is
+     * embedded, with their path before `route_prefix` is added: every route
+     * under `/admin` except the ones that stay.
+     *
+     * @return array<string, string> name => path
+     */
+    private static function embeddable(RouteCollection $routes): array
+    {
+        $paths = [];
+        foreach ($routes->all() as $name => $route) {
+            $path = $route->getPath();
+            if ('/admin' !== $path && !str_starts_with($path, '/admin/')) {
+                continue;
+            }
+            foreach (self::NOT_EMBEDDED as $stays) {
+                if (str_starts_with($name, $stays)) {
+                    continue 2;
+                }
+            }
+            $paths[$name] = $path;
+        }
+
+        return $paths;
     }
 
     /**

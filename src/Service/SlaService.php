@@ -15,6 +15,9 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class SlaService
 {
+    /** How long before a deadline `sla.warning` fires, as escalated-laravel. */
+    public const WARNING_MINUTES = 30;
+
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly TicketRepository $ticketRepository,
@@ -174,6 +177,60 @@ class SlaService
         }
 
         return $breached;
+    }
+
+    /**
+     * Fire `sla.warning` for each open ticket whose first-response or
+     * resolution deadline falls within the next `$warningMinutes` minutes and
+     * has not been missed, as escalated-laravel's SlaService::checkWarnings.
+     * The check runs with the breach check (every minute), so a deadline is
+     * warned about on every run until it is met or missed.
+     *
+     * @return int Number of warnings fired
+     */
+    public function checkWarnings(int $warningMinutes = self::WARNING_MINUTES): int
+    {
+        if (!$this->slaEnabled || ImportContext::isImporting()) {
+            return 0;
+        }
+
+        $warned = 0;
+        $now = new \DateTimeImmutable();
+        $threshold = $now->modify(sprintf('+%d minutes', $warningMinutes));
+
+        $deadlines = [
+            'first_response' => ['t.firstResponseDueAt', 't.firstResponseAt IS NULL AND t.slaFirstResponseBreached = false'],
+            'resolution' => ['t.resolutionDueAt', 't.slaResolutionBreached = false'],
+        ];
+
+        foreach ($deadlines as $type => [$due, $open]) {
+            $tickets = $this->em->createQueryBuilder()
+                ->select('t')
+                ->from(Ticket::class, 't')
+                ->where('t.status NOT IN (:closedStatuses)')
+                ->setParameter('closedStatuses', [Ticket::STATUS_RESOLVED, Ticket::STATUS_CLOSED])
+                ->andWhere($due.' IS NOT NULL')
+                ->andWhere($open)
+                ->andWhere($due.' BETWEEN :now AND :threshold')
+                ->setParameter('now', $now)
+                ->setParameter('threshold', $threshold)
+                ->andWhere('t.deletedAt IS NULL')
+                ->getQuery()
+                ->getResult();
+
+            foreach ($tickets as $ticket) {
+                $deadline = 'first_response' === $type ? $ticket->getFirstResponseDueAt() : $ticket->getResolutionDueAt();
+                $minutes = null === $deadline ? 0 : max(0, intdiv($deadline->getTimestamp() - $now->getTimestamp(), 60));
+                ++$warned;
+                $this->dispatcher->dispatch(new TicketWorkflowEvent(
+                    'sla.warning',
+                    $ticket,
+                    ['warning_type' => $type, 'type' => $type, 'minutes_remaining' => $minutes],
+                ));
+            }
+        }
+
+        return $warned;
     }
 
     /**

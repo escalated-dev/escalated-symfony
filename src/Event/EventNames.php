@@ -54,7 +54,7 @@ final class EventNames
     /**
      * The canonical names this bundle actually emits, to webhooks and
      * workflows alike. A form offers exactly these, so it never offers an
-     * event that is not sent. Not emitted yet: `sla.warning` (no warning scan).
+     * event that is not sent.
      */
     public const EMITTED = [
         self::TICKET_CREATED, self::TICKET_UPDATED, self::STATUS_CHANGED,
@@ -63,7 +63,7 @@ final class EventNames
         self::PRIORITY_CHANGED, self::DEPARTMENT_CHANGED,
         self::TAG_ADDED, self::TAG_REMOVED,
         self::REPLY_CREATED, self::NOTE_CREATED,
-        self::SLA_BREACHED,
+        self::SLA_WARNING, self::SLA_BREACHED,
         self::CHAT_STARTED, self::CHAT_ASSIGNED, self::CHAT_TRANSFERRED, self::CHAT_MESSAGE, self::CHAT_ENDED,
     ];
 

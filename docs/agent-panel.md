@@ -4,7 +4,7 @@ The shared frontend's agent panel (`@escalated-dev/escalated`, `docs/agent-panel
 
 ## Agent status
 
-- `PUT` or `POST /agent/status` (`escalated.agent.status`) with `{ "status": "online" | "away" | "offline" }` stores the agent's status on their agent profile (`chat_status`). A JSON client gets `{ "agent_status": "away" }`; an Inertia visit goes back. Anything else is a 422.
+- `PUT` or `POST /agent/status` (`escalated.agent.status`) with `{ "status": "online" | "away" | "offline" }` stores the agent's status on their agent profile (`chat_status`), the field chat routing reads: only `online` agents get new chats and count towards the widget's chat availability. A JSON client gets `{ "agent_status": "away" }`; an Inertia visit goes back. Anything else is a 422.
 - Every staff page shares `escalated.agent_status` (default `offline`) and `escalated.agent_statuses` (`["online", "away", "offline"]`).
 
 ## Knowledge base search

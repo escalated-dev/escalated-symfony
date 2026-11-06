@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.3.11] - 2026-11-05
+
 ### Upgrading
 - **`escalated:check-sla-breaches` now also fires `sla.warning`**, as escalated-laravel's `escalated:check-sla`: on every run, for each open ticket whose first-response or resolution deadline is due within 30 minutes and not yet missed (context `warning_type`/`type` and `minutes_remaining`). Webhooks, workflows and plugins receive it, the workflow and webhook forms now offer it, and the assignee gets the `sla_warning` notification. Like Laravel, a deadline is warned about on each run until it is met or missed.
 - **Live chat goes only to agents who are online.** Chat routing and the widget's chat availability now read the agent's own status (the agent profile's `chat_status`, set through `escalated.agent.status` or the admin chat status route), as escalated-laravel does: only `online` agents in a routing rule get new chats; `away` and `offline` agents, and agents with no profile, are skipped. Agents must set themselves Online to receive chats.
@@ -27,7 +29,7 @@
   - iframe mode sends `Content-Security-Policy: frame-ancestors 'self' <origins>` and drops `X-Frame-Options` on embedded responses only, after every other response listener.
 
 ### Not sent
-- `mention` notifications: the bundle does not detect @mentions in replies yet. `sla_warning` is wired but nothing in the bundle emits `sla.warning` yet. Notification titles are English (the bundle wires no translator for its pages).
+- Notification titles are English (the bundle wires no translator for its pages).
 
 ## [0.3.10] - 2026-11-04
 

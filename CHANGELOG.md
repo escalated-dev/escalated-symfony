@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [0.3.12] - 2026-11-07
+
+### Upgrading
+- No host changes: the bundle's code and `composer.json` are unchanged.
+
+### Changed
+- Dependabot no longer runs for the Docker demo host app's Composer file, which it cannot resolve outside the Docker image (#157).
+
 ## [0.3.11] - 2026-11-05
 
 ### Upgrading

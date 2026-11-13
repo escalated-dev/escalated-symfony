@@ -1,192 +1,170 @@
-<p align="center">
-  <a href="README.ar.md">العربية</a> •
-  <a href="README.de.md">Deutsch</a> •
-  <a href="../../README.md">English</a> •
-  <a href="README.es.md">Español</a> •
-  <a href="README.fr.md">Français</a> •
-  <a href="README.it.md">Italiano</a> •
-  <a href="README.ja.md">日本語</a> •
-  <a href="README.ko.md">한국어</a> •
-  <a href="README.nl.md">Nederlands</a> •
-  <a href="README.pl.md">Polski</a> •
-  <a href="README.pt-BR.md">Português (BR)</a> •
-  <b>Русский</b> •
-  <a href="README.tr.md">Türkçe</a> •
+<p align="center"><sub>
+  <a href="README.ar.md">العربية</a> ·
+  <a href="README.de.md">Deutsch</a> ·
+  <a href="../../README.md">English</a> ·
+  <a href="README.es.md">Español</a> ·
+  <a href="README.fr.md">Français</a> ·
+  <a href="README.it.md">Italiano</a> ·
+  <a href="README.ja.md">日本語</a> ·
+  <a href="README.ko.md">한국어</a> ·
+  <a href="README.nl.md">Nederlands</a> ·
+  <a href="README.pl.md">Polski</a> ·
+  <a href="README.pt-BR.md">Português (BR)</a> ·
+  <b>Русский</b> ·
+  <a href="README.tr.md">Türkçe</a> ·
   <a href="README.zh-CN.md">简体中文</a>
+</sub></p>
+
+<p align="center">
+  <a href="https://escalated.dev"><img src="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/logo.png" width="72" height="72" alt="Escalated"></a>
 </p>
 
-# Escalated for Symfony
+<h1 align="center">Escalated for Symfony</h1>
 
-Встраиваемая система тикетов поддержки для приложений Symfony. Готовый helpdesk с тикетами, ответами, отделами, тегами, политиками SLA и управлением доступом на основе ролей.
+<p align="center">
+  Добавьте полноценный хелпдеск в ваше приложение на Symfony.<br>
+  Тикеты, SLA, правила эскалации, входящие для агентов и клиентский портал, на вашей собственной базе данных.
+</p>
 
-## Требования
+<p align="center">
+  <a href="https://escalated.dev"><b>Сайт</b></a> ·
+  <a href="https://escalated.dev/docs"><b>Документация</b></a> ·
+  <a href="https://escalated.dev/cloud"><b>Cloud</b></a> ·
+  <a href="../../CHANGELOG.md"><b>Список изменений</b></a>
+</p>
 
-- PHP 8.2+
-- Symfony 6.4 или 7.x
-- Doctrine ORM 2.17+ / 3.x
-- Doctrine Migrations Bundle
+<br>
 
-## Установка
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/inbox-dark.png">
+  <img src="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/inbox-light.png" alt="Входящие агентов в Escalated: сохранённые представления со счётчиками, обратный отсчёт SLA и приоритет у каждого тикета" width="100%">
+</picture>
 
-```bash
-composer require escalated-dev/escalated-symfony
-```
+## Что он делает
 
-### 1. Регистрация бандла
-
-Если установлен Symfony Flex, бандл регистрируется автоматически. В противном случае добавьте его в `config/bundles.php`:
-
-```php
-return [
-    // ...
-    Escalated\Symfony\EscalatedBundle::class => ['all' => true],
-];
-```
-
-### 2. Настройка бандла
-
-Создайте `config/packages/escalated.yaml`:
-
-```yaml
-escalated:
-    user_class: App\Entity\User
-    route_prefix: /support
-    ui_enabled: true
-    table_prefix: escalated_
-    tickets:
-        allow_customer_close: true
-        default_priority: medium
-    sla:
-        enabled: true
-        business_hours_only: false
-        business_hours:
-            start: '09:00'
-            end: '17:00'
-            timezone: UTC
-            days: [1, 2, 3, 4, 5]
-```
-
-### 3. Выполнение миграций
-
-```bash
-php bin/console doctrine:migrations:migrate
-```
-
-Миграция создаёт все необходимые таблицы (`escalated_tickets`, `escalated_replies`, `escalated_departments`, `escalated_tags`, `escalated_sla_policies`, `escalated_ticket_activities`, `escalated_agent_profiles`).
-
-### 4. Настройка безопасности
-
-Добавьте роль `ROLE_ESCALATED_ADMIN` пользователям-администраторам в вашем провайдере пользователей. Доступ агентов определяется наличием сущности `AgentProfile`, связанной с пользователем.
-
-```yaml
-# config/packages/security.yaml
-security:
-    role_hierarchy:
-        ROLE_ESCALATED_ADMIN: ROLE_USER
-```
-
-### 5. (Необязательно) Установка Inertia
-
-Для встроенного фронтенд-интерфейса установите бандл Inertia:
-
-```bash
-composer require rompetomp/inertia-bundle
-# или
-composer require skipthedragon/inertia-bundle
-```
-
-Установите `ui_enabled: false`, если хотите использовать только API и сервисы с собственным фронтендом.
+<table>
+  <tr>
+    <td width="40%">
+      <h3>Входящие, в которых агенты могут работать весь день</h3>
+      Переписка, внутренние заметки, шаблоны ответов и таймеры SLA на одном экране. Тикеты также приходят по электронной почте через Postmark, Mailgun или SES.
+    </td>
+    <td width="60%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/ticket-dark.png">
+        <img src="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/ticket-light.png" alt="Тикет, открытый в рабочем пространстве агента, с редактором ответа">
+      </picture>
+    </td>
+  </tr>
+  <tr>
+    <td width="60%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/dashboard-dark.png">
+        <img src="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/dashboard-light.png" alt="Страница отчётов администратора со временем ответа, CSAT и нарушениями SLA">
+      </picture>
+    </td>
+    <td width="40%">
+      <h3>SLA и правила эскалации, которые вы видите</h3>
+      Цели по времени ответа и решения для каждого приоритета с учётом рабочих часов, правила, которые эскалируют или переназначают тикет при отставании, и отчёты о нарушениях.
+    </td>
+  </tr>
+</table>
 
 ## Возможности
 
-- **Жизненный цикл тикета** — Создание, назначение, ответ, решение, закрытие, повторное открытие с настраиваемыми переходами статусов
-- **SLA-движок** — Цели ответа и решения по приоритетам, расчёт рабочих часов, автоматическое обнаружение нарушений
-- **Панель агентов** — Очередь тикетов с фильтрами, внутренними заметками, шаблонными ответами
-- **Портал клиентов** — Самообслуживание: создание тикетов, ответы и отслеживание статуса
-- **Панель администратора** — Управление отделами, политиками SLA, тегами и просмотр отчётов
-- **Вложения файлов** — Загрузка перетаскиванием с настраиваемым хранилищем и лимитами размера
-- **Хронология активности** — Полный журнал аудита каждого действия по каждому тикету
-- **Уведомления по email** — Настраиваемые уведомления по событиям
-- **Маршрутизация по отделам** — Организация агентов по отделам с автоназначением
-- **Система тегов** — Категоризация тикетов цветными тегами
-- **Разделение тикетов** — Разделение ответа в новый самостоятельный тикет с сохранением оригинального контекста
-- **Отложение тикетов** — Откладывание тикетов с пресетами (1ч, 4ч, завтра, следующая неделя); команда `php bin/console escalated:wake-snoozed-tickets` автоматически пробуждает их по расписанию
-- **Сохранённые представления / пользовательские очереди** — Сохранение, именование и совместное использование пресетов фильтров как повторно используемых представлений тикетов
-- **Встраиваемый виджет поддержки** — Лёгкий виджет `<script>` с поиском по базе знаний, формой тикета и проверкой статуса
-- **Потоки email** — Исходящие письма включают корректные заголовки `In-Reply-To` и `References` для правильной группировки в почтовых клиентах
-- **Брендированные шаблоны email** — Настраиваемый логотип, основной цвет и текст подвала для всех исходящих писем
-- **Трансляция в реальном времени** — Опциональная трансляция через Mercure с автоматическим откатом на polling
-- **Переключатель базы знаний** — Включение или отключение публичной базы знаний из настроек администратора
+<table>
+<tr>
+<td width="33%" valign="top">
 
-## Архитектура
+**Тикеты**
+- Создание, назначение, ответ, решение, повторное открытие
+- Настраиваемые переходы статусов
+- Выделение ответа в новый тикет
+- Откладывание с автоматическим возвратом
+- Теги, вложения, история активности
 
-### Сущности
+</td>
+<td width="33%" valign="top">
 
-| Сущность | Описание |
-|---|---|
-| `Ticket` | Тикет поддержки со статусом, приоритетом, отслеживанием SLA |
-| `Reply` | Публичный ответ или внутренняя заметка к тикету |
-| `Department` | Организационная группировка для тикетов и агентов |
-| `Tag` | Метки для категоризации тикетов |
-| `SlaPolicy` | Цели времени первого ответа и решения по приоритетам |
-| `TicketActivity` | Журнал аудита всех изменений тикетов |
-| `AgentProfile` | Метаданные агента (тип, ёмкость) |
+**Рабочее место агента**
+- Очередь с фильтрами и сохранёнными представлениями
+- Внутренние заметки и шаблоны ответов
+- Отделы с автоматическим назначением
+- Обновления в реальном времени через Mercure
 
-### Сервисы
+</td>
+<td width="33%" valign="top">
 
-| Сервис | Описание |
-|---|---|
-| `TicketService` | Создание, обновление, переход, ответ на тикеты |
-| `AssignmentService` | Назначение/снятие агентов, проверка нагрузки |
-| `SlaService` | Привязка политик SLA, проверка нарушений |
+**SLA и эскалация**
+- Цели по времени ответа и решения для каждого приоритета
+- Рабочие часы
+- Автоматическое обнаружение нарушений
+- Правила эскалации и автоматизации
 
-### Контроллеры
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top">
 
-Маршруты организованы в четыре группы, все под настроенным `route_prefix`:
+**Клиенты**
+- Портал самообслуживания: создать, ответить, отследить
+- Проверенный гостевой доступ по коду из письма
+- Встраиваемый виджет с поиском по базе знаний
+- Ограничение частоты запросов на гостевых эндпоинтах
+- База знаний, включается и отключается
 
-- **Customer** (`/customer/tickets`) -- CRUD тикетов для аутентифицированных конечных пользователей
-- **Agent** (`/agent`) -- Панель управления и управление тикетами для агентов поддержки
-- **Admin** (`/admin`) -- Полное управление тикетами, отделами, тегами, настройками
-- **API** (`/api/v1`) -- JSON REST API для внешних интеграций
+</td>
+<td width="33%" valign="top">
 
-### Безопасность
+**Электронная почта**
+- Входящие через Postmark, Mailgun, SES
+- Уведомления по отдельным событиям
+- Правильные цепочки писем в почтовых клиентах
+- Шаблоны с вашим брендингом
 
-Два voter Symfony контролируют доступ:
+</td>
+<td width="33%" valign="top">
 
-- `ESCALATED_AGENT` -- Предоставляется, когда у пользователя есть запись `AgentProfile`
-- `ESCALATED_ADMIN` -- Предоставляется, когда у пользователя есть роль `ROLE_ESCALATED_ADMIN`
+**Администрирование и доступ**
+- Отделы, политики SLA, теги, отчёты
+- Роли, права, двухфакторная аутентификация, SSO
+- Администрирование внутри вашей собственной админ-панели
+- Исходящие вебхуки и плагины
 
-### Рендеринг UI
+</td>
+</tr>
+</table>
 
-Контроллеры используют `UiRendererInterface` для рендеринга страниц. `InertiaUiRenderer` по умолчанию делегирует установленному бандлу Inertia. Чтобы использовать Twig или другой рендерер, реализуйте `UiRendererInterface` и переопределите сервис в конфигурации контейнера:
+<p align="center"><sub><a href="../features.md">Все возможности подробно</a></sub></p>
 
-```yaml
-services:
-    Escalated\Symfony\Rendering\UiRendererInterface:
-        class: App\Rendering\TwigUiRenderer
-```
+<p align="center">
+  <a href="https://symfony.com"><img src="https://img.shields.io/badge/Symfony_6.4_or_7-000000?style=for-the-badge&logo=symfony&logoColor=white" alt="Symfony 6.4 or 7"></a>
+  <a href="https://www.php.net"><img src="https://img.shields.io/badge/PHP_8.2+-777BB4?style=for-the-badge&logo=php&logoColor=white" alt="PHP 8.2+"></a>
+  <a href="https://www.doctrine-project.org"><img src="https://img.shields.io/badge/Doctrine-FC6A31?style=for-the-badge&logo=doctrine&logoColor=white" alt="Doctrine"></a>
+  <a href="https://inertiajs.com"><img src="https://img.shields.io/badge/Inertia-9553E9?style=for-the-badge&logo=inertia&logoColor=white" alt="Inertia"></a>
+  <a href="https://vuejs.org"><img src="https://img.shields.io/badge/Vue_3-4FC08D?style=for-the-badge&logo=vuedotjs&logoColor=white" alt="Vue 3"></a>
+</p>
 
-## Переходы статусов
-
-Тикеты следуют конечному автомату с этими переходами:
-
-```
-open -> in_progress, waiting_on_customer, waiting_on_agent, escalated, resolved, closed
-in_progress -> waiting_on_customer, waiting_on_agent, escalated, resolved, closed
-waiting_on_customer -> open, in_progress, resolved, closed
-waiting_on_agent -> open, in_progress, escalated, resolved, closed
-escalated -> in_progress, resolved, closed
-resolved -> reopened, closed
-closed -> reopened
-reopened -> in_progress, waiting_on_customer, waiting_on_agent, escalated, resolved, closed
-```
-
-## Тестирование
+## Быстрый старт
 
 ```bash
-vendor/bin/phpunit
+composer require escalated-dev/escalated-symfony
+composer require rompetomp/inertia-bundle
+php bin/console doctrine:migrations:migrate
 ```
+
+Перед миграцией добавьте `config/packages/escalated.yaml` и импортируйте маршруты бандла в `config/routes/escalated.yaml`. Нужны PHP 8.2+ и Symfony 6.4 или 7.x. В [руководстве по началу работы](../getting-started.md) есть оба файла, роли безопасности и запланированные команды.
+
+## Подробнее
+
+- [Все возможности](../features.md) · [Начало работы](../getting-started.md) · [Подключение к базе данных](../configuration.md)
+- [Архитектура и переходы статусов](../architecture.md) · [Темы тикетов, действия и переводы](../customization.md)
+- [Управление доступом](../access-control.md) · [Доступ к тикетам и маршрутизация](../ticket-access-and-routing.md)
+- [Встраивание виджета](../embedding-the-widget.md) · [Гостевой доступ](../guest-access.md)
+- [Панель агента](../agent-panel.md) · [Встраивание админки](../embedding-admin.md)
+- [Плагины](../plugins.md) · [Рассылки](../newsletters.md)
+
+Escalated также доступен для [Laravel](https://github.com/escalated-dev/escalated-laravel), [Rails](https://github.com/escalated-dev/escalated-rails), [Django](https://github.com/escalated-dev/escalated-django), [NestJS](https://github.com/escalated-dev/escalated-nestjs), [AdonisJS](https://github.com/escalated-dev/escalated-adonis), [Phoenix](https://github.com/escalated-dev/escalated-phoenix), [Go](https://github.com/escalated-dev/escalated-go), [.NET](https://github.com/escalated-dev/escalated-dotnet), [Spring](https://github.com/escalated-dev/escalated-spring), [WordPress](https://github.com/escalated-dev/escalated-wordpress) и [Filament](https://github.com/escalated-dev/escalated-filament). Интерфейс находится в [escalated](https://github.com/escalated-dev/escalated).
 
 ## Лицензия
 
-MIT
+MIT. Copyright (c) Escalated.dev. См. [LICENSE](../../LICENSE).

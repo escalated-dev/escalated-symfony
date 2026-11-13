@@ -1,192 +1,170 @@
-<p align="center">
-  <a href="README.ar.md">العربية</a> •
-  <a href="README.de.md">Deutsch</a> •
-  <a href="../../README.md">English</a> •
-  <a href="README.es.md">Español</a> •
-  <a href="README.fr.md">Français</a> •
-  <a href="README.it.md">Italiano</a> •
-  <a href="README.ja.md">日本語</a> •
-  <a href="README.ko.md">한국어</a> •
-  <a href="README.nl.md">Nederlands</a> •
-  <b>Polski</b> •
-  <a href="README.pt-BR.md">Português (BR)</a> •
-  <a href="README.ru.md">Русский</a> •
-  <a href="README.tr.md">Türkçe</a> •
+<p align="center"><sub>
+  <a href="README.ar.md">العربية</a> ·
+  <a href="README.de.md">Deutsch</a> ·
+  <a href="../../README.md">English</a> ·
+  <a href="README.es.md">Español</a> ·
+  <a href="README.fr.md">Français</a> ·
+  <a href="README.it.md">Italiano</a> ·
+  <a href="README.ja.md">日本語</a> ·
+  <a href="README.ko.md">한국어</a> ·
+  <a href="README.nl.md">Nederlands</a> ·
+  <b>Polski</b> ·
+  <a href="README.pt-BR.md">Português (BR)</a> ·
+  <a href="README.ru.md">Русский</a> ·
+  <a href="README.tr.md">Türkçe</a> ·
   <a href="README.zh-CN.md">简体中文</a>
+</sub></p>
+
+<p align="center">
+  <a href="https://escalated.dev"><img src="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/logo.png" width="72" height="72" alt="Escalated"></a>
 </p>
 
-# Escalated for Symfony
+<h1 align="center">Escalated for Symfony</h1>
 
-Osadzalny system zgłoszeń wsparcia dla aplikacji Symfony. Gotowy helpdesk ze zgłoszeniami, odpowiedziami, działami, tagami, politykami SLA i kontrolą dostępu opartą na rolach.
+<p align="center">
+  Dodaj kompletny helpdesk do swojej aplikacji Symfony.<br>
+  Zgłoszenia, SLA, reguły eskalacji, skrzynka dla agentów i portal klienta, działające na Twojej własnej bazie danych.
+</p>
 
-## Wymagania
+<p align="center">
+  <a href="https://escalated.dev"><b>Strona</b></a> ·
+  <a href="https://escalated.dev/docs"><b>Dokumentacja</b></a> ·
+  <a href="https://escalated.dev/cloud"><b>Cloud</b></a> ·
+  <a href="../../CHANGELOG.md"><b>Lista zmian</b></a>
+</p>
 
-- PHP 8.2+
-- Symfony 6.4 lub 7.x
-- Doctrine ORM 2.17+ / 3.x
-- Doctrine Migrations Bundle
+<br>
 
-## Instalacja
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/inbox-dark.png">
+  <img src="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/inbox-light.png" alt="Skrzynka agentów w Escalated: zapisane widoki z licznikami, odliczanie SLA i priorytety przy każdym zgłoszeniu" width="100%">
+</picture>
 
-```bash
-composer require escalated-dev/escalated-symfony
-```
+## Co robi
 
-### 1. Rejestracja bundle
-
-Jeśli Symfony Flex jest zainstalowany, bundle jest rejestrowany automatycznie. W przeciwnym razie dodaj go do `config/bundles.php`:
-
-```php
-return [
-    // ...
-    Escalated\Symfony\EscalatedBundle::class => ['all' => true],
-];
-```
-
-### 2. Konfiguracja bundle
-
-Utwórz `config/packages/escalated.yaml`:
-
-```yaml
-escalated:
-    user_class: App\Entity\User
-    route_prefix: /support
-    ui_enabled: true
-    table_prefix: escalated_
-    tickets:
-        allow_customer_close: true
-        default_priority: medium
-    sla:
-        enabled: true
-        business_hours_only: false
-        business_hours:
-            start: '09:00'
-            end: '17:00'
-            timezone: UTC
-            days: [1, 2, 3, 4, 5]
-```
-
-### 3. Uruchomienie migracji
-
-```bash
-php bin/console doctrine:migrations:migrate
-```
-
-Migracja tworzy wszystkie wymagane tabele (`escalated_tickets`, `escalated_replies`, `escalated_departments`, `escalated_tags`, `escalated_sla_policies`, `escalated_ticket_activities`, `escalated_agent_profiles`).
-
-### 4. Konfiguracja bezpieczeństwa
-
-Dodaj rolę `ROLE_ESCALATED_ADMIN` do użytkowników administratorów w dostawcy użytkowników. Dostęp agenta jest określany przez obecność encji `AgentProfile` powiązanej z użytkownikiem.
-
-```yaml
-# config/packages/security.yaml
-security:
-    role_hierarchy:
-        ROLE_ESCALATED_ADMIN: ROLE_USER
-```
-
-### 5. (Opcjonalnie) Instalacja Inertia
-
-Dla wbudowanego interfejsu frontend zainstaluj bundle Inertia:
-
-```bash
-composer require rompetomp/inertia-bundle
-# lub
-composer require skipthedragon/inertia-bundle
-```
-
-Ustaw `ui_enabled: false`, jeśli chcesz używać tylko API i usług z niestandardowym frontendem.
+<table>
+  <tr>
+    <td width="40%">
+      <h3>Skrzynka, w której Twoi agenci mogą pracować przez cały dzień</h3>
+      Rozmowa, notatki wewnętrzne, gotowe odpowiedzi i liczniki SLA na jednym ekranie. Zgłoszenia przychodzą też e-mailem przez Postmark, Mailgun lub SES.
+    </td>
+    <td width="60%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/ticket-dark.png">
+        <img src="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/ticket-light.png" alt="Zgłoszenie otwarte w obszarze roboczym agenta z edytorem odpowiedzi">
+      </picture>
+    </td>
+  </tr>
+  <tr>
+    <td width="60%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/dashboard-dark.png">
+        <img src="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/dashboard-light.png" alt="Strona raportów administratora z czasami odpowiedzi, CSAT i naruszeniami SLA">
+      </picture>
+    </td>
+    <td width="40%">
+      <h3>SLA i reguły eskalacji, które widzisz</h3>
+      Cele czasu odpowiedzi i rozwiązania dla każdego priorytetu z godzinami pracy, reguły, które eskalują lub zmieniają przypisanie, gdy cel się opóźnia, oraz raporty o naruszeniach.
+    </td>
+  </tr>
+</table>
 
 ## Funkcje
 
-- **Cykl życia zgłoszenia** — Tworzenie, przypisywanie, odpowiadanie, rozwiązywanie, zamykanie, ponowne otwieranie z konfigurowalnymi przejściami statusów
-- **Silnik SLA** — Cele odpowiedzi i rozwiązania wg priorytetów, obliczanie godzin pracy, automatyczne wykrywanie naruszeń
-- **Panel agentów** — Kolejka zgłoszeń z filtrami, notatkami wewnętrznymi, gotowymi odpowiedziami
-- **Portal klienta** — Samoobsługowe tworzenie zgłoszeń, odpowiedzi i śledzenie statusu
-- **Panel administracyjny** — Zarządzanie działami, politykami SLA, tagami i przeglądanie raportów
-- **Załączniki** — Przesyłanie metodą przeciągnij i upuść z konfigurowalnym przechowywaniem i limitami rozmiaru
-- **Oś czasu aktywności** — Pełny dziennik audytu każdego działania na każdym zgłoszeniu
-- **Powiadomienia email** — Konfigurowalne powiadomienia wg zdarzeń
-- **Routing działowy** — Organizowanie agentów w działy z automatycznym przypisywaniem
-- **System tagów** — Kategoryzacja zgłoszeń kolorowymi tagami
-- **Podział zgłoszeń** — Podział odpowiedzi na nowe samodzielne zgłoszenie z zachowaniem oryginalnego kontekstu
-- **Odkładanie zgłoszeń** — Odkładanie zgłoszeń z presetami (1h, 4h, jutro, przyszły tydzień); komenda `php bin/console escalated:wake-snoozed-tickets` automatycznie je budzi zgodnie z harmonogramem
-- **Zapisane widoki / niestandardowe kolejki** — Zapisywanie, nazywanie i udostępnianie presetów filtrów jako wielokrotnego użytku widoków zgłoszeń
-- **Osadzalny widget wsparcia** — Lekki widget `<script>` z wyszukiwaniem w bazie wiedzy, formularzem zgłoszenia i sprawdzaniem statusu
-- **Wątki email** — Wychodzące emaile zawierają prawidłowe nagłówki `In-Reply-To` i `References` dla poprawnego wątkowania w klientach pocztowych
-- **Markowe szablony email** — Konfigurowalne logo, kolor główny i tekst stopki dla wszystkich wychodzących emaili
-- **Transmisja w czasie rzeczywistym** — Opcjonalna transmisja przez Mercure z automatycznym fallbackiem na polling
-- **Przełącznik bazy wiedzy** — Włączanie lub wyłączanie publicznej bazy wiedzy z ustawień administratora
+<table>
+<tr>
+<td width="33%" valign="top">
 
-## Architektura
+**Zgłoszenia**
+- Tworzenie, przypisywanie, odpowiadanie, rozwiązywanie, ponowne otwieranie
+- Konfigurowalne przejścia statusów
+- Wydzielenie odpowiedzi do nowego zgłoszenia
+- Odkładanie z automatycznym wznowieniem
+- Tagi, załączniki, oś czasu aktywności
 
-### Encje
+</td>
+<td width="33%" valign="top">
 
-| Encja | Opis |
-|---|---|
-| `Ticket` | Zgłoszenie wsparcia ze statusem, priorytetem, śledzeniem SLA |
-| `Reply` | Publiczna odpowiedź lub wewnętrzna notatka do zgłoszenia |
-| `Department` | Grupowanie organizacyjne dla zgłoszeń i agentów |
-| `Tag` | Etykiety do kategoryzacji zgłoszeń |
-| `SlaPolicy` | Cele czasu pierwszej odpowiedzi i rozwiązania wg priorytetów |
-| `TicketActivity` | Dziennik audytu wszystkich zmian w zgłoszeniach |
-| `AgentProfile` | Metadane agenta (typ, pojemność) |
+**Obszar roboczy agenta**
+- Kolejka z filtrami i zapisanymi widokami
+- Notatki wewnętrzne i gotowe odpowiedzi
+- Działy z automatycznym przypisywaniem
+- Aktualizacje w czasie rzeczywistym przez Mercure
 
-### Usługi
+</td>
+<td width="33%" valign="top">
 
-| Usługa | Opis |
-|---|---|
-| `TicketService` | Tworzenie, aktualizacja, przejścia, odpowiadanie na zgłoszenia |
-| `AssignmentService` | Przypisywanie/usuwanie agentów, sprawdzanie obciążenia |
-| `SlaService` | Dołączanie polityk SLA, sprawdzanie naruszeń |
+**SLA i eskalacja**
+- Cele czasu odpowiedzi i rozwiązania dla każdego priorytetu
+- Godziny pracy
+- Automatyczne wykrywanie naruszeń
+- Reguły eskalacji i automatyzacje
 
-### Kontrolery
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top">
 
-Trasy są zorganizowane w cztery grupy, wszystkie pod skonfigurowanym `route_prefix`:
+**Klienci**
+- Portal samoobsługowy: otwieranie, odpowiadanie, śledzenie
+- Zweryfikowany dostęp gościa przez kod wysłany e-mailem
+- Osadzany widżet z wyszukiwaniem w bazie wiedzy
+- Limity zapytań na endpointach dla gości
+- Baza wiedzy, włączona lub wyłączona
 
-- **Customer** (`/customer/tickets`) -- CRUD zgłoszeń dla uwierzytelnionych użytkowników końcowych
-- **Agent** (`/agent`) -- Panel i zarządzanie zgłoszeniami dla agentów wsparcia
-- **Admin** (`/admin`) -- Pełne zarządzanie zgłoszeniami, działami, tagami, ustawieniami
-- **API** (`/api/v1`) -- JSON REST API do integracji zewnętrznych
+</td>
+<td width="33%" valign="top">
 
-### Bezpieczeństwo
+**E-mail**
+- Przychodzące przez Postmark, Mailgun, SES
+- Powiadomienia dla poszczególnych zdarzeń
+- Poprawne wątki w klientach poczty
+- Szablony z Twoim brandingiem
 
-Dwóch voterów Symfony kontroluje dostęp:
+</td>
+<td width="33%" valign="top">
 
-- `ESCALATED_AGENT` -- Przyznawany, gdy użytkownik ma rekord `AgentProfile`
-- `ESCALATED_ADMIN` -- Przyznawany, gdy użytkownik ma rolę `ROLE_ESCALATED_ADMIN`
+**Administracja i dostęp**
+- Działy, zasady SLA, tagi, raporty
+- Role, uprawnienia, uwierzytelnianie dwuskładnikowe, SSO
+- Administracja wewnątrz Twojego panelu administracyjnego
+- Wychodzące webhooki i wtyczki
 
-### Renderowanie UI
+</td>
+</tr>
+</table>
 
-Kontrolery używają `UiRendererInterface` do renderowania stron. Domyślny `InertiaUiRenderer` deleguje do zainstalowanego bundle Inertia. Aby użyć Twig lub innego renderera, zaimplementuj `UiRendererInterface` i nadpisz usługę w konfiguracji kontenera:
+<p align="center"><sub><a href="../features.md">Wszystkie funkcje w szczegółach</a></sub></p>
 
-```yaml
-services:
-    Escalated\Symfony\Rendering\UiRendererInterface:
-        class: App\Rendering\TwigUiRenderer
-```
+<p align="center">
+  <a href="https://symfony.com"><img src="https://img.shields.io/badge/Symfony_6.4_or_7-000000?style=for-the-badge&logo=symfony&logoColor=white" alt="Symfony 6.4 or 7"></a>
+  <a href="https://www.php.net"><img src="https://img.shields.io/badge/PHP_8.2+-777BB4?style=for-the-badge&logo=php&logoColor=white" alt="PHP 8.2+"></a>
+  <a href="https://www.doctrine-project.org"><img src="https://img.shields.io/badge/Doctrine-FC6A31?style=for-the-badge&logo=doctrine&logoColor=white" alt="Doctrine"></a>
+  <a href="https://inertiajs.com"><img src="https://img.shields.io/badge/Inertia-9553E9?style=for-the-badge&logo=inertia&logoColor=white" alt="Inertia"></a>
+  <a href="https://vuejs.org"><img src="https://img.shields.io/badge/Vue_3-4FC08D?style=for-the-badge&logo=vuedotjs&logoColor=white" alt="Vue 3"></a>
+</p>
 
-## Przejścia statusów
-
-Zgłoszenia podążają za maszyną stanów z tymi przejściami:
-
-```
-open -> in_progress, waiting_on_customer, waiting_on_agent, escalated, resolved, closed
-in_progress -> waiting_on_customer, waiting_on_agent, escalated, resolved, closed
-waiting_on_customer -> open, in_progress, resolved, closed
-waiting_on_agent -> open, in_progress, escalated, resolved, closed
-escalated -> in_progress, resolved, closed
-resolved -> reopened, closed
-closed -> reopened
-reopened -> in_progress, waiting_on_customer, waiting_on_agent, escalated, resolved, closed
-```
-
-## Testowanie
+## Szybki start
 
 ```bash
-vendor/bin/phpunit
+composer require escalated-dev/escalated-symfony
+composer require rompetomp/inertia-bundle
+php bin/console doctrine:migrations:migrate
 ```
+
+Przed migracją dodaj `config/packages/escalated.yaml` i zaimportuj trasy bundla w `config/routes/escalated.yaml`. Wymaga PHP 8.2+ i Symfony 6.4 lub 7.x. [Przewodnik na start](../getting-started.md) zawiera oba pliki, role bezpieczeństwa i zaplanowane polecenia.
+
+## Dowiedz się więcej
+
+- [Wszystkie funkcje](../features.md) · [Pierwsze kroki](../getting-started.md) · [Połączenie z bazą danych](../configuration.md)
+- [Architektura i przejścia statusów](../architecture.md) · [Tematy zgłoszeń, akcje i tłumaczenia](../customization.md)
+- [Kontrola dostępu](../access-control.md) · [Dostęp do zgłoszeń i routing](../ticket-access-and-routing.md)
+- [Osadzanie widżetu](../embedding-the-widget.md) · [Dostęp gościa](../guest-access.md)
+- [Panel agenta](../agent-panel.md) · [Osadzanie panelu administracyjnego](../embedding-admin.md)
+- [Wtyczki](../plugins.md) · [Newslettery](../newsletters.md)
+
+Escalated jest dostępny również dla [Laravel](https://github.com/escalated-dev/escalated-laravel), [Rails](https://github.com/escalated-dev/escalated-rails), [Django](https://github.com/escalated-dev/escalated-django), [NestJS](https://github.com/escalated-dev/escalated-nestjs), [AdonisJS](https://github.com/escalated-dev/escalated-adonis), [Phoenix](https://github.com/escalated-dev/escalated-phoenix), [Go](https://github.com/escalated-dev/escalated-go), [.NET](https://github.com/escalated-dev/escalated-dotnet), [Spring](https://github.com/escalated-dev/escalated-spring), [WordPress](https://github.com/escalated-dev/escalated-wordpress) i [Filament](https://github.com/escalated-dev/escalated-filament). Interfejs znajduje się w [escalated](https://github.com/escalated-dev/escalated).
 
 ## Licencja
 
-MIT
+MIT. Copyright (c) Escalated.dev. Zobacz [LICENSE](../../LICENSE).

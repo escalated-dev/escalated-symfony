@@ -1,192 +1,170 @@
-<p align="center">
-  <a href="README.ar.md">العربية</a> •
-  <a href="README.de.md">Deutsch</a> •
-  <a href="../../README.md">English</a> •
-  <a href="README.es.md">Español</a> •
-  <a href="README.fr.md">Français</a> •
-  <a href="README.it.md">Italiano</a> •
-  <a href="README.ja.md">日本語</a> •
-  <b>한국어</b> •
-  <a href="README.nl.md">Nederlands</a> •
-  <a href="README.pl.md">Polski</a> •
-  <a href="README.pt-BR.md">Português (BR)</a> •
-  <a href="README.ru.md">Русский</a> •
-  <a href="README.tr.md">Türkçe</a> •
+<p align="center"><sub>
+  <a href="README.ar.md">العربية</a> ·
+  <a href="README.de.md">Deutsch</a> ·
+  <a href="../../README.md">English</a> ·
+  <a href="README.es.md">Español</a> ·
+  <a href="README.fr.md">Français</a> ·
+  <a href="README.it.md">Italiano</a> ·
+  <a href="README.ja.md">日本語</a> ·
+  <b>한국어</b> ·
+  <a href="README.nl.md">Nederlands</a> ·
+  <a href="README.pl.md">Polski</a> ·
+  <a href="README.pt-BR.md">Português (BR)</a> ·
+  <a href="README.ru.md">Русский</a> ·
+  <a href="README.tr.md">Türkçe</a> ·
   <a href="README.zh-CN.md">简体中文</a>
+</sub></p>
+
+<p align="center">
+  <a href="https://escalated.dev"><img src="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/logo.png" width="72" height="72" alt="Escalated"></a>
 </p>
 
-# Escalated for Symfony
+<h1 align="center">Escalated for Symfony</h1>
 
-Symfony 애플리케이션용 임베디드 지원 티켓 시스템. 티켓, 답변, 부서, 태그, SLA 정책, 역할 기반 접근 제어를 갖춘 플러그앤플레이 헬프데스크.
+<p align="center">
+  Symfony 앱에 완전한 헬프데스크를 추가하세요.<br>
+  티켓, SLA, 에스컬레이션 규칙, 상담원 받은편지함, 고객 포털이 여러분의 데이터베이스에서 동작합니다.
+</p>
 
-## 요구 사항
+<p align="center">
+  <a href="https://escalated.dev"><b>웹사이트</b></a> ·
+  <a href="https://escalated.dev/docs"><b>문서</b></a> ·
+  <a href="https://escalated.dev/cloud"><b>Cloud</b></a> ·
+  <a href="../../CHANGELOG.md"><b>변경 내역</b></a>
+</p>
 
-- PHP 8.2+
-- Symfony 6.4 또는 7.x
-- Doctrine ORM 2.17+ / 3.x
-- Doctrine Migrations Bundle
+<br>
 
-## 설치
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/inbox-dark.png">
+  <img src="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/inbox-light.png" alt="Escalated 상담원 받은편지함: 개수가 표시된 저장된 보기, SLA 카운트다운, 모든 티켓의 우선순위" width="100%">
+</picture>
 
-```bash
-composer require escalated-dev/escalated-symfony
-```
+## 하는 일
 
-### 1. 번들 등록
-
-Symfony Flex가 설치되어 있으면 번들이 자동으로 등록됩니다. 그렇지 않으면 `config/bundles.php`에 추가하세요:
-
-```php
-return [
-    // ...
-    Escalated\Symfony\EscalatedBundle::class => ['all' => true],
-];
-```
-
-### 2. 번들 설정
-
-`config/packages/escalated.yaml`을 생성하세요:
-
-```yaml
-escalated:
-    user_class: App\Entity\User
-    route_prefix: /support
-    ui_enabled: true
-    table_prefix: escalated_
-    tickets:
-        allow_customer_close: true
-        default_priority: medium
-    sla:
-        enabled: true
-        business_hours_only: false
-        business_hours:
-            start: '09:00'
-            end: '17:00'
-            timezone: UTC
-            days: [1, 2, 3, 4, 5]
-```
-
-### 3. 마이그레이션 실행
-
-```bash
-php bin/console doctrine:migrations:migrate
-```
-
-마이그레이션은 필요한 모든 테이블을 생성합니다 (`escalated_tickets`, `escalated_replies`, `escalated_departments`, `escalated_tags`, `escalated_sla_policies`, `escalated_ticket_activities`, `escalated_agent_profiles`).
-
-### 4. 보안 설정
-
-사용자 제공자에서 관리자 사용자에게 `ROLE_ESCALATED_ADMIN` 역할을 추가하세요. 에이전트 접근은 사용자에 연결된 `AgentProfile` 엔티티의 존재 여부로 결정됩니다.
-
-```yaml
-# config/packages/security.yaml
-security:
-    role_hierarchy:
-        ROLE_ESCALATED_ADMIN: ROLE_USER
-```
-
-### 5. (선택 사항) Inertia 설치
-
-내장 프론트엔드 UI를 위해 Inertia 번들을 설치하세요:
-
-```bash
-composer require rompetomp/inertia-bundle
-# 또는
-composer require skipthedragon/inertia-bundle
-```
-
-커스텀 프론트엔드로 API와 서비스만 사용하려면 `ui_enabled: false`로 설정하세요.
+<table>
+  <tr>
+    <td width="40%">
+      <h3>상담원이 하루 종일 작업할 수 있는 받은편지함</h3>
+      대화, 내부 메모, 미리 준비된 답변, SLA 타이머를 한 화면에서 다룹니다. 티켓은 Postmark, Mailgun, SES를 통해 이메일로도 들어옵니다.
+    </td>
+    <td width="60%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/ticket-dark.png">
+        <img src="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/ticket-light.png" alt="답장 작성기와 함께 상담원 작업 공간에 열린 티켓">
+      </picture>
+    </td>
+  </tr>
+  <tr>
+    <td width="60%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/dashboard-dark.png">
+        <img src="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/dashboard-light.png" alt="응답 시간, CSAT, SLA 위반을 보여 주는 관리자 보고서 페이지">
+      </picture>
+    </td>
+    <td width="40%">
+      <h3>한눈에 보이는 SLA와 에스컬레이션 규칙</h3>
+      업무 시간을 반영한 우선순위별 응답 및 해결 목표, 목표를 놓치면 에스컬레이션하거나 재배정하는 규칙, 위반 보고서.
+    </td>
+  </tr>
+</table>
 
 ## 기능
 
-- **티켓 라이프사이클** — 설정 가능한 상태 전환으로 생성, 할당, 답변, 해결, 닫기, 재오픈
-- **SLA 엔진** — 우선순위별 응답 및 해결 목표, 영업시간 계산, 자동 위반 감지
-- **에이전트 대시보드** — 필터, 내부 노트, 정형 응답이 있는 티켓 큐
-- **고객 포털** — 셀프 서비스 티켓 생성, 답변 및 상태 추적
-- **관리 패널** — 부서, SLA 정책, 태그 관리 및 보고서 조회
-- **파일 첨부** — 설정 가능한 저장소 및 크기 제한의 드래그 앤 드롭 업로드
-- **활동 타임라인** — 모든 티켓의 모든 작업에 대한 완전한 감사 로그
-- **이메일 알림** — 이벤트별 설정 가능한 알림
-- **부서 라우팅** — 자동 할당으로 에이전트를 부서에 조직
-- **태그 시스템** — 색상 태그로 티켓 분류
-- **티켓 분할** — 원본 컨텍스트를 보존하면서 답변을 새로운 독립 티켓으로 분할
-- **티켓 스누즈** — 프리셋(1시간, 4시간, 내일, 다음 주)으로 티켓 스누즈; `php bin/console escalated:wake-snoozed-tickets` 콘솔 명령이 일정에 따라 자동으로 깨움
-- **저장된 뷰 / 커스텀 큐** — 필터 프리셋을 재사용 가능한 티켓 뷰로 저장, 이름 지정 및 공유
-- **임베디드 지원 위젯** — KB 검색, 티켓 양식, 상태 확인이 있는 경량 `<script>` 위젯
-- **이메일 스레딩** — 발신 이메일에 메일 클라이언트에서의 올바른 스레딩을 위한 적절한 `In-Reply-To` 및 `References` 헤더 포함
-- **브랜드 이메일 템플릿** — 모든 발신 이메일에 대해 설정 가능한 로고, 기본 색상, 바닥글 텍스트
-- **실시간 브로드캐스팅** — Mercure를 통한 옵트인 브로드캐스팅, 자동 폴링 폴백 지원
-- **지식 베이스 토글** — 관리 설정에서 공개 지식 베이스 활성화 또는 비활성화
+<table>
+<tr>
+<td width="33%" valign="top">
 
-## 아키텍처
+**티켓**
+- 생성, 배정, 답장, 해결, 다시 열기
+- 설정 가능한 상태 전환
+- 답장을 새 티켓으로 분리
+- 자동 재개되는 스누즈
+- 태그, 첨부 파일, 활동 타임라인
 
-### 엔티티
+</td>
+<td width="33%" valign="top">
 
-| 엔티티 | 설명 |
-|---|---|
-| `Ticket` | 상태, 우선순위, SLA 추적이 있는 지원 티켓 |
-| `Reply` | 티켓에 대한 공개 답변 또는 내부 노트 |
-| `Department` | 티켓과 에이전트를 위한 조직적 그룹 |
-| `Tag` | 티켓 분류를 위한 레이블 |
-| `SlaPolicy` | 우선순위별 첫 응답 및 해결 시간 목표 |
-| `TicketActivity` | 모든 티켓 변경 사항의 감사 로그 |
-| `AgentProfile` | 에이전트 메타데이터 (유형, 용량) |
+**상담원 작업 공간**
+- 필터와 저장된 보기가 있는 대기열
+- 내부 메모와 미리 준비된 답변
+- 자동 배정을 지원하는 부서
+- Mercure를 통한 실시간 업데이트
 
-### 서비스
+</td>
+<td width="33%" valign="top">
 
-| 서비스 | 설명 |
-|---|---|
-| `TicketService` | 티켓 생성, 업데이트, 전환, 답변 |
-| `AssignmentService` | 에이전트 할당/해제, 워크로드 확인 |
-| `SlaService` | SLA 정책 연결, 위반 확인 |
+**SLA와 에스컬레이션**
+- 우선순위별 응답 및 해결 목표
+- 업무 시간
+- 위반 자동 감지
+- 에스컬레이션 규칙과 자동화
 
-### 컨트롤러
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top">
 
-라우트는 설정된 `route_prefix` 아래 네 그룹으로 구성됩니다:
+**고객**
+- 셀프서비스 포털: 생성, 답장, 추적
+- 이메일 코드로 확인된 게스트 접근
+- 지식 베이스 검색이 있는 임베드 위젯
+- 게스트 엔드포인트 요청 제한
+- 지식 베이스, 켜거나 끄기
 
-- **Customer** (`/customer/tickets`) -- 인증된 최종 사용자를 위한 티켓 CRUD
-- **Agent** (`/agent`) -- 지원 에이전트를 위한 대시보드 및 티켓 관리
-- **Admin** (`/admin`) -- 티켓, 부서, 태그, 설정의 전체 관리
-- **API** (`/api/v1`) -- 외부 통합을 위한 JSON REST API
+</td>
+<td width="33%" valign="top">
 
-### 보안
+**이메일**
+- Postmark, Mailgun, SES를 통한 수신
+- 이벤트별 알림
+- 메일 클라이언트에서 올바른 스레드 표시
+- 브랜드에 맞춘 템플릿
 
-두 개의 Symfony voter가 접근을 제어합니다:
+</td>
+<td width="33%" valign="top">
 
-- `ESCALATED_AGENT` -- 사용자가 `AgentProfile` 레코드를 가지고 있을 때 부여
-- `ESCALATED_ADMIN` -- 사용자가 `ROLE_ESCALATED_ADMIN` 역할을 가지고 있을 때 부여
+**관리와 접근**
+- 부서, SLA 정책, 태그, 보고서
+- 역할, 권한, 2단계 인증, SSO
+- 여러분의 관리자 패널 안에서 쓰는 관리 화면
+- 발신 웹훅과 플러그인
 
-### UI 렌더링
+</td>
+</tr>
+</table>
 
-컨트롤러는 `UiRendererInterface`를 사용하여 페이지를 렌더링합니다. 기본 `InertiaUiRenderer`는 설치된 Inertia 번들에 위임합니다. Twig 또는 다른 렌더러를 사용하려면 `UiRendererInterface`를 구현하고 컨테이너 설정에서 서비스를 오버라이드하세요:
+<p align="center"><sub><a href="../features.md">모든 기능 자세히 보기</a></sub></p>
 
-```yaml
-services:
-    Escalated\Symfony\Rendering\UiRendererInterface:
-        class: App\Rendering\TwigUiRenderer
-```
+<p align="center">
+  <a href="https://symfony.com"><img src="https://img.shields.io/badge/Symfony_6.4_or_7-000000?style=for-the-badge&logo=symfony&logoColor=white" alt="Symfony 6.4 or 7"></a>
+  <a href="https://www.php.net"><img src="https://img.shields.io/badge/PHP_8.2+-777BB4?style=for-the-badge&logo=php&logoColor=white" alt="PHP 8.2+"></a>
+  <a href="https://www.doctrine-project.org"><img src="https://img.shields.io/badge/Doctrine-FC6A31?style=for-the-badge&logo=doctrine&logoColor=white" alt="Doctrine"></a>
+  <a href="https://inertiajs.com"><img src="https://img.shields.io/badge/Inertia-9553E9?style=for-the-badge&logo=inertia&logoColor=white" alt="Inertia"></a>
+  <a href="https://vuejs.org"><img src="https://img.shields.io/badge/Vue_3-4FC08D?style=for-the-badge&logo=vuedotjs&logoColor=white" alt="Vue 3"></a>
+</p>
 
-## 상태 전환
-
-티켓은 다음 전환을 가진 상태 머신을 따릅니다:
-
-```
-open -> in_progress, waiting_on_customer, waiting_on_agent, escalated, resolved, closed
-in_progress -> waiting_on_customer, waiting_on_agent, escalated, resolved, closed
-waiting_on_customer -> open, in_progress, resolved, closed
-waiting_on_agent -> open, in_progress, escalated, resolved, closed
-escalated -> in_progress, resolved, closed
-resolved -> reopened, closed
-closed -> reopened
-reopened -> in_progress, waiting_on_customer, waiting_on_agent, escalated, resolved, closed
-```
-
-## 테스트
+## 빠른 시작
 
 ```bash
-vendor/bin/phpunit
+composer require escalated-dev/escalated-symfony
+composer require rompetomp/inertia-bundle
+php bin/console doctrine:migrations:migrate
 ```
+
+마이그레이션하기 전에 `config/packages/escalated.yaml`을 추가하고 `config/routes/escalated.yaml`에서 번들의 라우트를 가져오세요. PHP 8.2+와 Symfony 6.4 또는 7.x가 필요합니다. [시작 가이드](../getting-started.md)에 두 파일, 보안 역할, 예약 명령이 모두 나와 있습니다.
+
+## 더 알아보기
+
+- [모든 기능](../features.md) · [시작하기](../getting-started.md) · [데이터베이스 연결](../configuration.md)
+- [아키텍처와 상태 전환](../architecture.md) · [티켓 제목, 액션, 번역](../customization.md)
+- [접근 제어](../access-control.md) · [티켓 접근과 라우팅](../ticket-access-and-routing.md)
+- [위젯 임베드](../embedding-the-widget.md) · [게스트 접근](../guest-access.md)
+- [상담원 패널](../agent-panel.md) · [관리자 화면 임베드](../embedding-admin.md)
+- [플러그인](../plugins.md) · [뉴스레터](../newsletters.md)
+
+Escalated는 [Laravel](https://github.com/escalated-dev/escalated-laravel), [Rails](https://github.com/escalated-dev/escalated-rails), [Django](https://github.com/escalated-dev/escalated-django), [NestJS](https://github.com/escalated-dev/escalated-nestjs), [AdonisJS](https://github.com/escalated-dev/escalated-adonis), [Phoenix](https://github.com/escalated-dev/escalated-phoenix), [Go](https://github.com/escalated-dev/escalated-go), [.NET](https://github.com/escalated-dev/escalated-dotnet), [Spring](https://github.com/escalated-dev/escalated-spring), [WordPress](https://github.com/escalated-dev/escalated-wordpress), [Filament](https://github.com/escalated-dev/escalated-filament)용으로도 제공됩니다. UI는 [escalated](https://github.com/escalated-dev/escalated) 저장소에 있습니다.
 
 ## 라이선스
 
-MIT
+MIT. Copyright (c) Escalated.dev. [LICENSE](../../LICENSE)를 참고하세요.

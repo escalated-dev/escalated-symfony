@@ -1,192 +1,170 @@
-<p align="center">
-  <a href="README.ar.md">العربية</a> •
-  <a href="README.de.md">Deutsch</a> •
-  <a href="../../README.md">English</a> •
-  <a href="README.es.md">Español</a> •
-  <a href="README.fr.md">Français</a> •
-  <a href="README.it.md">Italiano</a> •
-  <a href="README.ja.md">日本語</a> •
-  <a href="README.ko.md">한국어</a> •
-  <a href="README.nl.md">Nederlands</a> •
-  <a href="README.pl.md">Polski</a> •
-  <a href="README.pt-BR.md">Português (BR)</a> •
-  <a href="README.ru.md">Русский</a> •
-  <b>Türkçe</b> •
+<p align="center"><sub>
+  <a href="README.ar.md">العربية</a> ·
+  <a href="README.de.md">Deutsch</a> ·
+  <a href="../../README.md">English</a> ·
+  <a href="README.es.md">Español</a> ·
+  <a href="README.fr.md">Français</a> ·
+  <a href="README.it.md">Italiano</a> ·
+  <a href="README.ja.md">日本語</a> ·
+  <a href="README.ko.md">한국어</a> ·
+  <a href="README.nl.md">Nederlands</a> ·
+  <a href="README.pl.md">Polski</a> ·
+  <a href="README.pt-BR.md">Português (BR)</a> ·
+  <a href="README.ru.md">Русский</a> ·
+  <b>Türkçe</b> ·
   <a href="README.zh-CN.md">简体中文</a>
+</sub></p>
+
+<p align="center">
+  <a href="https://escalated.dev"><img src="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/logo.png" width="72" height="72" alt="Escalated"></a>
 </p>
 
-# Escalated for Symfony
+<h1 align="center">Escalated for Symfony</h1>
 
-Symfony uygulamaları için gömülebilir destek bilet sistemi. Biletler, yanıtlar, departmanlar, etiketler, SLA politikaları ve rol tabanlı erişim kontrolü ile hazır yardım masası.
+<p align="center">
+  Symfony uygulamanıza eksiksiz bir yardım masası ekleyin.<br>
+  Talepler, SLA'lar, eskalasyon kuralları, temsilci gelen kutusu ve müşteri portalı, hepsi kendi veritabanınızda çalışır.
+</p>
 
-## Gereksinimler
+<p align="center">
+  <a href="https://escalated.dev"><b>Web sitesi</b></a> ·
+  <a href="https://escalated.dev/docs"><b>Dokümantasyon</b></a> ·
+  <a href="https://escalated.dev/cloud"><b>Cloud</b></a> ·
+  <a href="../../CHANGELOG.md"><b>Değişiklik günlüğü</b></a>
+</p>
 
-- PHP 8.2+
-- Symfony 6.4 veya 7.x
-- Doctrine ORM 2.17+ / 3.x
-- Doctrine Migrations Bundle
+<br>
 
-## Kurulum
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/inbox-dark.png">
+  <img src="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/inbox-light.png" alt="Escalated temsilci gelen kutusu: sayaçlı kayıtlı görünümler, SLA geri sayımları ve her talepte öncelik" width="100%">
+</picture>
 
-```bash
-composer require escalated-dev/escalated-symfony
-```
+## Neler yapar
 
-### 1. Bundle'ı kaydetme
-
-Symfony Flex kuruluysa, bundle otomatik olarak kaydedilir. Aksi takdirde `config/bundles.php` dosyasına ekleyin:
-
-```php
-return [
-    // ...
-    Escalated\Symfony\EscalatedBundle::class => ['all' => true],
-];
-```
-
-### 2. Bundle'ı yapılandırma
-
-`config/packages/escalated.yaml` dosyasını oluşturun:
-
-```yaml
-escalated:
-    user_class: App\Entity\User
-    route_prefix: /support
-    ui_enabled: true
-    table_prefix: escalated_
-    tickets:
-        allow_customer_close: true
-        default_priority: medium
-    sla:
-        enabled: true
-        business_hours_only: false
-        business_hours:
-            start: '09:00'
-            end: '17:00'
-            timezone: UTC
-            days: [1, 2, 3, 4, 5]
-```
-
-### 3. Migrasyonları çalıştırma
-
-```bash
-php bin/console doctrine:migrations:migrate
-```
-
-Migrasyon tüm gerekli tabloları oluşturur (`escalated_tickets`, `escalated_replies`, `escalated_departments`, `escalated_tags`, `escalated_sla_policies`, `escalated_ticket_activities`, `escalated_agent_profiles`).
-
-### 4. Güvenliği ayarlama
-
-Kullanıcı sağlayıcınızda yönetici kullanıcılara `ROLE_ESCALATED_ADMIN` rolünü ekleyin. Temsilci erişimi, kullanıcıya bağlı bir `AgentProfile` varlığının varlığıyla belirlenir.
-
-```yaml
-# config/packages/security.yaml
-security:
-    role_hierarchy:
-        ROLE_ESCALATED_ADMIN: ROLE_USER
-```
-
-### 5. (İsteğe bağlı) Inertia kurulumu
-
-Yerleşik frontend arayüzü için bir Inertia bundle'ı kurun:
-
-```bash
-composer require rompetomp/inertia-bundle
-# veya
-composer require skipthedragon/inertia-bundle
-```
-
-Yalnızca API ve hizmetleri özel bir frontend ile kullanmak istiyorsanız `ui_enabled: false` olarak ayarlayın.
+<table>
+  <tr>
+    <td width="40%">
+      <h3>Temsilcilerinizin gün boyu çalışabileceği bir gelen kutusu</h3>
+      Konuşma, dahili notlar, hazır yanıtlar ve SLA zamanlayıcıları tek ekranda. Talepler Postmark, Mailgun veya SES üzerinden e-postayla da gelir.
+    </td>
+    <td width="60%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/ticket-dark.png">
+        <img src="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/ticket-light.png" alt="Temsilci çalışma alanında yanıt düzenleyiciyle açılmış bir talep">
+      </picture>
+    </td>
+  </tr>
+  <tr>
+    <td width="60%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/dashboard-dark.png">
+        <img src="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/dashboard-light.png" alt="Yanıt sürelerini, CSAT'ı ve SLA ihlallerini gösteren yönetici raporları sayfası">
+      </picture>
+    </td>
+    <td width="40%">
+      <h3>Görebileceğiniz SLA'lar ve eskalasyon kuralları</h3>
+      Mesai saatlerine göre öncelik başına yanıt ve çözüm hedefleri, hedef kaçtığında eskale eden veya yeniden atayan kurallar ve ihlal raporları.
+    </td>
+  </tr>
+</table>
 
 ## Özellikler
 
-- **Bilet yaşam döngüsü** — Yapılandırılabilir durum geçişleriyle oluşturma, atama, yanıtlama, çözme, kapatma, yeniden açma
-- **SLA motoru** — Önceliğe göre yanıt ve çözüm hedefleri, iş saatleri hesaplaması, otomatik ihlal tespiti
-- **Temsilci paneli** — Filtreler, dahili notlar, hazır yanıtlar ile bilet kuyruğu
-- **Müşteri portalı** — Self-servis bilet oluşturma, yanıtlar ve durum takibi
-- **Yönetici paneli** — Departmanları, SLA politikalarını, etiketleri yönetme ve raporları görüntüleme
-- **Dosya ekleri** — Yapılandırılabilir depolama ve boyut limitleri ile sürükle-bırak yükleme
-- **Aktivite zaman çizelgesi** — Her bilet üzerindeki her eylemin tam denetim günlüğü
-- **E-posta bildirimleri** — Olay bazında yapılandırılabilir bildirimler
-- **Departman yönlendirmesi** — Otomatik atamayla temsilcileri departmanlara organize etme
-- **Etiket sistemi** — Renkli etiketlerle biletleri kategorize etme
-- **Bilet bölme** — Orijinal bağlamı koruyarak bir yanıtı yeni bağımsız bir bilete bölme
-- **Bilet erteleme** — Ön ayarlarla (1s, 4s, yarın, gelecek hafta) biletleri erteleme; `php bin/console escalated:wake-snoozed-tickets` komutu programa göre otomatik uyandırır
-- **Kayıtlı görünümler / özel kuyruklar** — Filtre ön ayarlarını yeniden kullanılabilir bilet görünümleri olarak kaydetme, adlandırma ve paylaşma
-- **Gömülebilir destek widget'ı** — KB araması, bilet formu ve durum kontrolü olan hafif `<script>` widget'ı
-- **E-posta threading** — Giden e-postalar, posta istemcilerinde doğru iş parçacığı oluşturma için uygun `In-Reply-To` ve `References` başlıkları içerir
-- **Markalı e-posta şablonları** — Tüm giden e-postalar için yapılandırılabilir logo, ana renk ve alt bilgi metni
-- **Gerçek zamanlı yayın** — Otomatik yoklama geri dönüşlü Mercure üzerinden isteğe bağlı yayın
-- **Bilgi tabanı anahtarı** — Yönetici ayarlarından genel bilgi tabanını etkinleştirme veya devre dışı bırakma
+<table>
+<tr>
+<td width="33%" valign="top">
 
-## Mimari
+**Talepler**
+- Oluşturma, atama, yanıtlama, çözme, yeniden açma
+- Yapılandırılabilir durum geçişleri
+- Bir yanıtı yeni bir talebe ayırma
+- Otomatik geri dönüşlü erteleme
+- Etiketler, ekler, etkinlik zaman çizelgesi
 
-### Varlıklar
+</td>
+<td width="33%" valign="top">
 
-| Varlık | Açıklama |
-|---|---|
-| `Ticket` | Durum, öncelik, SLA takibi olan destek bileti |
-| `Reply` | Bilet üzerindeki genel yanıt veya dahili not |
-| `Department` | Biletler ve temsilciler için organizasyonel gruplama |
-| `Tag` | Biletleri kategorize etmek için etiketler |
-| `SlaPolicy` | Önceliğe göre ilk yanıt ve çözüm süre hedefleri |
-| `TicketActivity` | Tüm bilet değişikliklerinin denetim günlüğü |
-| `AgentProfile` | Temsilci meta verileri (tür, kapasite) |
+**Temsilci çalışma alanı**
+- Filtreli ve kayıtlı görünümlü kuyruk
+- Dahili notlar ve hazır yanıtlar
+- Otomatik atamalı departmanlar
+- Mercure ile gerçek zamanlı güncellemeler
 
-### Hizmetler
+</td>
+<td width="33%" valign="top">
 
-| Hizmet | Açıklama |
-|---|---|
-| `TicketService` | Bilet oluşturma, güncelleme, geçiş, yanıtlama |
-| `AssignmentService` | Temsilci atama/kaldırma, iş yükü kontrolü |
-| `SlaService` | SLA politikalarını ekleme, ihlalleri kontrol etme |
+**SLA'lar ve eskalasyon**
+- Öncelik başına yanıt ve çözüm hedefleri
+- Mesai saatleri
+- Otomatik ihlal tespiti
+- Eskalasyon kuralları ve otomasyonlar
 
-### Denetleyiciler
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top">
 
-Rotalar, yapılandırılmış `route_prefix` altında dört gruba ayrılmıştır:
+**Müşteriler**
+- Self servis portal: açma, yanıtlama, takip
+- E-postayla gönderilen kodla doğrulanan misafir erişimi
+- Bilgi bankası aramalı, yerleştirilebilir widget
+- Misafir uç noktalarında istek sınırları
+- Bilgi bankası, açık veya kapalı
 
-- **Customer** (`/customer/tickets`) -- Kimliği doğrulanmış son kullanıcılar için bilet CRUD
-- **Agent** (`/agent`) -- Destek temsilcileri için panel ve bilet yönetimi
-- **Admin** (`/admin`) -- Biletler, departmanlar, etiketler, ayarların tam yönetimi
-- **API** (`/api/v1`) -- Dış entegrasyonlar için JSON REST API
+</td>
+<td width="33%" valign="top">
 
-### Güvenlik
+**E-posta**
+- Postmark, Mailgun, SES üzerinden gelen e-posta
+- Olay başına bildirimler
+- E-posta istemcilerinde doğru konu zincirleri
+- Markanıza uygun şablonlar
 
-İki Symfony voter erişimi kontrol eder:
+</td>
+<td width="33%" valign="top">
 
-- `ESCALATED_AGENT` -- Kullanıcının bir `AgentProfile` kaydı olduğunda verilir
-- `ESCALATED_ADMIN` -- Kullanıcının `ROLE_ESCALATED_ADMIN` rolü olduğunda verilir
+**Yönetim ve erişim**
+- Departmanlar, SLA politikaları, etiketler, raporlar
+- Roller, izinler, iki faktörlü doğrulama, SSO
+- Kendi yönetim panelinizin içinde yönetim
+- Giden webhook'lar ve eklentiler
 
-### UI Oluşturma
+</td>
+</tr>
+</table>
 
-Denetleyiciler sayfaları oluşturmak için `UiRendererInterface` kullanır. Varsayılan `InertiaUiRenderer`, kurulu Inertia bundle'ına yetki verir. Twig veya başka bir oluşturucu kullanmak için `UiRendererInterface`'i uygulayın ve konteyner yapılandırmanızda hizmeti geçersiz kılın:
+<p align="center"><sub><a href="../features.md">Tüm özellikler ayrıntılı olarak</a></sub></p>
 
-```yaml
-services:
-    Escalated\Symfony\Rendering\UiRendererInterface:
-        class: App\Rendering\TwigUiRenderer
-```
+<p align="center">
+  <a href="https://symfony.com"><img src="https://img.shields.io/badge/Symfony_6.4_or_7-000000?style=for-the-badge&logo=symfony&logoColor=white" alt="Symfony 6.4 or 7"></a>
+  <a href="https://www.php.net"><img src="https://img.shields.io/badge/PHP_8.2+-777BB4?style=for-the-badge&logo=php&logoColor=white" alt="PHP 8.2+"></a>
+  <a href="https://www.doctrine-project.org"><img src="https://img.shields.io/badge/Doctrine-FC6A31?style=for-the-badge&logo=doctrine&logoColor=white" alt="Doctrine"></a>
+  <a href="https://inertiajs.com"><img src="https://img.shields.io/badge/Inertia-9553E9?style=for-the-badge&logo=inertia&logoColor=white" alt="Inertia"></a>
+  <a href="https://vuejs.org"><img src="https://img.shields.io/badge/Vue_3-4FC08D?style=for-the-badge&logo=vuedotjs&logoColor=white" alt="Vue 3"></a>
+</p>
 
-## Durum Geçişleri
-
-Biletler bu geçişlerle bir durum makinesini takip eder:
-
-```
-open -> in_progress, waiting_on_customer, waiting_on_agent, escalated, resolved, closed
-in_progress -> waiting_on_customer, waiting_on_agent, escalated, resolved, closed
-waiting_on_customer -> open, in_progress, resolved, closed
-waiting_on_agent -> open, in_progress, escalated, resolved, closed
-escalated -> in_progress, resolved, closed
-resolved -> reopened, closed
-closed -> reopened
-reopened -> in_progress, waiting_on_customer, waiting_on_agent, escalated, resolved, closed
-```
-
-## Test
+## Hızlı başlangıç
 
 ```bash
-vendor/bin/phpunit
+composer require escalated-dev/escalated-symfony
+composer require rompetomp/inertia-bundle
+php bin/console doctrine:migrations:migrate
 ```
+
+Migration'dan önce `config/packages/escalated.yaml` dosyasını ekleyin ve bundle'ın rotalarını `config/routes/escalated.yaml` içinde içe aktarın. PHP 8.2+ ve Symfony 6.4 veya 7.x gerekir. [Başlangıç kılavuzu](../getting-started.md) iki dosyayı, güvenlik rollerini ve zamanlanmış komutları içerir.
+
+## Daha fazla bilgi
+
+- [Tüm özellikler](../features.md) · [Başlarken](../getting-started.md) · [Veritabanı bağlantısı](../configuration.md)
+- [Mimari ve durum geçişleri](../architecture.md) · [Talep konuları, eylemler ve çeviriler](../customization.md)
+- [Erişim kontrolü](../access-control.md) · [Talep erişimi ve yönlendirme](../ticket-access-and-routing.md)
+- [Widget'ı yerleştirme](../embedding-the-widget.md) · [Misafir erişimi](../guest-access.md)
+- [Temsilci paneli](../agent-panel.md) · [Yönetim panelini yerleştirme](../embedding-admin.md)
+- [Eklentiler](../plugins.md) · [Bültenler](../newsletters.md)
+
+Escalated, [Laravel](https://github.com/escalated-dev/escalated-laravel), [Rails](https://github.com/escalated-dev/escalated-rails), [Django](https://github.com/escalated-dev/escalated-django), [NestJS](https://github.com/escalated-dev/escalated-nestjs), [AdonisJS](https://github.com/escalated-dev/escalated-adonis), [Phoenix](https://github.com/escalated-dev/escalated-phoenix), [Go](https://github.com/escalated-dev/escalated-go), [.NET](https://github.com/escalated-dev/escalated-dotnet), [Spring](https://github.com/escalated-dev/escalated-spring), [WordPress](https://github.com/escalated-dev/escalated-wordpress) ve [Filament](https://github.com/escalated-dev/escalated-filament) için de kullanılabilir. Arayüz [escalated](https://github.com/escalated-dev/escalated) deposunda bulunur.
 
 ## Lisans
 
-MIT
+MIT. Copyright (c) Escalated.dev. Ayrıntılar için [LICENSE](../../LICENSE) dosyasına bakın.

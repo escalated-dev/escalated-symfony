@@ -1,192 +1,170 @@
-<p align="center">
-  <b>العربية</b> •
-  <a href="README.de.md">Deutsch</a> •
-  <a href="../../README.md">English</a> •
-  <a href="README.es.md">Español</a> •
-  <a href="README.fr.md">Français</a> •
-  <a href="README.it.md">Italiano</a> •
-  <a href="README.ja.md">日本語</a> •
-  <a href="README.ko.md">한국어</a> •
-  <a href="README.nl.md">Nederlands</a> •
-  <a href="README.pl.md">Polski</a> •
-  <a href="README.pt-BR.md">Português (BR)</a> •
-  <a href="README.ru.md">Русский</a> •
-  <a href="README.tr.md">Türkçe</a> •
+<p align="center"><sub>
+  <b>العربية</b> ·
+  <a href="README.de.md">Deutsch</a> ·
+  <a href="../../README.md">English</a> ·
+  <a href="README.es.md">Español</a> ·
+  <a href="README.fr.md">Français</a> ·
+  <a href="README.it.md">Italiano</a> ·
+  <a href="README.ja.md">日本語</a> ·
+  <a href="README.ko.md">한국어</a> ·
+  <a href="README.nl.md">Nederlands</a> ·
+  <a href="README.pl.md">Polski</a> ·
+  <a href="README.pt-BR.md">Português (BR)</a> ·
+  <a href="README.ru.md">Русский</a> ·
+  <a href="README.tr.md">Türkçe</a> ·
   <a href="README.zh-CN.md">简体中文</a>
+</sub></p>
+
+<p align="center">
+  <a href="https://escalated.dev"><img src="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/logo.png" width="72" height="72" alt="Escalated"></a>
 </p>
 
-# Escalated for Symfony
+<h1 align="center">Escalated for Symfony</h1>
 
-نظام تذاكر دعم قابل للتضمين لتطبيقات Symfony. مكتب مساعدة جاهز مع تذاكر وردود وأقسام ووسوم وسياسات SLA وتحكم في الوصول على أساس الأدوار.
+<p align="center">
+  أضف مكتب دعم متكاملًا إلى تطبيق Symfony الخاص بك.<br>
+  تذاكر، واتفاقيات مستوى الخدمة (SLA)، وقواعد تصعيد، وصندوق وارد للوكلاء، وبوابة للعملاء، تعمل كلها على قاعدة بياناتك الخاصة.
+</p>
 
-## المتطلبات
+<p align="center">
+  <a href="https://escalated.dev"><b>الموقع</b></a> ·
+  <a href="https://escalated.dev/docs"><b>التوثيق</b></a> ·
+  <a href="https://escalated.dev/cloud"><b>Cloud</b></a> ·
+  <a href="../../CHANGELOG.md"><b>سجل التغييرات</b></a>
+</p>
 
-- PHP 8.2+
-- Symfony 6.4 أو 7.x
-- Doctrine ORM 2.17+ / 3.x
-- Doctrine Migrations Bundle
+<br>
 
-## التثبيت
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/inbox-dark.png">
+  <img src="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/inbox-light.png" alt="صندوق وارد الوكلاء في Escalated: عروض محفوظة مع أعداد، وعدّ تنازلي لاتفاقيات SLA، وأولوية لكل تذكرة" width="100%">
+</picture>
 
-```bash
-composer require escalated-dev/escalated-symfony
-```
+## ما الذي يقدمه
 
-### 1. تسجيل الحزمة
-
-إذا كان Symfony Flex مثبتاً، يتم تسجيل الحزمة تلقائياً. وإلا، أضفها إلى `config/bundles.php`:
-
-```php
-return [
-    // ...
-    Escalated\Symfony\EscalatedBundle::class => ['all' => true],
-];
-```
-
-### 2. تكوين الحزمة
-
-أنشئ `config/packages/escalated.yaml`:
-
-```yaml
-escalated:
-    user_class: App\Entity\User
-    route_prefix: /support
-    ui_enabled: true
-    table_prefix: escalated_
-    tickets:
-        allow_customer_close: true
-        default_priority: medium
-    sla:
-        enabled: true
-        business_hours_only: false
-        business_hours:
-            start: '09:00'
-            end: '17:00'
-            timezone: UTC
-            days: [1, 2, 3, 4, 5]
-```
-
-### 3. تشغيل الترحيلات
-
-```bash
-php bin/console doctrine:migrations:migrate
-```
-
-يقوم الترحيل بإنشاء جميع الجداول الضرورية (`escalated_tickets`، `escalated_replies`، `escalated_departments`، `escalated_tags`، `escalated_sla_policies`، `escalated_ticket_activities`، `escalated_agent_profiles`).
-
-### 4. إعداد الأمان
-
-أضف دور `ROLE_ESCALATED_ADMIN` لمستخدمي المسؤول في مزود المستخدمين الخاص بك. يتم تحديد وصول الوكيل من خلال وجود كيان `AgentProfile` مرتبط بالمستخدم.
-
-```yaml
-# config/packages/security.yaml
-security:
-    role_hierarchy:
-        ROLE_ESCALATED_ADMIN: ROLE_USER
-```
-
-### 5. (اختياري) تثبيت Inertia
-
-للواجهة الأمامية المدمجة، قم بتثبيت حزمة Inertia:
-
-```bash
-composer require rompetomp/inertia-bundle
-# أو
-composer require skipthedragon/inertia-bundle
-```
-
-اضبط `ui_enabled: false` إذا كنت تريد استخدام API والخدمات فقط مع واجهة أمامية مخصصة.
+<table>
+  <tr>
+    <td width="40%">
+      <h3>صندوق وارد يستطيع وكلاؤك العمل فيه طوال اليوم</h3>
+      المحادثة والملاحظات الداخلية والردود الجاهزة ومؤقتات SLA في شاشة واحدة. تصل التذاكر أيضًا عبر البريد الإلكتروني من خلال Postmark أو Mailgun أو SES.
+    </td>
+    <td width="60%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/ticket-dark.png">
+        <img src="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/ticket-light.png" alt="تذكرة مفتوحة في مساحة عمل الوكيل مع محرر الرد">
+      </picture>
+    </td>
+  </tr>
+  <tr>
+    <td width="60%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/dashboard-dark.png">
+        <img src="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/dashboard-light.png" alt="صفحة تقارير المسؤول مع أوقات الاستجابة وCSAT وخروقات SLA">
+      </picture>
+    </td>
+    <td width="40%">
+      <h3>اتفاقيات SLA وقواعد تصعيد يمكنك رؤيتها</h3>
+      أهداف للاستجابة والحل لكل أولوية مع ساعات العمل، وقواعد تصعّد التذكرة أو تعيد إسنادها عند التأخر، وتقارير عن الخروقات.
+    </td>
+  </tr>
+</table>
 
 ## الميزات
 
-- **دورة حياة التذكرة** — إنشاء، تعيين، رد، حل، إغلاق، إعادة فتح مع انتقالات حالة قابلة للتكوين
-- **محرك SLA** — أهداف الاستجابة والحل لكل أولوية، حساب ساعات العمل، كشف الانتهاكات التلقائي
-- **لوحة تحكم الوكلاء** — قائمة تذاكر مع فلاتر، ملاحظات داخلية، ردود جاهزة
-- **بوابة العملاء** — إنشاء تذاكر ذاتية الخدمة، ردود، وتتبع الحالة
-- **لوحة الإدارة** — إدارة الأقسام، سياسات SLA، الوسوم وعرض التقارير
-- **مرفقات الملفات** — رفع بالسحب والإفلات مع تخزين وحدود حجم قابلة للتكوين
-- **الجدول الزمني للنشاط** — سجل تدقيق كامل لكل إجراء على كل تذكرة
-- **إشعارات البريد الإلكتروني** — إشعارات قابلة للتكوين لكل حدث
-- **توجيه الأقسام** — تنظيم الوكلاء في أقسام مع التعيين التلقائي
-- **نظام الوسوم** — تصنيف التذاكر بوسوم ملونة
-- **تقسيم التذاكر** — تقسيم رد إلى تذكرة مستقلة جديدة مع الحفاظ على السياق الأصلي
-- **تأجيل التذاكر** — تأجيل التذاكر مع إعدادات مسبقة (ساعة، 4 ساعات، غداً، الأسبوع القادم)؛ أمر `php bin/console escalated:wake-snoozed-tickets` يوقظها تلقائياً حسب الجدول
-- **العروض المحفوظة / قوائم مخصصة** — حفظ وتسمية ومشاركة إعدادات الفلتر كعروض تذاكر قابلة لإعادة الاستخدام
-- **أداة دعم قابلة للتضمين** — أداة `<script>` خفيفة مع بحث في قاعدة المعرفة ونموذج تذكرة وفحص الحالة
-- **ربط سلاسل البريد** — رسائل البريد الصادرة تتضمن رؤوس `In-Reply-To` و `References` الصحيحة لترابط صحيح في عملاء البريد
-- **قوالب بريد ذات علامة تجارية** — شعار ولون أساسي ونص تذييل قابل للتكوين لجميع رسائل البريد الصادرة
-- **البث في الوقت الفعلي** — بث اختياري عبر Mercure مع رجوع تلقائي إلى الاستطلاع
-- **مفتاح قاعدة المعرفة** — تمكين أو تعطيل قاعدة المعرفة العامة من إعدادات الإدارة
+<table>
+<tr>
+<td width="33%" valign="top">
 
-## الهندسة المعمارية
+**التذاكر**
+- الإنشاء والإسناد والرد والحل وإعادة الفتح
+- انتقالات حالة قابلة للتهيئة
+- فصل رد إلى تذكرة جديدة
+- التأجيل مع إعادة التفعيل تلقائيًا
+- وسوم ومرفقات وسجل نشاط
 
-### الكيانات
+</td>
+<td width="33%" valign="top">
 
-| الكيان | الوصف |
-|---|---|
-| `Ticket` | تذكرة دعم مع الحالة والأولوية وتتبع SLA |
-| `Reply` | رد عام أو ملاحظة داخلية على تذكرة |
-| `Department` | تجميع تنظيمي للتذاكر والوكلاء |
-| `Tag` | تسميات لتصنيف التذاكر |
-| `SlaPolicy` | أهداف وقت الاستجابة الأولى والحل لكل أولوية |
-| `TicketActivity` | سجل تدقيق لجميع تغييرات التذاكر |
-| `AgentProfile` | بيانات الوكيل الوصفية (النوع، السعة) |
+**مساحة عمل الوكيل**
+- قائمة انتظار مع عوامل تصفية وعروض محفوظة
+- ملاحظات داخلية وردود جاهزة
+- أقسام مع إسناد تلقائي
+- تحديثات فورية عبر Mercure
 
-### الخدمات
+</td>
+<td width="33%" valign="top">
 
-| الخدمة | الوصف |
-|---|---|
-| `TicketService` | إنشاء، تحديث، انتقال، رد على التذاكر |
-| `AssignmentService` | تعيين/إلغاء تعيين الوكلاء، فحص عبء العمل |
-| `SlaService` | إرفاق سياسات SLA، فحص الانتهاكات |
+**SLA والتصعيد**
+- أهداف للاستجابة والحل لكل أولوية
+- ساعات العمل
+- اكتشاف تلقائي للخروقات
+- قواعد تصعيد وأتمتة
 
-### وحدات التحكم
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top">
 
-يتم تنظيم المسارات في أربع مجموعات، جميعها تحت `route_prefix` المُعدّ:
+**العملاء**
+- بوابة خدمة ذاتية: فتح ورد ومتابعة
+- وصول ضيف موثّق برمز يُرسل بالبريد الإلكتروني
+- أداة قابلة للتضمين مع بحث في قاعدة المعرفة
+- حدود للطلبات على نقاط نهاية الضيوف
+- قاعدة معرفة، مفعّلة أو معطّلة
 
-- **Customer** (`/customer/tickets`) -- عمليات CRUD للتذاكر للمستخدمين المصادق عليهم
-- **Agent** (`/agent`) -- لوحة التحكم وإدارة التذاكر لوكلاء الدعم
-- **Admin** (`/admin`) -- إدارة كاملة للتذاكر والأقسام والوسوم والإعدادات
-- **API** (`/api/v1`) -- JSON REST API للتكاملات الخارجية
+</td>
+<td width="33%" valign="top">
 
-### الأمان
+**البريد الإلكتروني**
+- استقبال عبر Postmark وMailgun وSES
+- إشعارات لكل حدث
+- تجميع صحيح للمحادثات في برامج البريد
+- قوالب بهويتك التجارية
 
-يتحكم مصوتان في Symfony في الوصول:
+</td>
+<td width="33%" valign="top">
 
-- `ESCALATED_AGENT` -- يُمنح عندما يكون لدى المستخدم سجل `AgentProfile`
-- `ESCALATED_ADMIN` -- يُمنح عندما يكون لدى المستخدم دور `ROLE_ESCALATED_ADMIN`
+**الإدارة والوصول**
+- أقسام وسياسات SLA ووسوم وتقارير
+- أدوار وصلاحيات ومصادقة ثنائية وSSO
+- الإدارة داخل لوحة الإدارة الخاصة بك
+- Webhooks صادرة وإضافات
 
-### عرض واجهة المستخدم
+</td>
+</tr>
+</table>
 
-تستخدم وحدات التحكم `UiRendererInterface` لعرض الصفحات. يفوض `InertiaUiRenderer` الافتراضي إلى حزمة Inertia المثبتة. لاستخدام Twig أو عارض آخر، قم بتنفيذ `UiRendererInterface` وتجاوز الخدمة في تكوين الحاوية:
+<p align="center"><sub><a href="../features.md">كل الميزات بالتفصيل</a></sub></p>
 
-```yaml
-services:
-    Escalated\Symfony\Rendering\UiRendererInterface:
-        class: App\Rendering\TwigUiRenderer
-```
+<p align="center">
+  <a href="https://symfony.com"><img src="https://img.shields.io/badge/Symfony_6.4_or_7-000000?style=for-the-badge&logo=symfony&logoColor=white" alt="Symfony 6.4 or 7"></a>
+  <a href="https://www.php.net"><img src="https://img.shields.io/badge/PHP_8.2+-777BB4?style=for-the-badge&logo=php&logoColor=white" alt="PHP 8.2+"></a>
+  <a href="https://www.doctrine-project.org"><img src="https://img.shields.io/badge/Doctrine-FC6A31?style=for-the-badge&logo=doctrine&logoColor=white" alt="Doctrine"></a>
+  <a href="https://inertiajs.com"><img src="https://img.shields.io/badge/Inertia-9553E9?style=for-the-badge&logo=inertia&logoColor=white" alt="Inertia"></a>
+  <a href="https://vuejs.org"><img src="https://img.shields.io/badge/Vue_3-4FC08D?style=for-the-badge&logo=vuedotjs&logoColor=white" alt="Vue 3"></a>
+</p>
 
-## انتقالات الحالة
-
-تتبع التذاكر آلة حالة مع هذه الانتقالات:
-
-```
-open -> in_progress, waiting_on_customer, waiting_on_agent, escalated, resolved, closed
-in_progress -> waiting_on_customer, waiting_on_agent, escalated, resolved, closed
-waiting_on_customer -> open, in_progress, resolved, closed
-waiting_on_agent -> open, in_progress, escalated, resolved, closed
-escalated -> in_progress, resolved, closed
-resolved -> reopened, closed
-closed -> reopened
-reopened -> in_progress, waiting_on_customer, waiting_on_agent, escalated, resolved, closed
-```
-
-## الاختبار
+## البدء السريع
 
 ```bash
-vendor/bin/phpunit
+composer require escalated-dev/escalated-symfony
+composer require rompetomp/inertia-bundle
+php bin/console doctrine:migrations:migrate
 ```
 
-## الرخصة
+قبل تشغيل الترحيل، أضف `config/packages/escalated.yaml` واستورد مسارات الحزمة في `config/routes/escalated.yaml`. يتطلب PHP 8.2+ وSymfony 6.4 أو 7.x. يحتوي [دليل البدء](../getting-started.md) على الملفين وأدوار الأمان والأوامر المجدولة.
 
-MIT
+## اعرف المزيد
+
+- [كل الميزات](../features.md) · [البدء](../getting-started.md) · [الاتصال بقاعدة البيانات](../configuration.md)
+- [البنية وانتقالات الحالة](../architecture.md) · [عناوين التذاكر والإجراءات والترجمات](../customization.md)
+- [التحكم في الوصول](../access-control.md) · [الوصول إلى التذاكر والتوجيه](../ticket-access-and-routing.md)
+- [تضمين الأداة](../embedding-the-widget.md) · [وصول الضيوف](../guest-access.md)
+- [لوحة الوكيل](../agent-panel.md) · [تضمين لوحة الإدارة](../embedding-admin.md)
+- [الإضافات](../plugins.md) · [النشرات البريدية](../newsletters.md)
+
+يتوفر Escalated أيضًا لـ [Laravel](https://github.com/escalated-dev/escalated-laravel)، [Rails](https://github.com/escalated-dev/escalated-rails)، [Django](https://github.com/escalated-dev/escalated-django)، [NestJS](https://github.com/escalated-dev/escalated-nestjs)، [AdonisJS](https://github.com/escalated-dev/escalated-adonis)، [Phoenix](https://github.com/escalated-dev/escalated-phoenix)، [Go](https://github.com/escalated-dev/escalated-go)، [.NET](https://github.com/escalated-dev/escalated-dotnet)، [Spring](https://github.com/escalated-dev/escalated-spring)، [WordPress](https://github.com/escalated-dev/escalated-wordpress) و[Filament](https://github.com/escalated-dev/escalated-filament). توجد الواجهة في [escalated](https://github.com/escalated-dev/escalated).
+
+## الترخيص
+
+MIT. Copyright (c) Escalated.dev. راجع [LICENSE](../../LICENSE).

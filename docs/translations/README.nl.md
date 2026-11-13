@@ -1,192 +1,170 @@
-<p align="center">
-  <a href="README.ar.md">العربية</a> •
-  <a href="README.de.md">Deutsch</a> •
-  <a href="../../README.md">English</a> •
-  <a href="README.es.md">Español</a> •
-  <a href="README.fr.md">Français</a> •
-  <a href="README.it.md">Italiano</a> •
-  <a href="README.ja.md">日本語</a> •
-  <a href="README.ko.md">한국어</a> •
-  <b>Nederlands</b> •
-  <a href="README.pl.md">Polski</a> •
-  <a href="README.pt-BR.md">Português (BR)</a> •
-  <a href="README.ru.md">Русский</a> •
-  <a href="README.tr.md">Türkçe</a> •
+<p align="center"><sub>
+  <a href="README.ar.md">العربية</a> ·
+  <a href="README.de.md">Deutsch</a> ·
+  <a href="../../README.md">English</a> ·
+  <a href="README.es.md">Español</a> ·
+  <a href="README.fr.md">Français</a> ·
+  <a href="README.it.md">Italiano</a> ·
+  <a href="README.ja.md">日本語</a> ·
+  <a href="README.ko.md">한국어</a> ·
+  <b>Nederlands</b> ·
+  <a href="README.pl.md">Polski</a> ·
+  <a href="README.pt-BR.md">Português (BR)</a> ·
+  <a href="README.ru.md">Русский</a> ·
+  <a href="README.tr.md">Türkçe</a> ·
   <a href="README.zh-CN.md">简体中文</a>
+</sub></p>
+
+<p align="center">
+  <a href="https://escalated.dev"><img src="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/logo.png" width="72" height="72" alt="Escalated"></a>
 </p>
 
-# Escalated for Symfony
+<h1 align="center">Escalated for Symfony</h1>
 
-Een inbedbaar ticketsysteem voor ondersteuning voor Symfony-applicaties. Plug-and-play helpdesk met tickets, antwoorden, afdelingen, tags, SLA-beleid en rolgebaseerde toegangscontrole.
+<p align="center">
+  Voeg een complete helpdesk toe aan je Symfony-app.<br>
+  Tickets, SLA's, escalatieregels, een inbox voor agents en een klantenportaal, draaiend op je eigen database.
+</p>
 
-## Vereisten
+<p align="center">
+  <a href="https://escalated.dev"><b>Website</b></a> ·
+  <a href="https://escalated.dev/docs"><b>Documentatie</b></a> ·
+  <a href="https://escalated.dev/cloud"><b>Cloud</b></a> ·
+  <a href="../../CHANGELOG.md"><b>Wijzigingslog</b></a>
+</p>
 
-- PHP 8.2+
-- Symfony 6.4 of 7.x
-- Doctrine ORM 2.17+ / 3.x
-- Doctrine Migrations Bundle
+<br>
 
-## Installatie
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/inbox-dark.png">
+  <img src="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/inbox-light.png" alt="De agent-inbox van Escalated: opgeslagen weergaven met aantallen, SLA-afteltimers en prioriteiten op elk ticket" width="100%">
+</picture>
 
-```bash
-composer require escalated-dev/escalated-symfony
-```
+## Wat het doet
 
-### 1. Bundle registreren
-
-Als Symfony Flex is geïnstalleerd, wordt de bundle automatisch geregistreerd. Anders voegt u het toe aan `config/bundles.php`:
-
-```php
-return [
-    // ...
-    Escalated\Symfony\EscalatedBundle::class => ['all' => true],
-];
-```
-
-### 2. Bundle configureren
-
-Maak `config/packages/escalated.yaml`:
-
-```yaml
-escalated:
-    user_class: App\Entity\User
-    route_prefix: /support
-    ui_enabled: true
-    table_prefix: escalated_
-    tickets:
-        allow_customer_close: true
-        default_priority: medium
-    sla:
-        enabled: true
-        business_hours_only: false
-        business_hours:
-            start: '09:00'
-            end: '17:00'
-            timezone: UTC
-            days: [1, 2, 3, 4, 5]
-```
-
-### 3. Migraties uitvoeren
-
-```bash
-php bin/console doctrine:migrations:migrate
-```
-
-De migratie maakt alle benodigde tabellen aan (`escalated_tickets`, `escalated_replies`, `escalated_departments`, `escalated_tags`, `escalated_sla_policies`, `escalated_ticket_activities`, `escalated_agent_profiles`).
-
-### 4. Beveiliging instellen
-
-Voeg de rol `ROLE_ESCALATED_ADMIN` toe aan admin-gebruikers in uw gebruikersprovider. Agenttoegang wordt bepaald door de aanwezigheid van een `AgentProfile`-entiteit gekoppeld aan de gebruiker.
-
-```yaml
-# config/packages/security.yaml
-security:
-    role_hierarchy:
-        ROLE_ESCALATED_ADMIN: ROLE_USER
-```
-
-### 5. (Optioneel) Inertia installeren
-
-Voor de ingebouwde frontend-UI installeert u een Inertia-bundle:
-
-```bash
-composer require rompetomp/inertia-bundle
-# of
-composer require skipthedragon/inertia-bundle
-```
-
-Stel `ui_enabled: false` in als u alleen de API en services wilt gebruiken met een aangepaste frontend.
+<table>
+  <tr>
+    <td width="40%">
+      <h3>Een inbox waarin je agents de hele dag kunnen werken</h3>
+      Gesprek, interne notities, standaardantwoorden en SLA-timers op één scherm. Tickets komen ook binnen per e-mail via Postmark, Mailgun of SES.
+    </td>
+    <td width="60%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/ticket-dark.png">
+        <img src="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/ticket-light.png" alt="Een geopend ticket in de agentwerkruimte met de antwoordeditor">
+      </picture>
+    </td>
+  </tr>
+  <tr>
+    <td width="60%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/dashboard-dark.png">
+        <img src="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/dashboard-light.png" alt="De rapportpagina voor beheerders met reactietijden, CSAT en SLA-overschrijdingen">
+      </picture>
+    </td>
+    <td width="40%">
+      <h3>SLA's en escalatieregels die je kunt zien</h3>
+      Reactie- en oplosdoelen per prioriteit met kantooruren, regels die escaleren of opnieuw toewijzen als een doel uitloopt, en rapporten over overschrijdingen.
+    </td>
+  </tr>
+</table>
 
 ## Functies
 
-- **Ticketlevenscyclus** — Aanmaken, toewijzen, beantwoorden, oplossen, sluiten, heropenen met configureerbare statusovergangen
-- **SLA-engine** — Reactie- en oplossingsdoelen per prioriteit, berekening van kantooruren, automatische schendingsdetectie
-- **Agentendashboard** — Ticketwachtrij met filters, interne notities, standaardantwoorden
-- **Klantenportaal** — Zelfbediening ticketaanmaak, antwoorden en statusopvolging
-- **Adminpaneel** — Afdelingen, SLA-beleid, tags beheren en rapporten bekijken
-- **Bestandsbijlagen** — Drag-and-drop uploads met configureerbare opslag en groottelimieten
-- **Activiteitstijdlijn** — Volledig auditlogboek van elke actie op elk ticket
-- **E-mailmeldingen** — Configureerbare meldingen per gebeurtenis
-- **Afdelingsroutering** — Agenten organiseren in afdelingen met automatische toewijzing
-- **Tagsysteem** — Tickets categoriseren met gekleurde tags
-- **Ticket splitsen** — Een antwoord splitsen in een nieuw zelfstandig ticket met behoud van de originele context
-- **Ticket snoozen** — Tickets snoozen met presets (1u, 4u, morgen, volgende week); het `php bin/console escalated:wake-snoozed-tickets` commando wekt ze automatisch volgens schema
-- **Opgeslagen weergaven / aangepaste wachtrijen** — Filterpresets opslaan, benoemen en delen als herbruikbare ticketweergaven
-- **Inbedbare ondersteuningswidget** — Lichtgewicht `<script>`-widget met KB-zoeken, ticketformulier en statuscontrole
-- **E-mailthreading** — Uitgaande e-mails bevatten correcte `In-Reply-To`- en `References`-headers voor juiste threading in e-mailclients
-- **Merkgebonden e-mailsjablonen** — Configureerbaar logo, primaire kleur en voettekst voor alle uitgaande e-mails
-- **Realtime-uitzending** — Opt-in uitzending via Mercure met automatische polling-terugval
-- **Kennisbank-schakelaar** — Publieke kennisbank in- of uitschakelen via admin-instellingen
+<table>
+<tr>
+<td width="33%" valign="top">
 
-## Architectuur
+**Tickets**
+- Aanmaken, toewijzen, beantwoorden, oplossen, heropenen
+- Configureerbare statusovergangen
+- Een antwoord afsplitsen naar een nieuw ticket
+- Uitstellen met automatisch terugzetten
+- Tags, bijlagen, activiteitentijdlijn
 
-### Entiteiten
+</td>
+<td width="33%" valign="top">
 
-| Entiteit | Beschrijving |
-|---|---|
-| `Ticket` | Ondersteuningsticket met status, prioriteit, SLA-tracking |
-| `Reply` | Openbaar antwoord of interne notitie op een ticket |
-| `Department` | Organisatorische groepering voor tickets en agenten |
-| `Tag` | Labels voor het categoriseren van tickets |
-| `SlaPolicy` | Doelen voor eerste reactietijd en oplossingstijd per prioriteit |
-| `TicketActivity` | Auditlog van alle ticketwijzigingen |
-| `AgentProfile` | Agentmetadata (type, capaciteit) |
+**Agentwerkruimte**
+- Wachtrij met filters en opgeslagen weergaven
+- Interne notities en standaardantwoorden
+- Afdelingen met automatische toewijzing
+- Realtime updates via Mercure
 
-### Services
+</td>
+<td width="33%" valign="top">
 
-| Service | Beschrijving |
-|---|---|
-| `TicketService` | Tickets aanmaken, bijwerken, overgaan, beantwoorden |
-| `AssignmentService` | Agenten toewijzen/onttoewijzen, werklast controleren |
-| `SlaService` | SLA-beleid koppelen, controleren op schendingen |
+**SLA's en escalatie**
+- Reactie- en oplosdoelen per prioriteit
+- Kantooruren
+- Automatische detectie van overschrijdingen
+- Escalatieregels en automatiseringen
 
-### Controllers
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top">
 
-Routes zijn georganiseerd in vier groepen, allemaal onder de geconfigureerde `route_prefix`:
+**Klanten**
+- Selfserviceportaal: openen, beantwoorden, volgen
+- Geverifieerde gasttoegang met een code per e-mail
+- Insluitbare widget met zoeken in de kennisbank
+- Rate limits op gast-endpoints
+- Kennisbank, aan of uit
 
-- **Customer** (`/customer/tickets`) -- Ticket-CRUD voor geauthenticeerde eindgebruikers
-- **Agent** (`/agent`) -- Dashboard en ticketbeheer voor ondersteuningsagenten
-- **Admin** (`/admin`) -- Volledig beheer van tickets, afdelingen, tags, instellingen
-- **API** (`/api/v1`) -- JSON REST API voor externe integraties
+</td>
+<td width="33%" valign="top">
 
-### Beveiliging
+**E-mail**
+- Inkomend via Postmark, Mailgun, SES
+- Meldingen per gebeurtenis
+- Correcte threading in mailclients
+- Templates in je eigen huisstijl
 
-Twee Symfony-voters beheren de toegang:
+</td>
+<td width="33%" valign="top">
 
-- `ESCALATED_AGENT` -- Verleend wanneer de gebruiker een `AgentProfile`-record heeft
-- `ESCALATED_ADMIN` -- Verleend wanneer de gebruiker de rol `ROLE_ESCALATED_ADMIN` heeft
+**Beheer en toegang**
+- Afdelingen, SLA-beleid, tags, rapporten
+- Rollen, rechten, tweestapsverificatie, SSO
+- Beheer binnen je eigen adminpaneel
+- Uitgaande webhooks en plugins
 
-### UI-rendering
+</td>
+</tr>
+</table>
 
-Controllers gebruiken `UiRendererInterface` om pagina's te renderen. De standaard `InertiaUiRenderer` delegeert naar de geïnstalleerde Inertia-bundle. Om Twig of een andere renderer te gebruiken, implementeer `UiRendererInterface` en overschrijf de service in uw containerconfiguratie:
+<p align="center"><sub><a href="../features.md">Alle functies in detail</a></sub></p>
 
-```yaml
-services:
-    Escalated\Symfony\Rendering\UiRendererInterface:
-        class: App\Rendering\TwigUiRenderer
-```
+<p align="center">
+  <a href="https://symfony.com"><img src="https://img.shields.io/badge/Symfony_6.4_or_7-000000?style=for-the-badge&logo=symfony&logoColor=white" alt="Symfony 6.4 or 7"></a>
+  <a href="https://www.php.net"><img src="https://img.shields.io/badge/PHP_8.2+-777BB4?style=for-the-badge&logo=php&logoColor=white" alt="PHP 8.2+"></a>
+  <a href="https://www.doctrine-project.org"><img src="https://img.shields.io/badge/Doctrine-FC6A31?style=for-the-badge&logo=doctrine&logoColor=white" alt="Doctrine"></a>
+  <a href="https://inertiajs.com"><img src="https://img.shields.io/badge/Inertia-9553E9?style=for-the-badge&logo=inertia&logoColor=white" alt="Inertia"></a>
+  <a href="https://vuejs.org"><img src="https://img.shields.io/badge/Vue_3-4FC08D?style=for-the-badge&logo=vuedotjs&logoColor=white" alt="Vue 3"></a>
+</p>
 
-## Statusovergangen
-
-Tickets volgen een statusmachine met deze overgangen:
-
-```
-open -> in_progress, waiting_on_customer, waiting_on_agent, escalated, resolved, closed
-in_progress -> waiting_on_customer, waiting_on_agent, escalated, resolved, closed
-waiting_on_customer -> open, in_progress, resolved, closed
-waiting_on_agent -> open, in_progress, escalated, resolved, closed
-escalated -> in_progress, resolved, closed
-resolved -> reopened, closed
-closed -> reopened
-reopened -> in_progress, waiting_on_customer, waiting_on_agent, escalated, resolved, closed
-```
-
-## Testen
+## Snel aan de slag
 
 ```bash
-vendor/bin/phpunit
+composer require escalated-dev/escalated-symfony
+composer require rompetomp/inertia-bundle
+php bin/console doctrine:migrations:migrate
 ```
+
+Voeg vóór het migreren `config/packages/escalated.yaml` toe en importeer de routes van de bundle in `config/routes/escalated.yaml`. Vereist PHP 8.2+ en Symfony 6.4 of 7.x. De [handleiding om te beginnen](../getting-started.md) bevat beide bestanden, de beveiligingsrollen en de geplande commando's.
+
+## Meer informatie
+
+- [Alle functies](../features.md) · [Aan de slag](../getting-started.md) · [Databaseverbinding](../configuration.md)
+- [Architectuur en statusovergangen](../architecture.md) · [Ticketonderwerpen, acties en vertalingen](../customization.md)
+- [Toegangsbeheer](../access-control.md) · [Tickettoegang en routering](../ticket-access-and-routing.md)
+- [De widget insluiten](../embedding-the-widget.md) · [Gasttoegang](../guest-access.md)
+- [Agentpaneel](../agent-panel.md) · [Het beheer insluiten](../embedding-admin.md)
+- [Plugins](../plugins.md) · [Nieuwsbrieven](../newsletters.md)
+
+Escalated is ook beschikbaar voor [Laravel](https://github.com/escalated-dev/escalated-laravel), [Rails](https://github.com/escalated-dev/escalated-rails), [Django](https://github.com/escalated-dev/escalated-django), [NestJS](https://github.com/escalated-dev/escalated-nestjs), [AdonisJS](https://github.com/escalated-dev/escalated-adonis), [Phoenix](https://github.com/escalated-dev/escalated-phoenix), [Go](https://github.com/escalated-dev/escalated-go), [.NET](https://github.com/escalated-dev/escalated-dotnet), [Spring](https://github.com/escalated-dev/escalated-spring), [WordPress](https://github.com/escalated-dev/escalated-wordpress) en [Filament](https://github.com/escalated-dev/escalated-filament). De UI staat in [escalated](https://github.com/escalated-dev/escalated).
 
 ## Licentie
 
-MIT
+MIT. Copyright (c) Escalated.dev. Zie [LICENSE](../../LICENSE).

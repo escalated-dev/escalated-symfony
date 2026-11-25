@@ -47,6 +47,8 @@ class EscalatedBundle extends AbstractBundle
         $builder->setParameter('escalated.table_prefix', $config['table_prefix']);
         self::setAccessFeatures($builder, $config['access'], $config['two_factor'], $config['sso']);
         self::setEmbed($builder, $config['ui']['embed'] ?? []);
+        self::setOptionalRoutes($builder, $config);
+        self::setScheduling($builder, $config['scheduling'] ?? []);
         $this->aliasEntityManager($builder, $config['entity_manager'] ?? null);
 
         // Storage config
@@ -232,6 +234,51 @@ class EscalatedBundle extends AbstractBundle
         $builder->setParameter('escalated.ui.embed.replace_admin_gate', (bool) ($embed['replace_admin_gate'] ?? false));
         $builder->setParameter('escalated.ui.embed.layout', $embed['layout'] ?? null);
         $builder->setParameter('escalated.ui.embed.root_view', $embed['root_view'] ?? null);
+    }
+
+    /**
+     * Parameters for Routing\EscalatedRouteLoader and the customer route
+     * guards: the widget and guest portal routes are registered unless
+     * switched off (an explicit config value wins, then ESCALATED_WIDGET_ENABLED
+     * / ESCALATED_GUEST_ROUTES at runtime, default on), and the customer
+     * routes get the host's extra security attributes (none by default).
+     *
+     * @param array<string, mixed> $config
+     */
+    public static function setOptionalRoutes(ContainerBuilder $builder, array $config): void
+    {
+        $builder->setParameter('escalated.routes.on', true);
+        $builder->setParameter(
+            'escalated.widget.enabled',
+            $config['widget']['enabled'] ?? '%env(bool:default:escalated.routes.on:ESCALATED_WIDGET_ENABLED)%',
+        );
+        $builder->setParameter(
+            'escalated.guest.routes_enabled',
+            $config['guest']['routes_enabled'] ?? '%env(bool:default:escalated.routes.on:ESCALATED_GUEST_ROUTES)%',
+        );
+        $builder->setParameter('escalated.routes.customer_guards', array_values($config['routes']['customer_guards'] ?? []));
+    }
+
+    /**
+     * `scheduling.auto_register`: registers Scheduling\EscalatedScheduleProvider
+     * as the `escalated` Symfony Scheduler schedule. Off by default.
+     *
+     * @param array<string, mixed> $scheduling
+     */
+    public static function setScheduling(ContainerBuilder $builder, array $scheduling): void
+    {
+        if (!($scheduling['auto_register'] ?? false)) {
+            return;
+        }
+
+        if (!interface_exists(\Symfony\Component\Scheduler\ScheduleProviderInterface::class)
+            || !class_exists(\Symfony\Component\Console\Messenger\RunCommandMessage::class)) {
+            throw new \LogicException('escalated.scheduling.auto_register needs Symfony Scheduler: run "composer require symfony/scheduler symfony/messenger", or turn auto_register off and schedule the commands yourself (docs/getting-started.md).');
+        }
+
+        $builder->register(Scheduling\EscalatedScheduleProvider::class, Scheduling\EscalatedScheduleProvider::class)
+            ->setArgument('$newsletters', '%escalated.enable_newsletters%')
+            ->addTag('scheduler.schedule_provider', ['name' => Scheduling\EscalatedScheduleProvider::NAME]);
     }
 
     public static function setTicketAccess(ContainerBuilder $builder, array $config): void

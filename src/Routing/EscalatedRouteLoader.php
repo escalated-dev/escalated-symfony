@@ -18,7 +18,9 @@ use Symfony\Component\Routing\RouteCollection;
  * decides what that import contains:
  *
  *  - the JSON API and the inbound email webhook, always;
- *  - the customer, agent, admin, guest and widget UI, when `ui_enabled` is true;
+ *  - the customer, agent, admin, guest and widget UI, when `ui_enabled` is true,
+ *    except the widget routes while `widget.enabled` is false and the guest
+ *    portal routes while `guest.routes_enabled` is false;
  *  - the newsletter admin, public and webhook routes, when `ui_enabled` and
  *    `enable_newsletters` are both true.
  *
@@ -40,6 +42,10 @@ final class EscalatedRouteLoader extends Loader
 
     private const UI = ['Customer/', 'Agent/', 'Admin/', 'Widget/', 'Guest/', 'Auth/'];
 
+    private const WIDGET = 'Widget/';
+
+    private const GUEST = 'Guest/';
+
     private const NEWSLETTER = ['Newsletter/Admin/', 'Newsletter/Public/', 'Newsletter/Webhook/'];
 
     /** The controllers whose `/admin` routes move while the admin is embedded. */
@@ -54,6 +60,8 @@ final class EscalatedRouteLoader extends Loader
         private readonly bool $newslettersEnabled,
         ?string $env = null,
         private readonly ?EmbedConfig $embed = null,
+        private readonly mixed $widgetRoutes = true,
+        private readonly mixed $guestRoutes = true,
     ) {
         parent::__construct($env);
     }
@@ -96,6 +104,8 @@ final class EscalatedRouteLoader extends Loader
             'escalated.route_prefix' => $this->routePrefix,
             'escalated.ui_enabled' => $this->uiEnabled,
             'escalated.enable_newsletters' => $this->newslettersEnabled,
+            'escalated.widget.enabled' => $this->widgetRoutes,
+            'escalated.guest.routes_enabled' => $this->guestRoutes,
             ...($this->embed?->parameters() ?? []),
         ]));
 
@@ -136,7 +146,14 @@ final class EscalatedRouteLoader extends Loader
         $resources = self::ALWAYS;
 
         if ($this->uiEnabled) {
-            $resources = [...$resources, ...self::UI];
+            $resources = [...$resources, ...array_values(array_filter(
+                self::UI,
+                fn (string $ui): bool => match ($ui) {
+                    self::WIDGET => self::toBool($this->widgetRoutes),
+                    self::GUEST => self::toBool($this->guestRoutes),
+                    default => true,
+                },
+            ))];
 
             if ($this->newslettersEnabled) {
                 $resources = [...$resources, ...self::NEWSLETTER];
@@ -144,5 +161,15 @@ final class EscalatedRouteLoader extends Loader
         }
 
         return $resources;
+    }
+
+    /** A switch as configured or read from its env var (`false`, `0`, `off`, `no` and empty are off). */
+    public static function toBool(mixed $value): bool
+    {
+        if (\is_string($value)) {
+            return !\in_array(strtolower(trim($value)), ['', '0', 'false', 'off', 'no'], true);
+        }
+
+        return (bool) $value;
     }
 }

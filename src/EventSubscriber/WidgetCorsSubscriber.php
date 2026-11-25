@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Escalated\Symfony\EventSubscriber;
 
+use Escalated\Symfony\Routing\EscalatedRouteLoader;
 use Escalated\Symfony\Widget\WidgetOrigins;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -44,6 +45,7 @@ final class WidgetCorsSubscriber implements EventSubscriberInterface
         private readonly WidgetOrigins $origins,
         private readonly string $routePrefix = '/support',
         private readonly bool $uiEnabled = true,
+        private readonly mixed $widgetRoutes = true,
     ) {
     }
 
@@ -113,7 +115,8 @@ final class WidgetCorsSubscriber implements EventSubscriberInterface
 
     private function inScope(Request $request): bool
     {
-        if (!$this->uiEnabled) {
+        // No widget route exists, so there is nothing to answer a preflight for.
+        if (!$this->uiEnabled || !EscalatedRouteLoader::toBool($this->widgetRoutes)) {
             return false;
         }
 

@@ -9,7 +9,9 @@
 # reads the bundle configuration to decide what to register:
 #
 #   - the JSON API (/api/v1/...), always;
-#   - the customer, agent, admin and widget UI, when `ui_enabled` is true;
+#   - the customer, agent, admin and widget UI, when `ui_enabled` is true
+#     (the widget routes only while `widget.enabled` is true, the guest portal
+#     only while `guest.routes_enabled` is true; both default to true);
 #   - the newsletter routes, when `ui_enabled` and `enable_newsletters` are both true.
 #
 # Every route is mounted under `route_prefix` (default /support).

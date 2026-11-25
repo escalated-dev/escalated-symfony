@@ -149,6 +149,12 @@ final class EscalatedTestKernel extends Kernel
             // escalated.guest_access.from_address is unset.
             'mailer' => ['dsn' => 'null://null', 'headers' => ['From' => 'support@example.test']],
             'session' => ['storage_factory_id' => 'session.storage.factory.mock_file'],
+            // symfony/messenger and symfony/scheduler are dev dependencies for
+            // the optional scheduling.auto_register; FrameworkBundle would turn
+            // both on just because they are installed. A typical host has
+            // neither, and every compiled test container stays that size.
+            'messenger' => ['enabled' => false],
+            'scheduler' => ['enabled' => false],
         ]);
 
         // A stateful, lazy firewall over the whole application with a Doctrine

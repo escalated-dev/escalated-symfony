@@ -7,6 +7,7 @@ namespace Escalated\Symfony\Controller\Admin;
 use Escalated\Symfony\Rendering\ReportPages;
 use Escalated\Symfony\Rendering\ReportScreens;
 use Escalated\Symfony\Rendering\UiRendererInterface;
+use Escalated\Symfony\Scheduling\SchedulerHeartbeat;
 use Escalated\Symfony\Security\UserKeyResolver;
 use Escalated\Symfony\Service\AdvancedReportingService;
 use Escalated\Symfony\Service\ExportService;
@@ -41,6 +42,7 @@ class ReportController extends AbstractController
         private readonly UiRendererInterface $renderer,
         private readonly ?ReportPages $pages = null,
         private readonly ?ReportScreens $screens = null,
+        private readonly ?SchedulerHeartbeat $scheduler = null,
     ) {
     }
 
@@ -64,6 +66,7 @@ class ReportController extends AbstractController
             'sla_trends' => $this->reporting->slaBreachTrends($from, $to),
             'agent_ranking' => $this->reporting->agentPerformanceRanking($from, $to),
             'exportable_reports' => ExportService::EXPORTABLE_REPORTS,
+            'scheduler' => $this->scheduler?->status(),
         ]);
     }
 
@@ -72,7 +75,10 @@ class ReportController extends AbstractController
     {
         $this->denyAccessUnlessGranted('ESCALATED_ADMIN');
 
-        return $this->renderer->render('Escalated/Admin/Reports/Dashboard', $this->pages()->dashboard($this->range($request)[2]));
+        return $this->renderer->render('Escalated/Admin/Reports/Dashboard', [
+            ...$this->pages()->dashboard($this->range($request)[2]),
+            'scheduler' => $this->scheduler?->status(),
+        ]);
     }
 
     #[Route('/agents', name: 'reports.agents', methods: ['GET'])]

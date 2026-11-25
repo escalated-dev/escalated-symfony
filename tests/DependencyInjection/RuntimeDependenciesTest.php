@@ -28,6 +28,17 @@ final class RuntimeDependenciesTest extends TestCase
         'symfony/twig-bundle' => 'the Twig environment service the newsletter renderer injects',
     ];
 
+    /**
+     * Imported only by code that runs when the host opts in, and that checks
+     * the package is installed first (the bundle fails with a message saying
+     * what to install). Listed in composer.json `suggest`.
+     */
+    private const OPTIONAL_PACKAGES = [
+        // Scheduling\EscalatedScheduleProvider, registered only by
+        // EscalatedBundle::setScheduling() with scheduling.auto_register on.
+        'symfony/scheduler' => true,
+    ];
+
     public function testEveryPackageTheBundleUsesIsARuntimeDependency(): void
     {
         $installed = $this->installed();
@@ -39,7 +50,7 @@ final class RuntimeDependenciesTest extends TestCase
         $needed = self::IMPLICIT_RUNTIME_PACKAGES;
         foreach ($this->importedClasses() as $class => $file) {
             $package = $this->owningPackage($class, $prefixes);
-            if (null !== $package && !isset($needed[$package])) {
+            if (null !== $package && !isset($needed[$package]) && !isset(self::OPTIONAL_PACKAGES[$package])) {
                 $needed[$package] = 'imported by '.$file;
             }
         }

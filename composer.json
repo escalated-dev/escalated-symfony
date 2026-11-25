@@ -33,11 +33,14 @@
         "friendsofphp/php-cs-fixer": "^3.94",
         "phpunit/phpunit": "^10.5|^11.0",
         "symfony/browser-kit": "^6.4|^7.0",
-        "symfony/phpunit-bridge": "^6.4|^7.0|^8.0.8"
+        "symfony/messenger": "^6.4|^7.0",
+        "symfony/phpunit-bridge": "^6.4|^7.0|^8.0.8",
+        "symfony/scheduler": "^6.4|^7.0"
     },
     "suggest": {
         "rompetomp/inertia-bundle": "Required for built-in Inertia.js UI (^2.0)",
-        "skipthedragon/inertia-bundle": "Alternative Inertia.js bundle (^1.0)"
+        "skipthedragon/inertia-bundle": "Alternative Inertia.js bundle (^1.0)",
+        "symfony/scheduler": "Run the recurring jobs with Symfony Scheduler (escalated.scheduling.auto_register; needs symfony/messenger)"
     },
     "autoload": {
         "psr-4": {

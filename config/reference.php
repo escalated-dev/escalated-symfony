@@ -1316,6 +1316,18 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     inbound_secret?: scalar|Param|null, // Shared secret for inbound email. Providers must send it in the X-Escalated-Inbound-Secret header to the inbound webhook, and it signs the Reply-To address on outbound mail so replies thread back to their ticket. Only that signed address links inbound mail to a ticket, and only the requester may reply. Empty keeps the inbound webhook disabled. // Default: ""
  *     ui_enabled?: bool|Param, // Enable/disable the built-in Inertia UI. When disabled, only API routes and services are available. // Default: true
  *     enable_newsletters?: bool|Param, // Enable/disable the newsletter HTTP routes and dispatch worker. // Default: false
+ *     widget?: array{
+ *         enabled?: scalar|Param|null, // Register the widget routes ({route_prefix}/widget/api/...). False: no widget route exists. Null reads ESCALATED_WIDGET_ENABLED (default true). While the routes exist, the WidgetSettings service still switches the widget on or off at runtime. // Default: null
+ *     },
+ *     guest?: array{
+ *         routes_enabled?: scalar|Param|null, // Register the guest portal routes ({route_prefix}/guest/...). False: no guest route exists. Null reads ESCALATED_GUEST_ROUTES (default true). While the routes exist, the portal still answers 404 when guest tickets are off in WidgetSettings. // Default: null
+ *     },
+ *     routes?: array{
+ *         customer_guards?: mixed, // Security attributes (roles such as ROLE_STAFF, ESCALATED_AGENT, or attributes your voters decide) every customer portal and customer knowledge base route also requires, on top of the signed-in check those routes already make. Empty adds none. Set it, with widget.enabled and guest.routes_enabled false, to make the portal staff-only. // Default: []
+ *     },
+ *     scheduling?: array{
+ *         auto_register?: bool|Param, // Register the recurring jobs (SLA checks, escalations, automations, snooze wake-ups and the rest) with Symfony Scheduler as the `escalated` schedule, so a worker running `messenger:consume scheduler_escalated` runs them and no cron entries are needed. Needs symfony/scheduler and symfony/messenger. Off: schedule the commands yourself. // Default: false
+ *     },
  *     ui?: array{
  *         embed?: array{ // Optional: show Escalated's admin inside your own admin panel instead of the standalone admin at {route_prefix}/admin. Off by default; nothing changes unless it is turned on. See docs/embedding-admin.md.
  *             enabled?: scalar|Param|null, // Master switch. Null reads ESCALATED_EMBED (default false). // Default: null

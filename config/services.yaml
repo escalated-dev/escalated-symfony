@@ -38,6 +38,9 @@ services:
             - '../src/EscalatedBundle.php'
             # Plain config wrapper, instantiated by the registry — not a service.
             - '../src/Support/ArrayTicketAction.php'
+            # Registered by the extension only while scheduling.auto_register
+            # is on: it needs symfony/scheduler, which hosts may not have.
+            - '../src/Scheduling/EscalatedScheduleProvider.php'
             # Plain security identity built by ApiTokenAuthenticator — not a service.
             - '../src/Security/ApiTokenUser.php'
             - '../src/Security/GuestVerificationException.php'
@@ -124,6 +127,8 @@ services:
             $newslettersEnabled: '%escalated.enable_newsletters%'
             $env: '%kernel.environment%'
             $embed: '@Escalated\Symfony\Embed\EmbedConfig'
+            $widgetRoutes: '%escalated.widget.enabled%'
+            $guestRoutes: '%escalated.guest.routes_enabled%'
         tags: ['routing.loader']
 
     # Repositories (override to attach the Doctrine tag)
@@ -182,6 +187,13 @@ services:
         arguments:
             $routePrefix: '%escalated.route_prefix%'
             $uiEnabled: '%escalated.ui_enabled%'
+            $widgetRoutes: '%escalated.widget.enabled%'
+
+    # routes.customer_guards: the host's extra security attributes on the
+    # customer portal and customer knowledge base routes (none by default).
+    Escalated\Symfony\EventSubscriber\CustomerGuardSubscriber:
+        arguments:
+            $guards: '%escalated.routes.customer_guards%'
 
     # Verified guest access: emailed codes (budgets kept in the guest rate
     # limit's cache pool) and expiring grants, both keyed from kernel.secret.

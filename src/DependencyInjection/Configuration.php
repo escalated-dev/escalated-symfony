@@ -64,6 +64,64 @@ class Configuration implements ConfigurationInterface
                     ->defaultFalse()
                     ->info('Enable/disable the newsletter HTTP routes and dispatch worker.')
                 ->end()
+                ->arrayNode('widget')
+                    ->addDefaultsIfNotSet()
+                    ->children()
+                        ->scalarNode('enabled')
+                            ->defaultNull()
+                            ->info(
+                                'Register the widget routes ({route_prefix}/widget/api/...). False: no widget route '
+                                .'exists. Null reads ESCALATED_WIDGET_ENABLED (default true). While the routes exist, '
+                                .'the WidgetSettings service still switches the widget on or off at runtime.'
+                            )
+                        ->end()
+                    ->end()
+                ->end()
+                ->arrayNode('guest')
+                    ->addDefaultsIfNotSet()
+                    ->children()
+                        ->scalarNode('routes_enabled')
+                            ->defaultNull()
+                            ->info(
+                                'Register the guest portal routes ({route_prefix}/guest/...). False: no guest route '
+                                .'exists. Null reads ESCALATED_GUEST_ROUTES (default true). While the routes exist, '
+                                .'the portal still answers 404 when guest tickets are off in WidgetSettings.'
+                            )
+                        ->end()
+                    ->end()
+                ->end()
+                ->arrayNode('routes')
+                    ->addDefaultsIfNotSet()
+                    ->children()
+                        ->variableNode('customer_guards')
+                            ->defaultValue([])
+                            ->info(
+                                'Security attributes (roles such as ROLE_STAFF, ESCALATED_AGENT, or attributes your '
+                                .'voters decide) every customer portal and customer knowledge base route also requires, '
+                                .'on top of the signed-in check those routes already make. Empty adds none. Set it, '
+                                .'with widget.enabled and guest.routes_enabled false, to make the portal staff-only.'
+                            )
+                            ->validate()
+                                ->ifTrue(static fn (mixed $v): bool => !\is_array($v) || !array_is_list($v) || [] !== array_filter($v, static fn (mixed $g): bool => !\is_string($g) || '' === $g))
+                                ->thenInvalid('routes.customer_guards must be a list of security attributes, got %s.')
+                            ->end()
+                        ->end()
+                    ->end()
+                ->end()
+                ->arrayNode('scheduling')
+                    ->addDefaultsIfNotSet()
+                    ->children()
+                        ->booleanNode('auto_register')
+                            ->defaultFalse()
+                            ->info(
+                                'Register the recurring jobs (SLA checks, escalations, automations, snooze wake-ups and '
+                                .'the rest) with Symfony Scheduler as the `escalated` schedule, so a worker running '
+                                .'`messenger:consume scheduler_escalated` runs them and no cron entries are needed. '
+                                .'Needs symfony/scheduler and symfony/messenger. Off: schedule the commands yourself.'
+                            )
+                        ->end()
+                    ->end()
+                ->end()
                 ->arrayNode('ui')
                     ->addDefaultsIfNotSet()
                     ->children()

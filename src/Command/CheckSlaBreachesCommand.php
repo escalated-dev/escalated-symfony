@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Escalated\Symfony\Command;
 
+use Escalated\Symfony\Scheduling\SchedulerHeartbeat;
 use Escalated\Symfony\Service\SlaService;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -16,6 +17,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * breached, firing `sla.breached` for each, and fires `sla.warning` for each
  * deadline due within the next 30 minutes (escalated-laravel's
  * escalated:check-sla). Schedule it every minute.
+ *
+ * Each run records the scheduler heartbeat: the admin settings and reports
+ * pages warn when it is missing or older than 15 minutes.
  */
 #[AsCommand(
     name: 'escalated:check-sla-breaches',
@@ -25,6 +29,7 @@ class CheckSlaBreachesCommand extends Command
 {
     public function __construct(
         private readonly SlaService $slaService,
+        private readonly ?SchedulerHeartbeat $heartbeat = null,
     ) {
         parent::__construct();
     }
@@ -35,6 +40,7 @@ class CheckSlaBreachesCommand extends Command
 
         $breached = $this->slaService->checkBreaches();
         $warned = $this->slaService->checkWarnings();
+        $this->heartbeat?->record();
 
         if (0 === $breached && 0 === $warned) {
             $io->info('No new SLA breaches.');

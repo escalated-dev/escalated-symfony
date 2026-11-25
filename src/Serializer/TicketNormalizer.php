@@ -103,7 +103,11 @@ class TicketNormalizer implements NormalizerInterface, NormalizerAwareInterface
             $data['is_snoozed'] = null !== $snoozedUntil && $snoozedUntil > new \DateTimeImmutable();
         }
 
-        $isDetail = str_contains($context['groups'][0] ?? '', 'detail');
+        // `groups` may be one string ('ticket:detail', as the API passes it) or a list.
+        $isDetail = [] !== array_filter(
+            (array) ($context['groups'] ?? []),
+            static fn (mixed $group): bool => \is_string($group) && str_contains($group, 'detail'),
+        );
 
         // chat_session_id & chat_started_at: from the associated ChatSession
         $chatSession = $this->findChatSession($object);

@@ -47,6 +47,32 @@ class UserKeyResolver
     }
 
     /**
+     * The key of the user acting on a staff action, who must have one: the
+     * action records it (reply author, snoozed by, the agent's own state).
+     *
+     * @throws HostUserNotConfiguredException when the user is not a Doctrine entity, or was never persisted
+     */
+    public function require(UserInterface $user): int|string
+    {
+        $key = $this->resolve($user);
+        if (null !== $key) {
+            return $key;
+        }
+
+        if ($user instanceof ApiTokenUser) {
+            throw HostUserNotConfiguredException::noKey($user::class);
+        }
+
+        $manager = $this->registry?->getManagerForClass($user::class) ?? $this->em;
+        $factory = $manager->getMetadataFactory();
+        if (!$factory->hasMetadataFor($user::class) && $factory->isTransient($user::class)) {
+            throw HostUserNotConfiguredException::notAnEntity($user::class);
+        }
+
+        throw HostUserNotConfiguredException::noKey($user::class);
+    }
+
+    /**
      * Shape a stored or submitted user id the way the host's key type does:
      * numeric ids become ints for int/bigint keys, uuid/string keys stay strings.
      */

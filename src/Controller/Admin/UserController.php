@@ -8,6 +8,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Escalated\Symfony\Entity\Role;
 use Escalated\Symfony\Rendering\UiRendererInterface;
 use Escalated\Symfony\Security\AccessFeatures;
+use Escalated\Symfony\Security\HostUserSetup;
 use Escalated\Symfony\Security\RequiresFeature;
 use Escalated\Symfony\Security\UserKeyResolver;
 use Escalated\Symfony\Security\UserPermissions;
@@ -40,7 +41,22 @@ class UserController extends AbstractController
         private readonly string $userClass,
         private readonly AccessFeatures $accessFeatures = new AccessFeatures(),
         private readonly ?UserPermissions $userPermissions = null,
+        private readonly ?HostUserSetup $hostUsers = null,
     ) {
+    }
+
+    /**
+     * The host user repository. A user_class that is not a Doctrine user
+     * entity is a HostUserNotConfiguredException naming what is wrong, not a
+     * Doctrine mapping error.
+     *
+     * @return \Doctrine\ORM\EntityRepository<object>
+     */
+    private function userRepository(): \Doctrine\ORM\EntityRepository
+    {
+        $this->hostUsers?->assertUserClass();
+
+        return $this->em->getRepository($this->userClass);
     }
 
     #[Route('', name: 'index', methods: ['GET'])]
@@ -116,7 +132,7 @@ class UserController extends AbstractController
             return $this->redirectToRoute('escalated.admin.users.index', [], Response::HTTP_SEE_OTHER);
         }
 
-        $target = $this->em->getRepository($this->userClass)->find($user);
+        $target = $this->userRepository()->find($user);
         if (null === $target) {
             throw $this->createNotFoundException('User not found.');
         }
@@ -229,7 +245,7 @@ class UserController extends AbstractController
      */
     protected function loadUsers(string $search, int $page, int $perPage): array
     {
-        $repo = $this->em->getRepository($this->userClass);
+        $repo = $this->userRepository();
         $qb = $repo->createQueryBuilder('u');
 
         if ('' !== $search) {
@@ -266,7 +282,7 @@ class UserController extends AbstractController
         }
         $value = (bool) $payload['value'];
 
-        $target = $this->em->getRepository($this->userClass)->find($user);
+        $target = $this->userRepository()->find($user);
         if (null === $target) {
             throw $this->createNotFoundException('User not found.');
         }

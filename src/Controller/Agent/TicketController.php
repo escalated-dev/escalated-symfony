@@ -171,7 +171,7 @@ class TicketController extends TicketDeskController
     {
         $this->denyAccessUnlessGranted($this->gate());
         $ticket = $this->ticketOr404($reference);
-        $me = $this->currentUserKey() ?? throw $this->createAccessDeniedException();
+        $me = $this->actingUserKey();
         $unread ? $this->panel()->markUnread($me, $ticket) : $this->panel()->markRead($me, $ticket);
 
         if (!$request->headers->has('X-Inertia') && 'json' === $request->getPreferredFormat()) {

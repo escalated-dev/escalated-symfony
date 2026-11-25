@@ -165,7 +165,7 @@ abstract class TicketDeskController extends UiController
         }
 
         $user = $this->user();
-        $this->tickets->addReply($ticket, $this->currentUserKey() ?? $user->getUserIdentifier(), $body, $note, $user::class);
+        $this->tickets->addReply($ticket, $this->actingUserKey(), $body, $note, $user::class);
         $this->addFlash('success', $note ? 'Internal note added.' : 'Reply sent.');
 
         return $this->back($request, ...$this->showRoute($ticket));
@@ -327,7 +327,7 @@ abstract class TicketDeskController extends UiController
         }
 
         try {
-            $this->snoozes->snooze($ticket, $when, $this->currentUserKey() ?? $this->user()->getUserIdentifier());
+            $this->snoozes->snooze($ticket, $when, $this->actingUserKey());
         } catch (\InvalidArgumentException $e) {
             return $this->invalid($request, ['snoozed_until' => $e->getMessage()], ...$this->showRoute($ticket));
         }
@@ -451,6 +451,17 @@ abstract class TicketDeskController extends UiController
         $user = $this->getUser();
 
         return $user instanceof UserInterface ? $this->userKeys->resolve($user) : null;
+    }
+
+    /**
+     * The acting staff user's key, for an action that records who did it.
+     * A host user Escalated cannot key (not a Doctrine entity) gets a
+     * HostUserNotConfiguredException that says how to set it up, rather than
+     * the user's identifier stored where a user key belongs.
+     */
+    protected function actingUserKey(): int|string
+    {
+        return $this->userKeys->require($this->user());
     }
 
     protected function user(): UserInterface

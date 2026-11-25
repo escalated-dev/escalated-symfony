@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Escalated\Symfony\Controller\Admin;
 
 use Escalated\Symfony\Rendering\UiRendererInterface;
+use Escalated\Symfony\Scheduling\SchedulerHeartbeat;
 use Escalated\Symfony\Security\AccessFeatures;
 use Escalated\Symfony\Service\SettingsService;
 use Escalated\Symfony\Service\TwoFactorService;
@@ -30,6 +31,7 @@ class SettingsController extends AbstractController
         private readonly WidgetSettings $widgetSettings,
         private readonly AccessFeatures $features = new AccessFeatures(),
         private readonly ?TwoFactorService $twoFactor = null,
+        private readonly ?SchedulerHeartbeat $scheduler = null,
     ) {
     }
 
@@ -64,6 +66,8 @@ class SettingsController extends AbstractController
             'settings' => $settings,
             'supported_settings' => $this->supported(),
             'update_url' => $this->generateUrl('escalated.admin.settings.update'),
+            // Whether the recurring jobs run; null when it cannot be told.
+            'scheduler' => $this->scheduler?->status(),
         ]);
     }
 

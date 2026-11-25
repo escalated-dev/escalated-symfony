@@ -81,7 +81,7 @@ final class ReportPagesTest extends EscalatedWebTestCase
     public function testDashboardAndAgentMetrics(): void
     {
         $p = $this->visit('/support/admin/reports/dashboard?days=7')['props'];
-        self::assertSame(['period_days', 'volume', 'by_status', 'by_priority', 'avg_response_hours', 'avg_resolution_hours', 'sla_compliance', 'csat_average', 'agent_performance'], array_keys($p));
+        self::assertSame(['period_days', 'volume', 'by_status', 'by_priority', 'avg_response_hours', 'avg_resolution_hours', 'sla_compliance', 'csat_average', 'agent_performance', 'scheduler'], array_keys($p));
         self::assertSame(7, $p['period_days']);
         self::assertSame(2, $p['volume'][0]['value']);
         self::assertSame(['label', 'value'], array_keys($p['by_status'][0]));

@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+### Upgrading
+- No change is needed: every new option defaults to today's behaviour. The admin settings and reports pages now warn while the recurring jobs are not running (see below); schedule them, or set `escalated.scheduling.auto_register: true`, to clear it.
+
+### Added
+- `widget.enabled` (`ESCALATED_WIDGET_ENABLED`) and `guest.routes_enabled` (`ESCALATED_GUEST_ROUTES`), both default true: set false and no widget (`{route_prefix}/widget/api/...`) or guest portal (`{route_prefix}/guest/...`) route is registered, and the widget CORS listener answers no preflights. The `WidgetSettings` runtime switches still apply while the routes exist.
+- `routes.customer_guards` (default `[]`): security attributes every `escalated.customer.*` route (customer portal and customer knowledge base) also requires, as escalated-laravel's `escalated.routes.customer_middleware`. With the two switches above it makes an install staff-only (docs/getting-started.md, "Staff-only installs").
+- `escalated:check-sla-breaches` records a heartbeat (`scheduler_heartbeat_at` in the settings table). `Escalated/Admin/Settings`, `Escalated/Admin/Reports` and `Escalated/Admin/Reports/Dashboard` get a `scheduler` prop (`{ healthy, last_run_at, message, commands: [{ command, interval }] }`), unhealthy while the heartbeat is missing or older than 15 minutes; null when the settings table is not migrated.
+- `scheduling.auto_register` (default false): registers the recurring commands as the `escalated` Symfony Scheduler schedule (`messenger:consume scheduler_escalated`). Needs `symfony/scheduler` and `symfony/messenger`; turning it on without them fails the container build with a message saying so.
+- `escalated:doctor`: checks `escalated.user_class` (exists, implements `UserInterface`, mapped by Doctrine), agents, seeded permissions and assigned roles while roles & permissions are on, and the recurring jobs. Exits 1 on a problem that breaks staff actions.
+- A "Required: schedule the recurring jobs" section in the README and docs/getting-started.md, listing each command and interval.
+
+### Fixed
+- The JSON API ticket detail now includes `subjects` (and its other detail-only keys: `chat_messages`, `related_tickets`, `created_at_human` on activities). `TicketNormalizer` read only the first character of the `'ticket:detail'` group the API passes, so it never serialised a detail. The agent and admin ticket pages already sent `ticket.subjects`.
+- A staff action by a signed-in user Escalated cannot key (not a Doctrine entity) stored the user's identifier as the reply author or snoozer, or failed in the database; it now raises `HostUserNotConfiguredException`, which names what the host user must be. A `user_class` that is not a Doctrine user entity raises the same on the admin users screen instead of a Doctrine mapping error.
+
 ## [0.3.12] - 2026-11-07
 
 ### Upgrading

@@ -63,6 +63,43 @@ registered; the customer, agent, admin and widget UI only when `ui_enabled` is
 true; the newsletter routes only when `enable_newsletters` is true as well.
 Every route is mounted under `route_prefix`.
 
+The widget and the guest portal are public, unauthenticated routes. An install
+that does not use them can leave them out entirely:
+
+```yaml
+escalated:
+    widget:
+        enabled: false          # or ESCALATED_WIDGET_ENABLED=false; no {route_prefix}/widget/api/... route
+    guest:
+        routes_enabled: false   # or ESCALATED_GUEST_ROUTES=false; no {route_prefix}/guest/... route
+```
+
+Both default to true, so existing installs keep their routes. While the routes
+exist, the `WidgetSettings` service still switches the widget and guest tickets
+on or off at runtime (the routes answer 404 while they are off). The env vars
+are read when the router is built: clear the cache after changing them.
+
+### Staff-only installs
+
+When only your staff use Escalated, any signed-in user of your app could still
+open the customer portal and raise tickets. Add security attributes that every
+customer portal and customer knowledge base route (`escalated.customer.*`)
+also requires, on top of the signed-in check they already make, and switch
+off the public routes:
+
+```yaml
+escalated:
+    routes:
+        customer_guards: [ESCALATED_AGENT]   # any roles or voter attributes; default []
+    widget:
+        enabled: false
+    guest:
+        routes_enabled: false
+```
+
+A signed-in user who is not granted every attribute gets 403 (a visitor who is
+not signed in goes to your firewall's login). Staff routes are unaffected.
+
 ### Inbound email (optional)
 
 Replies and new tickets can arrive by email through your mail provider's inbound webhook. Set a shared secret:
@@ -138,23 +175,59 @@ escalated:
 
 The client IP is `Request::getClientIp()`. Behind a reverse proxy or load balancer, set `framework.trusted_proxies` and `trusted_headers`, or every guest shares the proxy's address.
 
-### Schedule the background commands
+### Required: schedule the recurring jobs
 
-Several features run from console commands rather than on a request. Run them from cron, Symfony Scheduler or your platform's job runner:
+SLA breaches, escalation rules, automations, snooze wake-ups and delayed
+workflow actions run from console commands, not on a request. **Nothing runs
+them unless you schedule them.** Until you do, the admin settings and reports
+pages show a warning: `escalated:check-sla-breaches` records a heartbeat on
+every run, and the warning appears while it is missing or older than 15
+minutes.
 
-```cron
-* * * * *  php bin/console escalated:check-sla-breaches      # mark overdue tickets, fire sla.breached
-* * * * *  php bin/console escalated:process-delayed-actions # run delayed workflow actions that are due
-* * * * *  php bin/console escalated:wake-snoozed-tickets    # reopen tickets whose snooze expired
-*/5 * * * * php bin/console escalated:automations:run        # time-based automations
-*/5 * * * * php bin/console escalated:escalations:run        # escalation rules
-*/5 * * * * php bin/console escalated:chat:close-idle        # close idle live chats
-* * * * *  php bin/console escalated:newsletters:dispatch    # only with enable_newsletters
-0 3 * * *  php bin/console escalated:purge-expired          # data retention (Admin > Settings > Data retention)
-* * * * *  php bin/console escalated:plugins:cron            # SDK plugins' cron schedules (with the plugin runtime)
-```
+| Command | Interval | What it does |
+|---|---|---|
+| `php bin/console escalated:check-sla-breaches` | every minute | marks overdue tickets, fires `sla.breached` and `sla.warning`, records the heartbeat |
+| `php bin/console escalated:process-delayed-actions` | every minute | runs delayed workflow actions that are due |
+| `php bin/console escalated:wake-snoozed-tickets` | every minute | reopens tickets whose snooze expired |
+| `php bin/console escalated:escalations:run` | every 5 minutes | escalation rules |
+| `php bin/console escalated:automations:run` | every 5 minutes | time-based automations |
+| `php bin/console escalated:chat:close-idle` | every 5 minutes | closes idle live chats |
+| `php bin/console escalated:plugins:cron` | every minute | plugins' cron schedules |
+| `php bin/console escalated:purge-expired` | daily | data retention (Admin > Settings > Data retention) |
+| `php bin/console escalated:newsletters:dispatch` | every minute | only with `enable_newsletters` |
 
-Without the first two, SLA breaches are never recorded and delayed workflow actions never run.
+Either way works:
+
+- **Cron** (or your platform's job runner):
+
+  ```cron
+  * * * * *   php bin/console escalated:check-sla-breaches
+  * * * * *   php bin/console escalated:process-delayed-actions
+  * * * * *   php bin/console escalated:wake-snoozed-tickets
+  */5 * * * * php bin/console escalated:escalations:run
+  */5 * * * * php bin/console escalated:automations:run
+  */5 * * * * php bin/console escalated:chat:close-idle
+  * * * * *   php bin/console escalated:plugins:cron
+  0 3 * * *   php bin/console escalated:purge-expired
+  * * * * *   php bin/console escalated:newsletters:dispatch   # only with enable_newsletters
+  ```
+
+- **Symfony Scheduler** (opt-in): with `symfony/scheduler` and `symfony/messenger`
+  installed, turn on auto-registration and the bundle registers every command
+  above as the `escalated` schedule. Then keep one worker running:
+
+  ```yaml
+  escalated:
+      scheduling:
+          auto_register: true   # default false
+  ```
+
+  ```bash
+  php bin/console messenger:consume scheduler_escalated
+  ```
+
+`php bin/console escalated:doctor` reports whether the jobs are running, along
+with the rest of the setup.
 
 ### Host user key type (UUID / string users)
 
@@ -194,7 +267,17 @@ Earlier releases shipped one migration as `Escalated\Symfony\Migrations\Version2
 
 ### 4. Set up security
 
+Escalated stores your users by primary key, so the user your firewall signs in must be a **Doctrine entity implementing `Symfony\Component\Security\Core\User\UserInterface`**, and `escalated.user_class` must name that class. If it is not, the first staff action fails with a `HostUserNotConfiguredException` that says what to change.
+
 Add the `ROLE_ESCALATED_ADMIN` role to admin users in your user provider. Agent access is determined by the presence of an `AgentProfile` entity linked to the user.
+
+Check the setup with:
+
+```bash
+php bin/console escalated:doctor
+```
+
+It reports a `user_class` that is missing, not a Doctrine entity or not a `UserInterface`; no agents; unseeded permissions or no assigned roles while roles & permissions are on; and recurring jobs that are not running. It exits 1 on a problem that breaks staff actions.
 
 ```yaml
 # config/packages/security.yaml

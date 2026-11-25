@@ -152,7 +152,13 @@ composer require rompetomp/inertia-bundle
 php bin/console doctrine:migrations:migrate
 ```
 
-Before migrating, add `config/packages/escalated.yaml` and import the bundle's routes in `config/routes/escalated.yaml`. Needs PHP 8.2+ and Symfony 6.4 or 7.x. The [getting started guide](docs/getting-started.md) has both files, security roles and the scheduled commands.
+Before migrating, add `config/packages/escalated.yaml` and import the bundle's routes in `config/routes/escalated.yaml`. Needs PHP 8.2+ and Symfony 6.4 or 7.x. The [getting started guide](docs/getting-started.md) has both files, security roles and the scheduled commands. Run `php bin/console escalated:doctor` to check the setup.
+
+### Required: schedule the recurring jobs
+
+SLA checks, escalation rules, automations and snooze wake-ups run only when something runs their commands: `escalated:check-sla-breaches`, `escalated:process-delayed-actions` and `escalated:wake-snoozed-tickets` every minute, `escalated:escalations:run`, `escalated:automations:run` and `escalated:chat:close-idle` every 5 minutes, `escalated:plugins:cron` every minute and `escalated:purge-expired` daily. Add them to cron, or set `escalated.scheduling.auto_register: true` and run `messenger:consume scheduler_escalated` (Symfony Scheduler). The admin settings and reports pages warn while they are not running. Details: [schedule the recurring jobs](docs/getting-started.md#required-schedule-the-recurring-jobs).
+
+A staff-only install can switch off the public widget and guest routes and guard the customer portal: see [staff-only installs](docs/getting-started.md#staff-only-installs).
 
 ## Learn more
 

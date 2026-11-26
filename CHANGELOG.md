@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.3.13] - 2026-11-25
+
 ### Upgrading
 - No change is needed: every new option defaults to today's behaviour. The admin settings and reports pages now warn while the recurring jobs are not running (see below); schedule them, or set `escalated.scheduling.auto_register: true`, to clear it.
 
